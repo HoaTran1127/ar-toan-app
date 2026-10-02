@@ -309,6 +309,42 @@ const LESSONS = {
     khoi_dong:'Có 3 bó chục và 2 que lẻ. Muốn bớt đi 5 que thì làm thế nào khi số que lẻ không đủ để bớt?',
     chot:'Thiếu ở một hàng thì mượn một bó của hàng bên trái và bó đó tách thành đúng 10 que; nhớ và mượn phải ghi lại chứ không tính nhẩm rồi quên.',
     obj:'bó que tính', boT:3, boO:2, bsT:1, bsO:5 },
+  'on-tap-toan-4': { model:'chooser', ten:'Ôn tập cuối lớp 4 trên bốn trạm vật thật', chSel:0,
+    de:'Bài: "Hình chữ nhật dài 6cm, rộng 4cm. Tính diện tích." Bài này thuộc mạch nào — chọn đúng VẬT THẬT để thao tác.',
+    khoi_dong:'Suốt năm lớp 4, chúng mình đã dùng những vật thật nào để học Toán?',
+    chot:'Mỗi mạch kiến thức có một vật thật và một sơ đồ riêng; nhận ra bài thuộc mạch nào thì chọn đúng vật của mạch đó.',
+    obj:'bốn trạm ôn tập',
+    opts:[ { n:'Lưới ô vuông', d:'Diện tích là đếm ô vuông phủ kín → đúng mạch đo diện tích (6 × 4 = 24 ô).', ok:true },
+      { n:'Bó que tính', d:'Bó que dùng cho giá trị hàng và cộng trừ có nhớ — không phải diện tích.', ok:false },
+      { n:'Bánh phân số', d:'Bánh tròn để tô phân số — bài này không hỏi phần của một cái.', ok:false },
+      { n:'Mặt đồng hồ', d:'Đồng hồ để đọc giờ – phút — không liên quan hình chữ nhật.', ok:false } ] },
+  'boss-cong-thu': { model:'chooser', ten:'Tổng hợp chương: chọn đúng công thức trước khi tính', chSel:0,
+    de:'Đề: "Hồ nước hình chữ nhật dài 8m, rộng 5m, người ta lót gạch kín đáy." Việc ĐẦU TIÊN phải làm gì?',
+    khoi_dong:'Đọc xong đề bài, việc đầu tiên là tính luôn hay là nhận ra đề đang hỏi công thức nào?',
+    chot:'Viết lại đúng công thức cần dùng rồi mới thế số; sai công thức thì tính cẩn thận đến mấy cũng ra đáp số sai.',
+    obj:'bài toán hồ nước',
+    opts:[ { n:'Nhận ra: cần DIỆN TÍCH đáy', d:'Lót kín đáy → hỏi diện tích = dài × rộng = 8 × 5 = 40 m², rồi mới tính số gạch.', ok:true },
+      { n:'Tính (8 + 5) × 2', d:'Ra CHU VI miệng hồ (26 m) — lót đáy không cần đường bao.', ok:false },
+      { n:'Tính 8 × 5 × 2', d:'Gấp đôi vô lý — hồ không có chiều cao trong đề.', ok:false },
+      { n:'Cộng 8 + 5 ngay', d:'Không là công thức nào, chỉ là tổng hai cạnh.', ok:false } ] },
+  'hinh-hoc-on-tap': { model:'chooser', ten:'Chu vi, diện tích, thể tích: chọn đúng công thức', chSel:0,
+    de:'Hình LẬP PHƯƠNG cạnh 3cm. Đề hỏi THỂ TÍCH. Chọn đúng công thức (chú ý đơn vị).',
+    khoi_dong:'Bốn hình đã học thì có bốn công thức khác nhau. Làm sao để không dùng nhầm?',
+    chot:'Đo đủ số đo mà công thức cần rồi mới thế số; chu vi và diện tích khác đơn vị, diện tích và thể tích cũng khác đơn vị.',
+    obj:'hộp quà hình lập phương',
+    opts:[ { n:'3 × 3 × 3 = 27 cm³', d:'a³ — ba số đo của cùng hình, cho thể tích; đơn vị là cm³.', ok:true },
+      { n:'3 × 3 = 9 cm²', d:'Ra DIỆN TÍCH một mặt (cm²), không phải thể tích.', ok:false },
+      { n:'(3 + 3) × 2 = 12 cm', d:'Ra CHU VI một mặt (cm) — một chiều.', ok:false },
+      { n:'3 × 12 = 36 cm', d:'Ra tổng độ dài 12 cạnh — đơn vị cm, không phải thể tích.', ok:false } ] },
+  'on-tap-toan-5': { model:'chooser', ten:'Ôn tập cuối lớp 5: chọn chiến lược trước khi tính', chSel:0,
+    de:'Đề: "May 5 bộ quần áo như nhau hết 14m vải. Hỏi may 8 bộ như thế hết mấy mét vải?" Chốt chiến lược nào rồi mới tính?',
+    khoi_dong:'Một bài toán đố lớp 5 có tới ba cách làm. Làm sao biết cách nào nên dùng?',
+    chot:'Chốt chiến lược trước khi tính: rút về đơn vị, dùng tỉ số hay vẽ sơ đồ đoạn thẳng; mọi bước phải nằm dọc theo chiến lược đã chọn.',
+    obj:'xưởng may', chien_luoc:'là rút về đơn vị hay vẽ sơ đồ đoạn thẳng?',
+    opts:[ { n:'Rút về đơn vị', d:'1 bộ = 14 : 5 = 2,8 m → 8 bộ = 2,8 × 8 = 22,4 m. Cặp đại lượng 1-1 nên rút về 1 trước.', ok:true },
+      { n:'Sơ đồ đoạn thẳng tổng–tỉ', d:'Sơ đồ này cần BIẾT TỔNG hai lượng — đề không cho tổng, không dùng được.', ok:false },
+      { n:'Đếm chia nhóm (phân số của một số)', d:'Không có chuyện "lấy một phần của một số" ở đây.', ok:false },
+      { n:'Vẽ hình rồi đo', d:'Bài toán đại lượng, không phải hình học — vẽ hình không giúp ích.', ok:false } ] },
 };
 
 const state = {
@@ -345,6 +381,7 @@ const state = {
   aLen: 1, aHi: 9, bLen: 2, bHi: 1,
   dtRow: 0, dtCol: 0,
   boT: 3, boO: 2, bsT: 1, bsO: 5,
+  chSel: 0,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -2340,6 +2377,56 @@ const MODELS = {
         new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: .5 })); m.position.set((i - (c.tD - 1) / 2) * 0.5, 0.6, -0.6); g.add(m); }
       for (let i = 0; i < c.oD; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.85, 0.12),
         new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: .5 })); m.position.set((i - (c.oD - 1) / 2) * 0.32, 0.45, 0.7); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
+  chooser: {
+    defaults(st, L) { st.chSel = (L.chSel != null ? L.chSel : 0); },
+    list() { return (cur().opts || []); },
+    geomSig(st) { return 'chooser' + this.list().map((o) => o.n).join('|') + ':' + st.chSel; },
+    params() { const n = Math.max(1, this.list().length); return [ { key: 'chSel', label: 'Phương án', min: 0, max: n - 1 }]; },
+    ctlHint() { return 'Giơ ngón tay = chọn phương án (1 ngón → phương án 1). Cả lớp THỐNG NHẤT một chiến lược/công thức/vật TRƯỚC khi tính — đó mới là ý bài ôn tập.'; },
+    wrap(txt, max) { const w = String(txt).split(' '); const lines = []; let c = '';
+      for (const t of w) { if ((c + ' ' + t).trim().length > max) { if (c) lines.push(c.trim()); c = t; } else c += ' ' + t; } if (c) lines.push(c.trim()); return lines; },
+    draw2d(host, st) {
+      const L = cur(), o = this.list(), n = Math.max(1, o.length), sel = clamp(st.chSel, 0, n - 1);
+      const W = 560, H = 260, mx = 14, gap = 10, cw = (W - 2 * mx - (n - 1) * gap) / n, cardY = 62, cardH = 96;
+      let s = '';
+      this.wrap(L.de || L.ten, 62).slice(0, 2).forEach((ln, i) => { s += `<text x="${W / 2}" y="${24 + i * 18}" fill="var(--chalk)" font-size="13" text-anchor="middle">${ln}</text>`; });
+      for (let i = 0; i < n; i++) {
+        const x = mx + i * (cw + gap), isSel = i === sel;
+        const fill = isSel ? (o[i].ok ? 'rgba(255,209,102,.16)' : 'rgba(240,90,90,.16)') : 'rgba(255,255,255,.05)';
+        const stroke = isSel ? (o[i].ok ? 'var(--accent)' : 'var(--warn)') : 'rgba(242,240,230,.25)';
+        s += `<rect x="${x}" y="${cardY}" width="${cw}" height="${cardH}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="${isSel ? 3 : 1.2}"></rect>`
+          + `<circle cx="${x + 16}" cy="${cardY + 16}" r="11" fill="${isSel ? stroke : 'rgba(242,240,230,.2)'}"></circle>`
+          + `<text x="${x + 16}" y="${cardY + 20}" fill="#0e1b22" font-size="12" font-weight="700" text-anchor="middle">${i + 1}</text>`;
+        this.wrap(o[i].n, Math.floor(cw / 6.4)).slice(0, 3).forEach((ln, k) => { s += `<text x="${x + cw / 2}" y="${cardY + 44 + k * 15}" fill="var(--chalk)" font-size="11.5" font-weight="${isSel ? 700 : 400}" text-anchor="middle">${ln}</text>`; });
+      }
+      const det = o[sel] ? o[sel].d : '', dy = cardY + cardH + 18;
+      this.wrap(det, 76).slice(0, 3).forEach((ln, i) => { s += `<text x="${W / 2}" y="${dy + i * 16}" fill="${o[sel] && o[sel].ok ? 'var(--accent)' : 'var(--chalk)'}" font-size="12.5" text-anchor="middle">${ln}</text>`; });
+      const verdict = o[sel] && o[sel].ok ? '✓ Đúng rồi — chốt cách này rồi mới tính' : '✗ Chưa khớp — đề không hỏi cách này';
+      s += `<text x="${W / 2}" y="${H - 8}" fill="${o[sel] && o[sel].ok ? 'var(--accent)' : 'var(--warn)'}" font-size="15" font-weight="700" text-anchor="middle">${verdict}</text>`;
+      host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, o = this.list(), sel = clamp(st.chSel, 0, Math.max(0, o.length - 1)), c = o[sel] || {};
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: đề bài — ${L.de || L.ten}`, hint: 'Đừng tính vội. Hãy chọn cách làm.' };
+      if (s === 2) return { cap: `Sơ đồ: cả lớp giơ tay chọn phương án. Đang chọn: ${c.n || '—'}. ${c.d || ''}`, hint: 'Giơ ngón tay 1…' + o.length + ' để đổi phương án.' };
+      if (s === 3) return { cap: (c.ok ? `Chốt đúng: ${c.n}. ` : `Phương án "${c.n || '—'}" chưa khớp. `) + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: bài này nên ${L.chien_luoc || 'chọn cách nào'} — em giơ tay chọn phương án. Cô đếm, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const o = this.list(), sel = clamp(st.chSel, 0, Math.max(0, o.length - 1)); return `Chọn: ${(o[sel] && o[sel].n) || '—'} · ${(o[sel] && o[sel].ok) ? 'đúng' : 'thử lại'}`; },
+    showFromStep() { return 2; },
+    hand(st, f) { const n = Math.max(1, this.list().length); st.chSel = clamp(f, 1, n) - 1; },
+    handLabel(f) { const o = this.list(), i = clamp(f, 1, Math.max(1, o.length)) - 1; return (o[i] && o[i].n) || ('phương án ' + (i + 1)); },
+    build3d(st) {
+      const g = new THREE.Group(), o = this.list(), n = Math.max(1, o.length), sel = clamp(st.chSel, 0, n - 1);
+      for (let i = 0; i < n; i++) { const h = i === sel ? 1.1 : 0.45;
+        const col = i === sel ? (o[i].ok ? 0xffd166 : 0xf05a5a) : 0x4a5a66;
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.7, h, 0.7), new THREE.MeshStandardMaterial({ color: col, roughness: .55 }));
+        m.position.set((i - (n - 1) / 2) * 0.9, h / 2, 0); g.add(m); }
       return g;
     },
     paint3d() {},
