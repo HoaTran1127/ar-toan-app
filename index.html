@@ -399,6 +399,10 @@ const LESSONS = {
     khoi_dong:'Một cái hộp quà hình chữ nhật. Nếu cô dán giấy quanh 4 mặt XUNG QUANH rồi mới dán thêm NẮP và ĐÁY, em cần giấy cho mấy mặt mỗi lần? Diện tích xung quanh khác diện tích toàn phần ở chỗ nào?',
     chot:'Diện tích XUNG QUANH = (độ dài + độ rộng) × 2 × chiều cao (chỉ 4 mặt bên). Diện tích TOÀN PHẦN = xung quanh + 2 × (dài × rộng) (thêm nắp và đáy). ĐỪNG nhầm: toàn phần = xung quanh CỘNG hai mặt đáy.',
     obj:'hộp dài 6 rộng 4 cao 3', saA:6, saB:4, saC:3 },
+  'thu-tu-tinh': { model:'order', ten:'Thứ tự thực hiện các phép tính',
+    khoi_dong:'Cô viết 2 + 3 × 4 lên bảng. Hai bạn tính ra hai kết quả khác nhau: một bạn nói 20, một bạn nói 14. Ai đúng? Vì sao cùng một biểu thức mà ra hai số — họ làm theo thứ tự nào?',
+    chot:'Thứ tự: có DẤU NGOẶC thì làm TRONG NGOẶC trước; không có ngoặc thì làm × và ÷ TRƯỚC, rồi mới đến + và −. Cùng các số 2, 3, 4: 2 + 3 × 4 = 14 (× trước), nhưng (2 + 3) × 4 = 20 (ngoặc trước). ĐỪNG đọc bừa từ trái sang phải.',
+    obj:'2 + 3 × 4', ordA:2, ordB:3, ordC:4, ordK:0 },
 };
 
 const state = {
@@ -444,6 +448,7 @@ const state = {
   trB: 10, trH: 6,
   tpA: 12, tpB: 6, tpH: 5,
   saA: 6, saB: 4, saC: 3,
+  ordA: 2, ordB: 3, ordC: 4, ordK: 0,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3136,6 +3141,75 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // beyond-bank 10: THỨ TỰ THỰC HIỆN PHÉP TÍNH — một biểu thức 3 số, hai tay đặt a·b, +/− đặt c và DẠNG.
+  // Dạy "ngoặc trước → rồi × ÷ → cuối + −" bằng HAI BƯỚC CÓ THỨ TỰ + một CÁCH SAI gạch đỏ. Chặn đúng lỗi
+  // kinh điển "cứ đọc trái→phải mà tính" và "thấy số cộng đẹp thì nhảy vào cộng trước".
+  order: {
+    twoHands: true,
+    defaults(st, L) { st.ordA = (L.ordA != null ? L.ordA : 2); st.ordB = (L.ordB != null ? L.ordB : 3); st.ordC = (L.ordC != null ? L.ordC : 4); st.ordK = (L.ordK != null ? L.ordK : 0); },
+    fmt(n) { const s = Math.round(n * 100) / 100; if (Number.isInteger(s)) return String(s); let t = s.toFixed(2); if (t.endsWith('0')) t = t.slice(0, -1); return t.replace('.', ','); },
+    a(st) { return clamp(st.ordA, 1, 9); },
+    b(st) { return clamp(st.ordB, 1, 9); },
+    c(st) { return clamp(st.ordC, 1, 9); },
+    k(st) { return clamp(Math.round(st.ordK), 0, 2); },
+    spec(st) {
+      const a = this.a(st), b = this.b(st), c = this.c(st), k = this.k(st);
+      if (k === 1) return { dang: '(a + b) × c', text: `(${a} + ${b}) × ${c}`, uuTien: 'DẤU NGOẶC làm trước hết', step1: `① trong ngoặc: ${a} + ${b} = ${a + b}`, step2: `② ${a + b} × ${c} = ${(a + b) * c}`, duong: (a + b) * c, saiText: `${a} + ${b} × ${c}`, saiVal: a + b * c, saiLyDo: 'bỏ ngoặc, nhảy sang phép × trước — SAI: mọi thứ TRONG NGOẶC phải tính trước.' };
+      if (k === 2) return { dang: 'a × b + c', text: `${a} × ${b} + ${c}`, uuTien: '× và ÷ làm trước + và −', step1: `① ${a} × ${b} = ${a * b}`, step2: `② ${a * b} + ${c} = ${a * b + c}`, duong: a * b + c, saiText: `${a} × (${b} + ${c})`, saiVal: a * (b + c), saiLyDo: `thích cộng ${b} + ${c} cho đẹp rồi mới nhân — SAI: × phải chạy trước +.` };
+      return { dang: 'a + b × c', text: `${a} + ${b} × ${c}`, uuTien: '× và ÷ làm trước + và −', step1: `① ${b} × ${c} = ${b * c}`, step2: `② ${a} + ${b * c} = ${a + b * c}`, duong: a + b * c, saiText: `(${a} + ${b}) × ${c}`, saiVal: (a + b) * c, saiLyDo: 'đọc trái→phải nên cộng trước rồi nhân — SAI: phép × chạy trước phép +' };
+    },
+    geomSig(st) { return 'ord' + this.a(st) + this.b(st) + this.c(st) + ':' + this.k(st); },
+    params() { return [
+      { key: 'ordA', label: 'Số a', min: 1, max: 9 },
+      { key: 'ordB', label: 'Số b', min: 1, max: 9 },
+      { key: 'ordC', label: 'Số c', min: 1, max: 9 },
+      { key: 'ordK', label: 'Dạng (0:a+b×c · 1:(a+b)×c · 2:a×b+c)', min: 0, max: 2 }]; },
+    ctlHint() { return 'Tay TRÁI đặt a, tay PHẢI đặt b; số c và DẠNG biểu thức chỉnh bằng +/−. Xem phép nào được ưu tiên chạy TRƯỚC, rồi đọc kết quả từng bước.'; },
+    draw2d(host, st) {
+      const sp = this.spec(st), f = this.fmt.bind(this);
+      const gold = 'rgba(255,209,102,.16)', teal = 'rgba(127,201,191,.20)';
+      const box1 = `<rect x="26" y="80" width="228" height="42" rx="6" fill="${gold}" stroke="var(--warn)" stroke-width="1.6"></rect>`
+        + `<text x="40" y="107" fill="var(--chalk)" font-size="14" font-weight="700">${sp.step1}</text>`;
+      const arrow = `<text x="258" y="107" fill="var(--accent)" font-size="20" font-weight="700">→</text>`;
+      const box2 = `<rect x="286" y="80" width="236" height="42" rx="6" fill="${teal}" stroke="var(--ok)" stroke-width="1.6"></rect>`
+        + `<text x="300" y="107" fill="var(--chalk)" font-size="14" font-weight="700">${sp.step2}</text>`;
+      const rule = `<text x="26" y="46" fill="var(--warn)" font-size="13.5" font-weight="700">Ưu tiên: ① DẤU NGOẶC  →  ② × và ÷  →  ③ + và −</text>`;
+      const expr = `<text x="26" y="72" fill="var(--accent)" font-size="20" font-weight="700">${sp.text} = ?</text>`
+        + `<text x="300" y="72" fill="rgba(242,240,230,.7)" font-size="13" font-weight="700">dạng ${sp.dang}</text>`;
+      const res = `<text x="26" y="150" fill="var(--ok)" font-size="18" font-weight="700">Kết quả ĐÚNG: ${sp.text} = ${f(sp.duong)}</text>`;
+      const wrong = `<rect x="26" y="164" width="496" height="66" rx="6" fill="rgba(231,76,60,.10)" stroke="var(--bad)" stroke-width="1.4" stroke-dasharray="6 4"></rect>`
+        + `<text x="38" y="188" fill="var(--bad)" font-size="14" font-weight="700">❌ Cách SAI hay gặp: ${sp.saiText} = ${f(sp.saiVal)}</text>`
+        + `<text x="38" y="212" fill="rgba(242,240,230,.82)" font-size="12.5">Vì sao sai: ${sp.saiLyDo}.</text>`;
+      host.innerHTML = `<svg id="order" width="548" height="258" viewBox="0 0 548 258">`
+        + `<text x="16" y="20" fill="rgba(242,240,230,.72)" font-size="12.5">Thứ tự thực hiện phép tính — làm ĐÚNG THỨ TỰ, không đọc bừa từ trái sang</text>`
+        + rule + expr + box1 + arrow + box2 + res + wrong + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, sp = this.spec(st), f = this.fmt.bind(this);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: cả lớp cùng tính một biểu thức ${sp.text}. Hỏi: phép nào làm TRƯỚC?`, hint: 'Tay trái đặt a, tay phải đặt b, +/− cho c và đổi dạng.' };
+      if (s === 2) return { cap: `Sơ đồ: ${sp.uuTien}. Bước ① ${sp.step1.replace('① ', '')}, rồi bước ② ${sp.step2.replace('② ', '')}.`, hint: 'Đó là thứ tự — ngoặc trước, × ÷ trước, + − sau.' };
+      if (s === 3) return { cap: `${sp.text} = ${f(sp.duong)}. Nếu tính sai thứ tự (${sp.saiText}) sẽ ra ${f(sp.saiVal)} — ${sp.saiLyDo}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: ${sp.text} bằng bao nhiêu? (nhớ đúng thứ tự!) Cô đếm tay giơ, hoặc +/− đổi biểu thức.`, hint: '' };
+    },
+    value(st) { const sp = this.spec(st); return `${sp.text} = ${this.fmt(sp.duong)}`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.ordA = clamp(l, 1, 9);
+      if (r !== null) st.ordB = clamp(r, 1, 9);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), n = clamp(Math.round(this.spec(st).duong), 1, 30), cols = 5, sc = 0.5, cell = 0.62;
+      const mat = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.5 });
+      for (let i = 0; i < n; i++) { const r = Math.floor(i / cols), c = i % cols;
+        const m = new THREE.Mesh(new THREE.BoxGeometry(sc, sc, sc), mat);
+        m.position.set((c - (cols - 1) / 2) * cell, r * cell + sc / 2, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3237,6 +3311,10 @@ EX['dien-tich-hinh-thang'] = [
 EX['dien-tich-hinh-hop'] = [
   { prompt: 'Một hộp chữ nhật có chiều dài 6 cm, chiều rộng 4 cm, chiều cao 3 cm. Diện tích XUNG QUANH của hộp là bao nhiêu?', choices: ['60 cm²', '108 cm²', '72 cm²'], answer: '60 cm²', explanation: 'Sxq = (dài + rộng) × 2 × cao = (6 + 4) × 2 × 3 = 60 cm². Xung quanh chỉ tính 4 MẶT BÊN, chưa cộng hai đáy.', errorTag: 'tinh-nham-xung-quanh-thanh-toan-phan' },
   { prompt: 'Với hộp ở trên (dài 6, rộng 4, cao 3), diện tích TOÀN PHẦN là bao nhiêu?', choices: ['108 cm²', '60 cm²', '48 cm²'], answer: '108 cm²', explanation: 'Stp = Sxq + 2 × (dài × rộng) = 60 + 2 × (6 × 4) = 60 + 48 = 108 cm². Toàn phần phải CỘNG thêm hai mặt đáy vào diện tích xung quanh.', errorTag: 'quen-cong-hai-day-khi-tinh-toan-phan' },
+];
+EX['thu-tu-tinh'] = [
+  { prompt: 'Tính: 4 + 5 × 3 = ?', choices: ['27', '19', '15'], answer: '19', explanation: 'Không có ngoặc nên × chạy trước: 5 × 3 = 15, rồi 4 + 15 = 19. Đọc trái→phải (4 + 5 = 9 rồi × 3 = 27) là SAI thứ tự.', errorTag: 'doc-trai-sang-phai-quen-nhan-truoc' },
+  { prompt: 'Tính: (6 + 2) × 5 = ?', choices: ['16', '40', '34'], answer: '40', explanation: 'Có DẤU NGOẶC nên làm trong ngoặc trước: 6 + 2 = 8, rồi 8 × 5 = 40. Bỏ ngoặc nhảy sang 2 × 5 = 10 rồi cộng 6 = 16 là SAI.', errorTag: 'bo-ngoac-tinh-nhan-truoc' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
