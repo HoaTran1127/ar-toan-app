@@ -301,6 +301,10 @@ const LESSONS = {
     khoi_dong:'Hai bạn thi viết số lớn hơn: một bạn chỉ được viết 5 chữ số, một bạn được viết 6 chữ số. Chưa cần đọc hết số, ai chắc chắn thắng?',
     chot:'So sánh bắt đầu từ số chữ số rồi mới so từ hàng lớn nhất xuống; đừng nhìn chữ số đầu tiên mà kết luận ngay.',
     obj:'thi viết số' },
+  'bang-so-lieu': { model:'dtable', ten:'Đọc bảng số liệu không nhầm hàng, không nhầm cột',
+    khoi_dong:'Trong bảng điểm của cả lớp, làm sao tìm đúng điểm của một bạn mà không đọc sang bạn ngồi bên cạnh?',
+    chot:'Phải dóng đúng cả tên hàng và tên cột mới đọc được giá trị của một ô; số trung bình cộng bằng tổng chia cho số phần tử.',
+    obj:'bảng điểm lớp', dtRow:0, dtCol:0 },
 };
 
 const state = {
@@ -335,6 +339,7 @@ const state = {
   tfDI: 0, tfN: 1,
   pStep: 0,
   aLen: 1, aHi: 9, bLen: 2, bHi: 1,
+  dtRow: 0, dtCol: 0,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -2201,6 +2206,67 @@ const MODELS = {
           new THREE.MeshStandardMaterial({ color: i === 0 ? (side === 'A' ? 0xffd166 : 0x7fc9bf) : 0x4a5a66, roughness: .55 }));
           m.position.set((i - (len - 1) / 2) * 0.7, 0, z); g.add(m); } };
       mkRow('A', st.aLen, st.aHi, -0.9); mkRow('B', st.bLen, st.bHi, 0.9);
+      return g;
+    },
+    paint3d() {},
+  },
+  dtable: {
+    twoHands: true,
+    data() { return {
+      rows: [ ['An', 8, 6, 7], ['Bình', 5, 9, 4], ['Cường', 10, 8, 9], ['Dung', 7, 9, 8] ],
+      cols: ['Toán', 'Tiếng Việt', 'Anh'] }; },
+    avg(row) { return (row[1] + row[2] + row[3]) / 3; },
+    at(st) { const d = this.data(), ri = clamp(st.dtRow, 0, 3), ci = clamp(st.dtCol, 0, 3);
+      return { d, ri, ci, rl: d.rows[ri][0], cl: ci < 3 ? d.cols[ci] : 'TB',
+        val: ci < 3 ? d.rows[ri][1 + ci] : this.avg(d.rows[ri]) }; },
+    defaults(st, L) { st.dtRow = L.dtRow; st.dtCol = L.dtCol; },
+    geomSig(st) { return 'dtable' + st.dtRow + ':' + st.dtCol; },
+    params() { return [ { key: 'dtRow', label: 'Hàng · bạn', min: 0, max: 3 }, { key: 'dtCol', label: 'Cột · môn', min: 0, max: 3 }]; },
+    ctlHint() { return 'Dóng NGANG theo tên HÀNG (bên trái) rồi dóng DỌC theo tên CỘT (trên đầu): hai dải gặp nhau ở ĐÚNG một ô. Đưa hai tay — trái chọn hàng, phải chọn cột — hoặc bấm +/−.'; },
+    draw2d(host, st) {
+      const { d, ri, ci, rl, cl, val } = this.at(st);
+      const headers = d.cols.concat(['TB']);
+      const x0 = 20, LW = 118, CW = 112, topY = 40, HH = 34, RH = 44;
+      const colX = (j) => x0 + LW + j * CW, rowY = (i) => topY + HH + i * RH;
+      const W = 600, H = topY + HH + 4 * RH + 40;
+      let s = `<rect x="${x0}" y="${rowY(ri)}" width="${LW + 4 * CW}" height="${RH}" fill="rgba(255,209,102,.14)"></rect>`
+        + `<rect x="${colX(ci)}" y="${topY}" width="${CW}" height="${HH + 4 * RH}" fill="rgba(127,201,191,.16)"></rect>`;
+      s += `<text x="${x0 + 8}" y="${topY + 22}" fill="var(--chalk)" font-size="13" font-weight="700">Bạn</text>`;
+      headers.forEach((hh, j) => { s += `<text x="${colX(j) + CW / 2}" y="${topY + 22}" fill="${j === ci ? '#7fc9bf' : 'var(--chalk)'}" font-size="${j === 2 ? 12 : 13}" font-weight="${j === ci ? 700 : 400}" text-anchor="middle">${hh}</text>`; });
+      d.rows.forEach((r, i) => {
+        s += `<text x="${x0 + 8}" y="${rowY(i) + 28}" fill="${i === ri ? 'var(--accent)' : 'rgba(242,240,230,.85)'}" font-size="14" font-weight="${i === ri ? 700 : 400}">${r[0]}</text>`;
+        for (let j = 0; j < 4; j++) {
+          const v = j < 3 ? r[1 + j] : this.avg(r), sel = (i === ri && j === ci);
+          s += `<rect x="${colX(j) + 6}" y="${rowY(i) + 6}" width="${CW - 12}" height="${RH - 12}" rx="5" fill="${sel ? 'rgba(255,209,102,.92)' : 'rgba(255,255,255,.05)'}" stroke="${sel ? 'var(--warn)' : 'rgba(242,240,230,.18)'}" stroke-width="${sel ? 3 : 1}"></rect>`
+            + `<text x="${colX(j) + CW / 2}" y="${rowY(i) + 28}" fill="${sel ? '#0e1b22' : 'var(--chalk)'}" font-size="15" font-weight="${sel ? 700 : 400}" text-anchor="middle">${v}</text>`;
+        } });
+      s += `<text x="${W / 2}" y="${H - 14}" fill="var(--chalk)" font-size="13" text-anchor="middle">Hàng ${rl} (dải vàng) dóng × cột ${cl} (dải xám) → gặp nhau ở ô ${val}</text>`;
+      host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, { d, ri, ci, rl, cl, val } = this.at(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: đây là BẢNG ĐIỂM của 4 bạn, mỗi bạn 3 môn và một cột trung bình. Đọc bảng là DÓNG theo hàng và cột — không đoán, không nhìn lướt sang ô bên cạnh.`, hint: 'Đưa hai tay để chọn hàng và cột đang dóng.' };
+      if (s === 2) return { cap: `Sơ đồ: dóng NGANG theo tên hàng "${rl}" (dải vàng) và dóng DỌC theo tên cột "${cl}" (dải xám); hai dải cắt nhau ở ĐÚNG một ô = ${val}. Nếu dóng sai một hàng là đọc nhầm sang bạn ngồi bên cạnh.`, hint: 'Nhớ: phải dóng CẢ tên hàng lẫn tên cột.' };
+      if (s === 3) return { cap: (ci === 3 ? `Trung bình của ${rl} = (${d.rows[ri][1]} + ${d.rows[ri][2]} + ${d.rows[ri][3]}) : 3 môn = ${d.rows[ri][1] + d.rows[ri][2] + d.rows[ri][3]} : 3 = ${val}. ` : `Ô đang dóng: ${rl} · ${cl} = ${val}. `) + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: muốn biết điểm môn Tiếng Việt của bạn Bình, em dóng hàng nào trước rồi dóng cột nào? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const a = this.at(st); return `Ô ${a.rl} · ${a.cl} = ${a.val}`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x;
+        if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.dtRow = clamp(l, 0, 3);
+      if (r !== null) st.dtCol = clamp(r, 0, 3);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), ri = clamp(st.dtRow, 0, 3), ci = clamp(st.dtCol, 0, 3);
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+        const sel = (i === ri && j === ci), band = (i === ri || j === ci), h = sel ? 0.95 : band ? 0.45 : 0.2;
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.6, h, 0.6),
+          new THREE.MeshStandardMaterial({ color: sel ? 0xffd166 : band ? 0x7fc9bf : 0x4a5a66, roughness: .55 }));
+        m.position.set((j - 1.5) * 0.75, h / 2, (i - 1.5) * 0.75); g.add(m); }
       return g;
     },
     paint3d() {},
