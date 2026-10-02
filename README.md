@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Ba mươi chín mô hình đang có:
+Bốn mươi mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -90,8 +90,9 @@ Ba mươi chín mô hình đang có:
 | `line` | **Biểu đồ đoạn thẳng** (beyond-bank): đọc **xu thế theo thời gian** (nhiệt độ trong ngày) | trục ngang = GIỜ, trục dọc = °C; **5 điểm** nối thành đường gấp khúc + lưới ngang; **con đọc** (gạch đứt cam) chỉ mốc đang xem, dóng ra trục dọc đọc đúng giá trị | 5 cột + 5 khối cầu, cầu đỏ = con đọc | **lòng bàn tay ngang** quét trái↔phải để dời con đọc; hoặc bấm vào điểm, +/− từng giờ |
 | `svt` | **Tam giác đại lượng S–v–t** (beyond-bank): che ô cần tìm → ra phép tính | **tam giác**: S ở chóp, v·t ở đáy (kẻ gạch ngang + dọc chia 3 ô); ô ĐANG CHE nền vàng ghi `? = kết quả`, hai ô kia hiện số; dưới tam giác là **dòng công thức** đầy đủ | 3 hộp, hộp đang che màu vàng, hai hộp xanh | **giơ ngón = chọn ô che**: 1 → S, 2 → v, 3 → t; +/− hai số còn lại đổi đề → ô che tự tính |
 | `circle` | **Hình tròn** (beyond-bank): bán kính → đường kính, chu vi, diện tích | vòng tròn + 12 nan hoa; **bán kính r** (cạnh vàng, tâm→mép), **đường kính d = 2r** (nét đứt cam ngang qua tâm); dưới là **chu vi khai triển** thành một đoạn thẳng = π×d; cột phải ghi d, C = 2πr, S = πr² (π ≈ 3,14) | đĩa trụ (CylinderGeometry) to/nhỏ theo r | **lòng bàn tay ngang** đổi bán kính; hoặc bấm vào hình (khoảng cách tới tâm = r), +/− bán kính |
+| `tri` | **Diện tích hình tam giác** (beyond-bank): đáy × chiều cao rồi **chia 2** | **hình chữ nhật** nét đứt (đáy × cao) bao lấy **tam giác đặc** (nửa dưới-trái) + **tam giác mờ giống hệt** (nửa trên-phải); **đường chéo** vàng là chỗ cắt; ô vuông góc ở đỉnh, nhãn **đáy b** (cạnh dưới) và **cao h** (cạnh đứng); cột phải: chữ nhật = b×h, rồi **S = đáy × cao ÷ 2** | lăng trụ tam giác (Shape + ExtrudeGeometry) to/nhỏ theo đáy & cao | **hai tay**: tay TRÁI đặt ĐÁY, tay PHẢI đặt CHIỀU CAO (giơ ngón rồi +/− tới 20 \| 14); hoặc bấm vào hình |
 
-Bài hiện có (45 bài · 39 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 6 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (46 bài · 40 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 7 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -107,7 +108,7 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` (Vòng 69–74):** SGK lớp 4 có mạch
+**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` (Vòng 69–75):** SGK lớp 4 có mạch
 "Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
 giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
 (`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** các model cũ.
@@ -131,6 +132,13 @@ Vòng 74 thêm mạch thứ sáu: `circle` — **hình tròn** (bán kính → �
 tích S = πr²). Bán kính đổi bằng **lòng bàn tay ngang** hoặc bấm (khoảng cách tới tâm = r); vẽ thêm
 **"chu vi khai triển"** thành một đoạn thẳng để thấy C trải đúng π lần đường kính. Chặn lỗi lẫn r với d,
 quên ×2 ở chu vi, và lẫn chu vi với diện tích. Số thập phân hiển thị theo kiểu Việt (dấu phẩy).
+Vòng 75 thêm mạch thứ bảy: `tri` — **diện tích hình tam giác**. Vẽ một **hình chữ nhật** đáy × cao rồi cắt
+theo **đường chéo**: hai tam giác **giống hệt** (một tô đặc, một tô mờ) **lắp khít** vừa đúng hình chữ nhật,
+nên **một tam giác = một nửa** → công thức `S = đáy × cao ÷ 2` có "÷ 2" **không phải điều phải thuộc mà là
+điều nhìn thấy được**. Hai tay dựng hình: tay TRÁI kéo ĐÂY (đáy), tay PHẢI dựng CAO (chiều cao); cột bên ghi
+dòng chữ nhật = b×h rồi dòng S = b×h÷2. Chặn đúng lỗi kinh điển **"quên chia 2"** (tính 8×5=40 rồi dừng). 3D
+dùng `Shape` + `ExtrudeGeometry` → lăng trụ tam giác thật. Đây là **công thức diện tích trung tâm lớp 5** còn
+thiếu, nay đã có cùng `rhomb` (hình thoi) và `shear` (hình bình hành).
 
 **Vòng 70 còn sửa một LỖI CHỨC NĂNG thật của điều khiển hai tay:** nhánh `twoHands` trong
 `loopDetect` vốn so `state.balL + '/' + state.balR` để quyết định vẽ lại — hai biến CHỈ model
