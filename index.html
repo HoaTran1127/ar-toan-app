@@ -297,6 +297,10 @@ const LESSONS = {
     khoi_dong:'Một bài toán đố dài bốn dòng chữ. Làm sao biết phải tính cái gì trước?',
     chot:'Vẽ sơ đồ trước rồi mới tính; mỗi bước một phép tính kèm đơn vị, và đáp số nằm ở bước cuối cùng.',
     obj:'bài toán đố' },
+  'so-sanh-sap-xep': { model:'numcmp', ten:'So sánh và sắp xếp số có nhiều chữ số', aLen:1, aHi:9, bLen:2, bHi:1,
+    khoi_dong:'Hai bạn thi viết số lớn hơn: một bạn chỉ được viết 5 chữ số, một bạn được viết 6 chữ số. Chưa cần đọc hết số, ai chắc chắn thắng?',
+    chot:'So sánh bắt đầu từ số chữ số rồi mới so từ hàng lớn nhất xuống; đừng nhìn chữ số đầu tiên mà kết luận ngay.',
+    obj:'thi viết số' },
 };
 
 const state = {
@@ -330,6 +334,7 @@ const state = {
   pn: 15,
   tfDI: 0, tfN: 1,
   pStep: 0,
+  aLen: 1, aHi: 9, bLen: 2, bHi: 1,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -2132,6 +2137,70 @@ const MODELS = {
       for (let i = 0; i < K; i++) { const last = i === K - 1 && shown === K;
         const mat = new THREE.MeshStandardMaterial({ color: i < shown ? (last ? 0xff8f6b : 0x5fb0a5) : 0x33414a, roughness: .6, transparent: i < shown ? false : true, opacity: i < shown ? 1 : 0.25 });
         const m = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.6, 0.6), mat); m.position.set(0, 1.2 - i * 0.8, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
+
+  // ======================= Model: numcmp (so sánh số nhiều chữ số) =======================
+  // Repo 'so-sanh-sap-xep': so SỐ CHỮ SỐ trước, rồi mới từ hàng cao nhất xuống;
+  // đừng nhìn chữ số đầu mà kết luận (9 một chữ số < 10 hai chữ số).
+  numcmp: {
+    twoHands: true,
+    defaults(st, L) { st.aLen = L.aLen; st.aHi = L.aHi; st.bLen = L.bLen; st.bHi = L.bHi; },
+    cmp(st) { const aL = st.aLen, bL = st.bLen, aH = st.aHi, bH = st.bHi;
+      if (aL !== bL) return { stage: 'số chữ số', a: aL, b: bL, v: aL > bL ? '>' : '<' };
+      if (aH !== bH) return { stage: 'chữ số hàng cao nhất', a: aH, b: bH, v: aH > bH ? '>' : '<' };
+      return { stage: 'hai hàng đầu đã bằng nhau', a: aH, b: bH, v: '=' }; },
+    geomSig(st) { return 'numcmp' + st.aLen + ':' + st.aHi + ':' + st.bLen + ':' + st.bHi; },
+    params() { return [
+      { key: 'aLen', label: 'A · số chữ số', min: 1, max: 6 }, { key: 'aHi', label: 'A · chữ số đầu', min: 1, max: 9 },
+      { key: 'bLen', label: 'B · số chữ số', min: 1, max: 6 }, { key: 'bHi', label: 'B · chữ số đầu', min: 1, max: 9 }]; },
+    ctlHint() { return 'Đếm số ô để biết số nào NHIỀU chữ số hơn (chắc chắn lớn hơn, chưa cần đọc!). Đưa hai tay đổi CHỮ SỐ ĐẦU khi hai số bằng độ dài, hoặc bấm +/−.'; },
+    tiles(st, side, len, hi, y) {
+      const xs = 150, tw = 44, gap = 8, lab = side === 'A' ? 'var(--accent)' : '#7fc9bf';
+      let s = `<text x="16" y="${y + 28}" fill="${lab}" font-size="16" font-weight="700">Số ${side}</text>`
+        + `<text x="16" y="${y + 46}" fill="rgba(242,240,230,.6)" font-size="12">${len} chữ số</text>`;
+      for (let i = 0; i < len; i++) { const bx = xs + i * (tw + gap), first = i === 0;
+        s += `<rect x="${bx}" y="${y}" width="${tw}" height="44" rx="6" fill="${first ? (side === 'A' ? 'rgba(255,209,102,.75)' : 'rgba(127,201,191,.7)') : 'rgba(255,255,255,.06)'}" stroke="${first ? 'var(--chalk)' : 'rgba(242,240,230,.3)'}" stroke-width="${first ? 2 : 1}"></rect>`
+          + `<text x="${bx + tw / 2}" y="${y + 30}" fill="#0e1b22" font-size="22" font-weight="700" text-anchor="middle">${first ? hi : '·'}</text>`; }
+      return s;
+    },
+    draw2d(host, st) {
+      const c = this.cmp(st), W = 560, H = 250;
+      let s = this.tiles(st, 'A', st.aLen, st.aHi, 40) + this.tiles(st, 'B', st.bLen, st.bHi, 118);
+      s += `<text x="${W - 30}" y="98" fill="var(--warn)" font-size="40" font-weight="700" text-anchor="middle">${c.v}</text>`;
+      let note;
+      if (c.v === '=') note = `Hai số có ${c.a} chữ số và cùng chữ số đầu ${c.a} → phải xét tiếp hàng thấp hơn.`;
+      else if (c.stage === 'số chữ số') { const more = c.v === '>' ? 'A' : 'B'; note = `${more} có NHIỀU chữ số hơn (${Math.max(st.aLen, st.bLen)} so với ${Math.min(st.aLen, st.bLen)}) nên ${more} chắc chắn lớn hơn — chưa cần đọc hết!` + (c.a !== c.b && ((c.a > c.b && st.aHi < st.bHi) || (c.b > c.a && st.bHi < st.aHi)) ? ` (chú ý: chữ số đầu của số LỚN hơn lại NHỎ hơn — đừng nhìn chữ số đầu mà kết luận).` : ''); }
+      else note = `Bằng số chữ số (${st.aLen}), so chữ số hàng cao nhất: ${c.a} ${c.v} ${c.b} → ${c.v === '>' ? 'A' : 'B'} lớn hơn.`;
+      s += `<text x="${W / 2}" y="200" fill="var(--chalk)" font-size="13" text-anchor="middle">${note}</text>`
+        + `<text x="${W / 2}" y="230" fill="var(--accent)" font-size="24" font-weight="700" text-anchor="middle">${st.aLen} chữ số (đầu ${st.aHi})  ${c.v}  ${st.bLen} chữ số (đầu ${st.bHi})</text>`;
+      host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, c = this.cmp(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: số A có ${st.aLen} chữ số (đầu ${st.aHi}), số B có ${st.bLen} chữ số (đầu ${st.bHi}). Nhìn ĐỘ DÀI dải ô: bên nào nhiều ô hơn là bên to hơn.`, hint: 'Đếm số ô, rồi đưa hai tay đổi chữ số đầu.' };
+      if (s === 2) return { cap: `Sơ đồ: ${c.v === '=' ? 'hai số bằng độ dài và cùng chữ số đầu → xét tiếp hàng dưới.' : c.stage === 'số chữ số' ? `BƯỚC 1 — so SỐ CHỮ SỐ: ${Math.max(st.aLen, st.bLen)} > ${Math.min(st.aLen, st.bLen)} nên số nhiều chữ số hơn LỚN HƠN, chưa cần đọc.` : `BƯỚC 2 — bằng số chữ số, so từ HÀNG CAO NHẤT: ${c.a} ${c.v} ${c.b}.`}`, hint: 'Luôn theo thứ tự: số chữ số → rồi từng hàng từ cao xuống thấp.' };
+      if (s === 3) return { cap: `Kết luận: A ${c.v} B (quyết bởi ${c.stage}). ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: số có 6 chữ số và số có 5 chữ số, chưa đọc chữ số nào — số nào lớn hơn? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const c = this.cmp(st); return `${st.aLen}cs ${c.v} ${st.bLen}cs · ${c.stage}`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; // màn chiếu mirror qua CSS → đảo trục
+        if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.aHi = clamp(l, 1, 5) + 4;   // 1..5 ngón → 5..9 (chữ số đầu đáng kể)
+      if (r !== null) st.bHi = clamp(r, 1, 5) + 4;
+    },
+    build3d(st) {
+      const g = new THREE.Group(), mkRow = (side, len, hi, z) => { const first = clamp(hi, 1, 9);
+        for (let i = 0; i < len; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.55, i === 0 ? 0.35 + first * 0.12 : 0.55, 0.55),
+          new THREE.MeshStandardMaterial({ color: i === 0 ? (side === 'A' ? 0xffd166 : 0x7fc9bf) : 0x4a5a66, roughness: .55 }));
+          m.position.set((i - (len - 1) / 2) * 0.7, 0, z); g.add(m); } };
+      mkRow('A', st.aLen, st.aHi, -0.9); mkRow('B', st.bLen, st.bHi, 0.9);
       return g;
     },
     paint3d() {},
