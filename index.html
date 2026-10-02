@@ -371,6 +371,10 @@ const LESSONS = {
     khoi_dong:'Cô đố: số 84 có chia hết cho 2 không? Cho 5? Không cần đặt tính — nhìn vào đâu mà em trả lời được ngay?',
     chot:'Chia hết cho 2 và 5 chỉ cần nhìn CHỮ SỐ TẬN CÙNG (2: chẵn; 5: tận cùng 0 hoặc 5); còn chia hết cho 3 và 9 phải lấy TỔNG các chữ số, KHÔNG phải chữ số cuối.',
     obj:'số 84', dvT:8, dvU:4 },
+  'bieu-do-hinh-quat': { model:'piechart', ten:'Biểu đồ hình quạt: sở thích của cả lớp',
+    khoi_dong:'Cô chiếu một vòng tròn chia thành các quạt về môn thể thao cả lớp thích. Không cần đếm từng em — nhìn quạt, em nói ngay môn nào chiếm nhiều phần trăm nhất không?',
+    chot:'Cả hình tròn là 100% của TỔNG số em; mỗi quạt bằng số em của nhóm CHIA cho tổng rồi nhân 100. Quạt càng to thì càng nhiều phần trăm — đừng nhìn quạt mà đoán số tuyệt đối khi chưa biết tổng.',
+    obj:'biểu đồ sở thích của 20 em', pc0:10, pc1:5, pc2:3, pc3:2, pcSel:0 },
 };
 
 const state = {
@@ -409,6 +413,7 @@ const state = {
   boT: 3, boO: 2, bsT: 1, bsO: 5,
   mnC0: 3, mnC1: 2, mnC2: 1, mnC3: 1, mnSel: 0, mnPrice: 38000,
   dvT: 8, dvU: 4,
+  pc0: 10, pc1: 5, pc2: 3, pc3: 2, pcSel: 0,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -2598,6 +2603,92 @@ const MODELS = {
     },
     paint3d() {},
   },
+
+  // ======================= Model: piechart (biểu đồ hình quạt) =======================
+  // beyond-bank THỨ 3: SGK lớp 5 có mạch "Biểu đồ hình quạt" (đọc quạt → phần trăm của tổng) nhưng
+  // bank 39 cụm chưa có → thêm MỘT MODELS MỚI + một dòng LESSONS. Ý cốt + lỗi kinh điển: CẢ hình tròn
+  // = 100% của TỔNG; mỗi quạt = số của nhóm CHIA tổng × 100. Hay nhầm "quạt to = nhiều em" mà quên mất
+  // chuẩn 100%, hoặc nhầm đọc số tuyệt đối trên quạt. Số em đổi → quạt chia lại đúng tỉ lệ ngay.
+  piechart: {
+    cats() { return ['Bóng đá', 'Bơi lội', 'Đọc sách', 'Nhảy dây']; },
+    colors() { return [['#c65a2e', '#e79a6b'], ['#3f9e57', '#79cf8c'], ['#2f77c2', '#6aa8e6'], ['#7a5aa0', '#b89adb']]; },
+    keys() { return ['pc0', 'pc1', 'pc2', 'pc3']; },
+    vals(st) { return [st.pc0, st.pc1, st.pc2, st.pc3]; },
+    total(st) { const v = this.vals(st); return v[0] + v[1] + v[2] + v[3]; },
+    pctTxt(p) { const s = Math.round(p * 10) / 10; return (s % 1 === 0) ? String(s) : s.toFixed(1); },
+    pc(st, i) { const t = this.total(st); return t > 0 ? this.pctTxt(this.vals(st)[i] / t * 100) : '0'; },
+    mm(st) { const v = this.vals(st); let mi = 0, ma = 0; for (let i = 1; i < 4; i++) { if (v[i] > v[ma]) ma = i; if (v[i] < v[mi]) mi = i; } return { mi, ma }; },
+    arc(cx, cy, r, a0, a1) {
+      const x0 = cx + r * Math.sin(a0), y0 = cy - r * Math.cos(a0), x1 = cx + r * Math.sin(a1), y1 = cy - r * Math.cos(a1);
+      const large = (a1 - a0) > Math.PI ? 1 : 0;
+      return `M ${cx.toFixed(2)} ${cy.toFixed(2)} L ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`;
+    },
+    defaults(st, L) { st.pc0 = L.pc0; st.pc1 = L.pc1; st.pc2 = L.pc2; st.pc3 = L.pc3; st.pcSel = (L.pcSel != null ? L.pcSel : 0); },
+    geomSig(st) { return 'pc' + this.vals(st).join(':') + ':' + clamp(st.pcSel, 0, 3); },
+    params() { const c = this.cats(); return c.map((x, i) => ({ key: this.keys()[i], label: 'Số em · ' + x, min: 0, max: 20 })); },
+    ctlHint() { return 'Bấm một nhóm (hoặc một quạt) để CHỌN, giơ 0–5 ngón đặt số em cho nhóm đó, hoặc +/− từng nhóm. Biểu đồ chia lại đúng tỉ lệ ngay.'; },
+    draw2d(host, st) {
+      const v = this.vals(st), t = this.total(st), col = this.colors(), cats = this.cats(),
+        sel = clamp(st.pcSel, 0, 3), W = 548, Hh = 258, cx = 148, cy = 138, r = 96;
+      let s = '';
+      if (t > 0) {
+        let a0 = 0;
+        for (let i = 0; i < 4; i++) {
+          if (v[i] <= 0) continue;
+          const frac = v[i] / t, a1 = a0 + frac * Math.PI * 2, isSel = i === sel, rr = isSel ? r + 6 : r;
+          const shape = frac >= 0.9999
+            ? `<circle cx="${cx}" cy="${cy}" r="${rr}" fill="${col[i][1]}" stroke="${isSel ? 'var(--accent)' : col[i][0]}" stroke-width="${isSel ? 3 : 1.5}"></circle>`
+            : `<path d="${this.arc(cx, cy, rr, a0, a1)}" fill="${col[i][1]}" stroke="${isSel ? 'var(--accent)' : col[i][0]}" stroke-width="${isSel ? 3 : 1.5}"></path>`;
+          s += `<g data-pcs="${i}" style="cursor:pointer">` + shape + `</g>`;
+          if (frac >= 0.06) { const mid = (a0 + a1) / 2, lr = rr * 0.62;
+            s += `<text x="${(cx + Math.sin(mid) * lr).toFixed(1)}" y="${(cy - Math.cos(mid) * lr + 4).toFixed(1)}" fill="#0e1b22" font-size="12.5" font-weight="700" text-anchor="middle">${this.pctTxt(frac * 100)}%</text>`; }
+          a0 = a1;
+        }
+      } else {
+        s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(242,240,230,.3)" stroke-dasharray="5 5"></circle>`
+          + `<text x="${cx}" y="${cy + 4}" fill="rgba(242,240,230,.4)" font-size="13" text-anchor="middle">chưa có số liệu</text>`;
+      }
+      const lx = 292; let ly = 74;
+      s += `<text x="${lx}" y="42" fill="rgba(242,240,230,.72)" font-size="12.5">Bấm một nhóm để chọn:</text>`;
+      for (let i = 0; i < 4; i++) { const isSel = i === sel;
+        s += `<g data-pcs="${i}" style="cursor:pointer">`
+          + `<rect x="${lx - 8}" y="${ly - 16}" width="252" height="30" rx="6" fill="${isSel ? 'rgba(255,255,255,.10)' : 'transparent'}" stroke="${isSel ? 'var(--accent)' : 'rgba(242,240,230,.18)'}" stroke-width="${isSel ? 2 : 1}"></rect>`
+          + `<rect x="${lx}" y="${ly - 9}" width="16" height="16" rx="3" fill="${col[i][1]}" stroke="${col[i][0]}"></rect>`
+          + `<text x="${lx + 26}" y="${ly + 4}" fill="var(--chalk)" font-size="13">${cats[i]}: ${v[i]} em · ${this.pc(st, i)}%</text></g>`;
+        ly += 37; }
+      host.innerHTML = `<svg id="piechart" width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}">`
+        + `<text x="16" y="22" fill="rgba(242,240,230,.72)" font-size="13">Biểu đồ hình quạt — cả hình tròn = ${t} em = 100%</text>`
+        + s + `</svg>`;
+      const svg = host.querySelector('#piechart');
+      svg.querySelectorAll('g[data-pcs]').forEach((g) => g.addEventListener('pointerdown', () => { state.pcSel = +g.dataset.pcs; drawVisual(); render(); }));
+    },
+    caption(st) {
+      const L = cur(), s = st.step, v = this.vals(st), t = this.total(st), cats = this.cats(), { mi, ma } = this.mm(st);
+      const list = cats.map((c, i) => `${c} ${this.pc(st, i)}%`).join(', ');
+      const diff = t > 0 ? this.pctTxt((v[ma] - v[mi]) / t * 100) : '0';
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: khảo sát sở thích của ${t} em — ${cats.map((c, i) => `${c}: ${v[i]} em`).join(', ')}.`, hint: 'Bấm nhóm để chọn, giơ ngón tay đặt số em cho nhóm đó, hoặc +/−.' };
+      if (s === 2) return { cap: `Sơ đồ: lấy số em từng nhóm CHIA tổng ${t} rồi ×100 → ${list}. Các quạt cộng lại đúng 100%.`, hint: 'Cả hình tròn = 100%; quạt to hơn = nhiều phần trăm hơn.' };
+      if (s === 3) return { cap: `${cats[ma]} được thích nhất (${this.pc(st, ma)}%), ${cats[mi]} ít nhất (${this.pc(st, mi)}%) — chênh nhau ${diff} phần trăm. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: môn nào chiếm quạt TO nhất, môn nào NHỎ nhất trên biểu đồ này? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const cats = this.cats(), { mi, ma } = this.mm(st);
+      return this.total(st) > 0 ? `${cats[ma]} nhiều nhất ${this.pc(st, ma)}% · ${cats[mi]} ít nhất ${this.pc(st, mi)}%` : 'chưa có số liệu'; },
+    showFromStep() { return 2; },
+    hand(st, f) { st[this.keys()[clamp(st.pcSel, 0, 3)]] = clamp(f, 0, 20); },
+    handLabel(f, st) { const cats = this.cats(), i = clamp(st.pcSel, 0, 3); return `→ ${cats[i]} = ${clamp(f, 0, 20)} em`; },
+    build3d(st) {
+      const g = new THREE.Group(), v = this.vals(st), t = this.total(st), col = this.colors();
+      if (t <= 0) return g;
+      let a0 = 0;
+      for (let i = 0; i < 4; i++) { if (v[i] <= 0) continue; const ang = (v[i] / t) * Math.PI * 2;
+        const mesh = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.5, 30, 1, false, a0, ang),
+          new THREE.MeshStandardMaterial({ color: parseInt(col[i][1].slice(1), 16), roughness: .55 }));
+        g.add(mesh); a0 += ang; }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -2664,6 +2755,11 @@ EX['tien-viet-nam'] = [
 EX['dau-hieu-chia-het'] = [
   { prompt: 'Số 63 có chia hết cho 3 không? Vì sao?', choices: ['Có, vì 6 + 3 = 9 chia hết cho 3', 'Có, vì chữ số tận cùng là 3', 'Không, vì 63 là số lẻ'], answer: 'Có, vì 6 + 3 = 9 chia hết cho 3', explanation: 'Muốn xét chia hết cho 3, lấy TỔNG các chữ số: 6 + 3 = 9, mà 9 ⋮ 3 nên 63 ⋮ 3.', errorTag: 'xet-chu-so-tan-cung-thay-vi-tong' },
   { prompt: 'Số nào dưới đây chia hết cho CẢ 2 và 5?', choices: ['30', '25', '12'], answer: '30', explanation: 'Chia hết cho cả 2 và 5 ⇔ chữ số tận cùng là 0. Chỉ có 30 tận cùng bằng 0.', errorTag: 'quen-dau-hieu-ket-hop-tan-cung-0' },
+];
+// Biểu đồ hình quạt không có trong examples.mjs của bank → 2 câu SGK-style tự tác.
+EX['bieu-do-hinh-quat'] = [
+  { prompt: 'Một biểu đồ hình quạt cho biết 25% số em lớp 5 thích bơi lội. Lớp có 20 em. Hỏi có bao nhiêu em thích bơi lội?', choices: ['5 em', '10 em', '4 em'], answer: '5 em', explanation: '25% của 20 = 20 × 25 / 100 = 5 em.', errorTag: 'tinh-sai-phan-tram-cua-mot-so' },
+  { prompt: 'Trong biểu đồ hình quạt, cả hình tròn đại diện cho bao nhiêu phần trăm?', choices: ['100%', '50%', 'Bằng số nhóm'], answer: '100%', explanation: 'Cả hình tròn là toàn bộ = 100%; các quạt cộng lại đúng 100%, không phụ thuộc số nhóm.', errorTag: 'khong-biet-ca-hinh-tron-bang-100-phan-tram' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
