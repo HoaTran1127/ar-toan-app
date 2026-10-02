@@ -459,6 +459,10 @@ const LESSONS = {
     khoi_dong:'Cô có 5 MẢNH bánh, mỗi cái bánh được cắt thành 3 phần bằng nhau. Ghép 3 mảnh lại thì thành đúng 1 cái bánh nguyên. Hỏi với 5 mảnh ấy cô ghép được mấy cái bánh nguyên và còn thừa mấy mảnh? Vì sao 5/3 không phải là "5 cái bánh" mà là "1 cái và 2/3 cái" — hỗn số là gì?',
     chot:'Hỗn số gồm một SỐ TỰ NHIÊN (phần nguyên) đứng trước và một PHÂN SỐ bé hơn 1 (phần phân số) đứng sau, ví dụ 2 1/3. Một phân số LỚN HƠN 1 đổi sang hỗn số bằng cách: lấy TỬ số CHIA MẪU số — thương là phần nguyên, số dư là tử của phần phân số, MẪU số GIỮ NGUYÊN. Ví dụ 5/3: 5 : 3 = 1 dư 2 nên 5/3 = 1 2/3. Ngược lại đổi hỗn số về phân số: lấy phần nguyên × mẫu số rồi cộng tử số. CHÚ Ý: 5/3 KHÔNG phải là 5 1/3 — phải CHIA 5 cho 3 trước.',
     obj:'5/3', mxTop:5, mxDen:3 },
+  'phan-so-thap-phan': { model:'decfrac', ten:'Phân số thập phân ↔ số thập phân (bảng hàng giá trị)',
+    khoi_dong:'Cô có một băng giấy chia 10 phần bằng nhau, tô 7 phần. Viết là 7/10. Nhưng trên bảng hàng giá trị thì 7 phần đó nằm ở HÀNG NÀO sau dấu phẩy? Vì sao 7/10 = 0,7 mà 7/100 lại là 0,07 chứ không phải 0,7?',
+    chot:'Phân số có MẪU là 10, 100, 1000 gọi là PHÂN SỐ THẬP PHÂN, và nó viết thẳng thành SỐ THẬP PHÂN: tử số đặt vào đúng HÀNG của mẫu — mẫu 10 → chữ số ở hàng PHẦN MƯỜI, mẫu 100 → hàng PHẦN TRĂM, mẫu 1000 → hàng PHẦN NGHÌN. Thiếu hàng nào thì viết CHỮ SỐ 0 ở hàng đó (7/1000 = 0,007). Ở tận cùng bên phải, thêm/bớt chữ số 0 KHÔNG đổi giá trị (0,5 = 0,50 = 50/100).',
+    obj:'7/10', dfExp:1, dfNum:7 },
 };
 
 const state = {
@@ -519,6 +523,7 @@ const state = {
   inK: 12, inX: 2,
   tuNum: 2, tuUnit: 0,
   mxTop: 5, mxDen: 3,
+  dfExp: 1, dfNum: 7,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4192,6 +4197,75 @@ const MODELS = {
     },
     paint3d() {},
   },
+  decfrac: {
+    res(st) {
+      const e = clamp(Math.round(st.dfExp), 1, 3), D = Math.pow(10, e), N = clamp(Math.round(st.dfNum), 1, 99);
+      const ip = Math.floor(N / D), fp = N % D, fracStr = String(fp).padStart(e, '0');
+      const digits = fracStr.split('').map((ch) => +ch);
+      const trimmed = fracStr.replace(/0+$/, '');
+      const dec = trimmed === '' ? String(ip) : (`${ip},${trimmed}`);
+      const PLACE = ['phần mười', 'phần trăm', 'phần nghìn'];
+      return { e, D, N, ip, fp, fracStr, digits, dec, placeName: PLACE[e - 1] };
+    },
+    defaults(st, L) { st.dfExp = (L.dfExp != null ? L.dfExp : 1); st.dfNum = (L.dfNum != null ? L.dfNum : 7); },
+    geomSig(st) { const d = this.res(st); return 'df' + d.e + ',' + d.N; },
+    params() { return [{ key: 'dfExp', label: 'Mẫu số (10 · 100 · 1000)', min: 1, max: 3 }, { key: 'dfNum', label: 'Tử số (số phần tô)', min: 1, max: 99 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bấm một MẪU (10 · 100 · 1000) để chọn hàng; giơ 1–9 ngón đặt tử số. Tử số rơi đúng vào hàng phần mười / phần trăm / phần nghìn sau dấu phẩy.'; },
+    hand(st, f) { st.dfNum = clamp(Math.round(f), 1, 99); },
+    handLabel(f) { return '→ tử số = ' + clamp(Math.round(f), 1, 99); },
+    draw2d(host, st) {
+      const d = this.res(st);
+      const PLACE = ['phần mười', 'phần trăm', 'phần nghìn'];
+      const frac = `<text x="20" y="34" fill="var(--chalk)" font-size="12.5" font-weight="700">Phân số thập phân</text>`
+        + `<text x="34" y="66" text-anchor="middle" fill="var(--chalk)" font-size="20" font-weight="800">${d.N}</text>`
+        + `<line x1="16" y1="72" x2="52" y2="72" stroke="var(--chalk)" stroke-width="2"></line>`
+        + `<text x="34" y="94" text-anchor="middle" fill="var(--chalk)" font-size="20" font-weight="800">${d.D}</text>`;
+      const ipx = 96; let ipBoxes = `<text x="${ipx}" y="34" fill="rgba(242,240,230,.7)" font-size="11">Nguyên = ${d.ip}</text>`;
+      for (let k = 0; k < d.ip; k++) { const bx = ipx + k * 16; ipBoxes += `<rect x="${bx}" y="44" width="14" height="14" fill="rgba(127,201,191,.7)" stroke="rgba(242,240,230,.6)" stroke-width="0.8"></rect>`; }
+      const comma = `<text x="${ipx + d.ip * 16 + 4}" y="70" fill="var(--accent)" font-size="26" font-weight="800">,</text>`;
+      let cols = '';
+      for (let j = 0; j < d.e; j++) {
+        const cx = 300 + j * 76, digit = d.digits[j];
+        cols += `<text x="${cx + 22}" y="34" text-anchor="middle" fill="rgba(242,240,230,.7)" font-size="10.5">${PLACE[j]}</text>`;
+        for (let s = 0; s < 10; s++) { const by = 48 + (9 - s) * 13, on = s < digit; cols += `<rect x="${cx}" y="${by}" width="44" height="11" fill="${on ? 'rgba(240,196,92,.72)' : 'rgba(255,255,255,.04)'}" stroke="rgba(242,240,230,.28)" stroke-width="0.6"></rect>`; }
+        cols += `<text x="${cx + 22}" y="192" text-anchor="middle" fill="var(--accent)" font-size="16" font-weight="800">${digit}</text>`;
+      }
+      const decCard = `<text x="16" y="128" fill="var(--chalk)" font-size="12.5" font-weight="700">Số thập phân:</text>`
+        + `<rect x="16" y="136" width="72" height="32" rx="4" fill="rgba(240,196,92,.16)" stroke="var(--accent)"></rect>`
+        + `<text x="52" y="157" text-anchor="middle" fill="var(--accent)" font-size="16" font-weight="800">${d.dec}</text>`
+        + `<text x="98" y="150" fill="rgba(242,240,230,.85)" font-size="11">Tử ${d.N} đặt vào hàng ${d.placeName}.</text>`
+        + `<text x="98" y="166" fill="rgba(242,240,230,.85)" font-size="11">Mẫu ${d.D} có ${d.e} chữ số 0 → ${d.e} chữ số sau phẩy.</text>`;
+      let chips = `<text x="150" y="222" fill="rgba(242,240,230,.7)" font-size="11">Mẫu — bấm để đổi hàng:</text>`;
+      for (let e = 1; e <= 3; e++) { const Dv = Math.pow(10, e), cx = 150 + (e - 1) * 70, on = e === d.e; chips += `<g data-dfe="${e}" style="cursor:pointer"><rect x="${cx}" y="228" width="58" height="24" rx="3" fill="${on ? 'rgba(240,196,92,.2)' : 'rgba(255,255,255,.03)'}" stroke="${on ? 'var(--accent)' : 'rgba(242,240,230,.14)'}" stroke-width="${on ? 2 : 1}"></rect><text x="${cx + 29}" y="245" text-anchor="middle" font-size="13" font-weight="${on ? 800 : 500}" fill="${on ? 'var(--accent)' : 'var(--chalk)'}">${Dv}</text></g>`; }
+      const err = `<text x="366" y="230" fill="var(--warn)" font-size="10.5">❌ 7/100 = 0,7? Sai — mẫu 100 → hàng PHẦN TRĂM → 0,07.</text>`;
+      const title = `<text x="150" y="16" fill="var(--chalk)" font-size="13" font-weight="700">Phân số thập phân ↔ Số thập phân (bảng hàng giá trị)</text>`;
+      host.innerHTML = `<svg id="decfrac" width="548" height="258" viewBox="0 0 548 258">` + title + frac + ipBoxes + comma + cols + decCard + chips + err + `</svg>`;
+      const svg = host.querySelector('#decfrac');
+      if (svg && svg.querySelectorAll) svg.querySelectorAll('g[data-dfe]').forEach((g) => g.addEventListener('pointerdown', () => { state.dfExp = +g.dataset.dfe; drawVisual(); render(); }));
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: một băng giấy chia ${d.D} phần bằng nhau, cô tô ${d.N} phần = ${d.N}/${d.D}. Mỗi phần nhỏ bằng ${d.placeName}.`, hint: 'Càng nhiều số 0 ở mẫu thì mỗi phần càng nhỏ.' };
+      if (s === 2) return { cap: `Bảng hàng giá trị: tử số ${d.N} đặt vào hàng ${d.placeName} (chữ số ${d.digits.join('')} sau dấu phẩy). Vậy ${d.N}/${d.D} = ${d.dec}.`, hint: 'Đếm số chữ số sau phẩy = số chữ số 0 của mẫu.' };
+      if (s === 3) return { cap: `Phép đổi: ${d.N} : ${d.D} = ${d.dec}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: đổi ${d.N}/${d.D} ra số thập phân? Mẫu ${d.D} có ${d.e} chữ số 0 → viết ${d.e} chữ số sau dấu phẩy → ${d.dec}.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); return `${d.N}/${d.D} = ${d.dec}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), g = new THREE.Group();
+      const matInt = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.55 });
+      const matSeg = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const matEmpty = new THREE.MeshStandardMaterial({ color: 0x3a3f4b, roughness: 0.85 });
+      let x = 0;
+      for (let k = 0; k < d.ip; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), matInt); m.position.set(x, 0.5, 0); g.add(m); x += 1.2; }
+      for (let j = 0; j < d.e; j++) { const digit = d.digits[j]; for (let s = 0; s < 10; s++) { const on = s < digit; const m = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.12, 0.7), on ? matSeg : matEmpty); m.position.set(x + j * 1.4, 0.1 + s * 0.16, 0); g.add(m); } }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4365,6 +4439,11 @@ EX['hon-so'] = [
   { prompt: 'Hỗn số 2 1/3 viết thành phân số là?', choices: ['7/3', '6/3', '2/3'], answer: '7/3', explanation: 'Lấy phần nguyên × mẫu + tử: 2 × 3 + 1 = 7, mẫu giữ nguyên 3. Vậy 2 1/3 = 7/3. Không phải 6/3 (quên cộng tử) hay 2/3.', errorTag: 'doi_hon_so_nham_cong' },
   { prompt: 'Phân số 5/2 viết thành hỗn số là?', choices: ['2 1/2', '2 2/2', '5 1/2'], answer: '2 1/2', explanation: 'Lấy tử CHIA mẫu: 5 : 2 = 2 dư 1. Thương 2 là phần nguyên, dư 1 là tử, mẫu giữ nguyên 2. Vậy 5/2 = 2 1/2. Không phải 5 1/2.', errorTag: 'nham_tu_la_phan_nguyen' },
   { prompt: '8/3 bằng hỗn số nào?', choices: ['2 2/3', '3 2/3', '2 1/3'], answer: '2 2/3', explanation: '8 : 3 = 2 dư 2, nên 8/3 = 2 2/3. Kiểm lại: 2 × 3 + 2 = 8 đúng.', errorTag: 'chia_mau_nham_du' },
+];
+EX['phan-so-thap-phan'] = [
+  { prompt: 'Viết 7/100 thành số thập phân.', choices: ['0,07', '0,7', '7,0'], answer: '0,07', explanation: 'Mẫu 100 có HAI chữ số 0 nên viết HAI chữ số sau dấu phẩy; 7 đứng ở hàng phần trăm → 0,07. 0,7 là 7/10.', errorTag: 'khong_dem_so_0_o_mau' },
+  { prompt: 'Số thập phân 0,5 ứng với phân số nào?', choices: ['5/10', '5/100', '5/5'], answer: '5/10', explanation: 'Chữ số 5 ở hàng PHẦN MƯỜI (một chữ số sau phẩy) → mẫu 10 → 5/10. 5/100 = 0,05.', errorTag: 'hang_phan_muoi_nham_thanh_tram' },
+  { prompt: 'Rút gọn: 50/100 viết thành số thập phân là?', choices: ['0,5', '0,50', 'Cả A và B đều đúng'], answer: 'Cả A và B đều đúng', explanation: '50/100 = 0,50 = 0,5 — thêm/bớt chữ số 0 ở TẬN CÙNG bên phải không đổi giá trị. Đây chính là chỗ 0,5 và 0,50 bằng nhau.', errorTag: 'so_0_tan_cung_doi_gia_tri' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
