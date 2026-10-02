@@ -463,6 +463,10 @@ const LESSONS = {
     khoi_dong:'Cô có một băng giấy chia 10 phần bằng nhau, tô 7 phần. Viết là 7/10. Nhưng trên bảng hàng giá trị thì 7 phần đó nằm ở HÀNG NÀO sau dấu phẩy? Vì sao 7/10 = 0,7 mà 7/100 lại là 0,07 chứ không phải 0,7?',
     chot:'Phân số có MẪU là 10, 100, 1000 gọi là PHÂN SỐ THẬP PHÂN, và nó viết thẳng thành SỐ THẬP PHÂN: tử số đặt vào đúng HÀNG của mẫu — mẫu 10 → chữ số ở hàng PHẦN MƯỜI, mẫu 100 → hàng PHẦN TRĂM, mẫu 1000 → hàng PHẦN NGHÌN. Thiếu hàng nào thì viết CHỮ SỐ 0 ở hàng đó (7/1000 = 0,007). Ở tận cùng bên phải, thêm/bớt chữ số 0 KHÔNG đổi giá trị (0,5 = 0,50 = 50/100).',
     obj:'7/10', dfExp:1, dfNum:7 },
+  'nhan-so-0': { model:'zeromult', ten:'Nhân nhẩm với số có chữ số 0 ở tận cùng',
+    khoi_dong:'Cô bảo 30 × 4. Nhiều em nhảy ngay vào tính 30 × 4 theo cột dọc rất lâu. Nhưng có một cách NHẨM nhanh: tạm BỎ chữ số 0 ở tận cùng, tính 3 × 4, rồi viết lại chữ số 0 đó. Vì sao làm thế được? Kết quả là bao nhiêu và vì sao KHÔNG phải 12?',
+    chot:'Khi nhân với số có chữ số 0 ở tận cùng: ta TẠM BỎ các chữ số 0, nhân PHẦN KHÁC 0 với nhau, rồi VIẾT LẠI đúng BẤY NHIÊU chữ số 0 vào tận cùng tích. Số 0 ở tận cùng chỉ "to gấp 10, 100…", không làm thay đổi phép nhân cơ bản. Ví dụ 30 × 4: bỏ 1 chữ số 0 → 3 × 4 = 12 → viết lại 1 chữ số 0 → 120. CHÚ Ý: quên viết lại chữ số 0 là ra 12 (sai), viết dư là ra 1 200 (cũng sai).',
+    obj:'30 × 4', zmMant:3, zmZeros:1, zmB:4 },
 };
 
 const state = {
@@ -524,6 +528,7 @@ const state = {
   tuNum: 2, tuUnit: 0,
   mxTop: 5, mxDen: 3,
   dfExp: 1, dfNum: 7,
+  zmMant: 3, zmZeros: 1, zmB: 4,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4266,6 +4271,57 @@ const MODELS = {
     },
     paint3d() {},
   },
+  zeromult: {
+    res(st) {
+      const mant = clamp(Math.round(st.zmMant), 1, 9), z = clamp(Math.round(st.zmZeros), 0, 3), b = clamp(Math.round(st.zmB), 1, 9);
+      const A = mant * Math.pow(10, z), base = mant * b, product = base * Math.pow(10, z);
+      return { mant, z, b, A, base, product };
+    },
+    defaults(st, L) { st.zmMant = (L.zmMant != null ? L.zmMant : 3); st.zmZeros = (L.zmZeros != null ? L.zmZeros : 1); st.zmB = (L.zmB != null ? L.zmB : 4); },
+    geomSig(st) { const d = this.res(st); return 'zm' + d.mant + ',' + d.z + ',' + d.b; },
+    params() { return [{ key: 'zmMant', label: 'Chữ số khác 0 (thừa số 1)', min: 1, max: 9 }, { key: 'zmZeros', label: 'Số chữ số 0 ở tận cùng', min: 0, max: 3 }, { key: 'zmB', label: 'Thừa số thứ hai (1 chữ số)', min: 1, max: 9 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Ba thanh trượt: mant (1–9), số CHỮ SỐ 0 tận cùng thừa số 1 (0–3), thừa số 2 (1–9). Giơ 1–9 ngón đổi mant. Bỏ 0 → nhân phần khác 0 → viết lại đủ số 0.'; },
+    hand(st, f) { st.zmMant = clamp(Math.round(f), 1, 9); },
+    handLabel(f) { return '→ mant = ' + clamp(Math.round(f), 1, 9); },
+    draw2d(host, st) {
+      const d = this.res(st);
+      const cell = 40, gapw = 46;
+      const drawNum = (str, ztrail, x0, y) => { let out = ''; const n = str.length; for (let k = 0; k < n; k++) { const bx = x0 + k * gapw, isZero = (n - k) <= ztrail, ch = str[k]; out += `<rect x="${bx}" y="${y}" width="${cell}" height="${cell}" rx="4" fill="${isZero ? 'rgba(127,201,191,.12)' : 'rgba(240,196,92,.2)'}" stroke="${isZero ? 'rgba(127,201,191,.55)' : 'var(--accent)'}" stroke-width="1.5"></rect><text x="${(bx + cell / 2).toFixed(0)}" y="${y + cell / 2 + 8}" text-anchor="middle" font-size="22" font-weight="800" fill="${isZero ? 'rgba(127,201,191,.95)' : 'var(--accent)'}">${ch}</text>`; } return out; };
+      const aX = 44, aY = 40;
+      const aBoxes = drawNum(String(d.A), d.z, aX, aY);
+      const opX = aX + String(d.A).length * gapw + 8;
+      const op = `<text x="${opX}" y="${aY + 28}" fill="var(--chalk)" font-size="20" font-weight="800">× ${d.b}</text>`;
+      const mid = `<text x="16" y="112" fill="rgba(242,240,230,.9)" font-size="12">${d.z > 0 ? 'Tạm bỏ ' + d.z + ' chữ số 0 → ' : 'Không có số 0 ở tận cùng → '}nhẩm: ${d.mant} × ${d.b} = ${d.base}</text>`;
+      const pY = 132;
+      const eqLbl = `<text x="16" y="${pY + 28}" fill="var(--chalk)" font-size="20" font-weight="800">=</text>`;
+      const pBoxes = drawNum(String(d.product), d.z, aX, pY);
+      const note = `<text x="${aX + String(d.product).length * gapw + 8}" y="${pY + 28}" fill="rgba(240,196,92,.9)" font-size="11">→ viết lại ${d.z} chữ số 0</text>`;
+      const legend = `<text x="16" y="196" fill="rgba(127,201,191,.9)" font-size="10.5">ô xám = chữ số 0 tận cùng (chỉ "gấp 10/100/1000") · ô vàng = phần khác 0</text>`;
+      const err = `<text x="16" y="246" fill="var(--warn)" font-size="10.5">❌ Quên viết lại ${d.z} chữ số 0 thì ra ${d.base} (sai) — đúng phải là ${d.A} × ${d.b} = ${d.product}.</text>`;
+      const title = `<text x="150" y="16" fill="var(--chalk)" font-size="13" font-weight="700">Nhân nhẩm với số có chữ số 0 ở tận cùng</text>`;
+      host.innerHTML = `<svg id="zeromult" width="548" height="258" viewBox="0 0 548 258">` + title + aBoxes + op + mid + eqLbl + pBoxes + note + legend + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${d.A} gói kẹo xếp ${d.b} lớp. Bỏ ${d.z} chữ số 0 ở ${d.A} thì còn ${d.mant} gói × ${d.b} lớp = ${d.base}, rồi viết lại ${d.z} chữ số 0 → ${d.product} gói.`, hint: 'Số 0 ở tận cùng chỉ "to gấp 10, 100…", không đổi phép nhân cơ bản.' };
+      if (s === 2) return { cap: `Tách số: ${d.A} = ${d.mant} × ${Math.pow(10, d.z)}. Nhân phần khác 0: ${d.mant} × ${d.b} = ${d.base}. Viết lại ${d.z} chữ số 0 ⟹ ${d.A} × ${d.b} = ${d.product}.`, hint: 'Đếm chữ số 0 ở tận cùng hai thừa số = số chữ số 0 viết thêm vào kết quả.' };
+      if (s === 3) return { cap: `Phép tính: ${d.A} × ${d.b} = ${d.product}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: tính ${d.A} × ${d.b}? Bỏ ${d.z} chữ số 0, nhẩm ${d.mant} × ${d.b} = ${d.base}, rồi viết ${d.z} chữ số 0 ra sau ⟹ ${d.product}.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); return `${d.A} × ${d.b} = ${d.product}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), g = new THREE.Group();
+      const matBase = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const matZero = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      for (let r = 0; r < d.mant; r++) { for (let c = 0; c < d.b; c++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), matBase); m.position.set(c * 0.9, -r * 0.9, 0); g.add(m); } }
+      for (let k = 0; k < d.z; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), matZero); m.position.set((d.b + 0.6 + k) * 0.9, -0.45, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4444,6 +4500,11 @@ EX['phan-so-thap-phan'] = [
   { prompt: 'Viết 7/100 thành số thập phân.', choices: ['0,07', '0,7', '7,0'], answer: '0,07', explanation: 'Mẫu 100 có HAI chữ số 0 nên viết HAI chữ số sau dấu phẩy; 7 đứng ở hàng phần trăm → 0,07. 0,7 là 7/10.', errorTag: 'khong_dem_so_0_o_mau' },
   { prompt: 'Số thập phân 0,5 ứng với phân số nào?', choices: ['5/10', '5/100', '5/5'], answer: '5/10', explanation: 'Chữ số 5 ở hàng PHẦN MƯỜI (một chữ số sau phẩy) → mẫu 10 → 5/10. 5/100 = 0,05.', errorTag: 'hang_phan_muoi_nham_thanh_tram' },
   { prompt: 'Rút gọn: 50/100 viết thành số thập phân là?', choices: ['0,5', '0,50', 'Cả A và B đều đúng'], answer: 'Cả A và B đều đúng', explanation: '50/100 = 0,50 = 0,5 — thêm/bớt chữ số 0 ở TẬN CÙNG bên phải không đổi giá trị. Đây chính là chỗ 0,5 và 0,50 bằng nhau.', errorTag: 'so_0_tan_cung_doi_gia_tri' },
+];
+EX['nhan-so-0'] = [
+  { prompt: 'Tính nhẩm: 20 × 5.', choices: ['100', '50', '1 000'], answer: '100', explanation: 'Bỏ 1 chữ số 0: 2 × 5 = 10, viết lại 1 chữ số 0 → 100. Không phải 50 (thiếu một chữ số 0) hay 1 000 (viết dư).', errorTag: 'quen_viet_lai_so_0' },
+  { prompt: 'Tính nhẩm: 300 × 4.', choices: ['1 200', '120', '12 000'], answer: '1 200', explanation: '300 có HAI chữ số 0. Bỏ 0: 3 × 4 = 12, viết lại 2 chữ số 0 → 1 200. Quên một chữ số 0 là ra 120 (sai).', errorTag: 'thieu_so_0_viet_lai' },
+  { prompt: 'Tính nhẩm: 40 × 60.', choices: ['2 400', '240', '24 000'], answer: '2 400', explanation: 'Mỗi thừa số có 1 chữ số 0, tổng 2 chữ số 0. Bỏ 0: 4 × 6 = 24, viết lại 2 chữ số 0 → 2 400.', errorTag: 'cong_nham_so_0_hai_thua_so' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
