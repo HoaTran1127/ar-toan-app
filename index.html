@@ -507,6 +507,10 @@ const LESSONS = {
     khoi_dong:'Làm tròn 3,47 đến hàng phần mười được số nào? Vì sao chỉ cần nhìn chữ số 7 (hàng phần trăm) mà KHÔNG cần để ý các chữ số còn lại?',
     chot:'LÀM TRÒN SỐ THẬP PHÂN làm giống số tự nhiên: chọn HÀNG cần làm tròn, rồi chỉ nhìn CHỮ SỐ NGAY BÊN PHẢI nó. Chữ số đó từ 5 trở lên thì CỘNG 1 vào hàng đang làm tròn, nhỏ hơn 5 thì GIỮ; sau đó BỎ hết các chữ số bên phải. Làm tròn đến phần mười thì còn 1 chữ số sau dấu phẩy, đến đơn vị thì mất hết phần thập phân. KHÔNG làm tròn dây chuyền nhiều bước.',
     obj:'làm tròn 3,47 đến hàng phần mười', rU: 3, rT: 4, rH: 7, rTar: 1 },
+  'nhan-hai-chu-so-dien-tich': { model:'areamult', ten:'Nhân số có hai chữ số bằng mô hình diện tích (tích riêng phần)',
+    khoi_dong:'Tính 23 × 14. Thay vì đặt tính ngay, ta vẽ HÌNH CHỮ NHẬT 23 × 14 rồi CHIA nó thành 4 ô theo chục và đơn vị: 20×10, 20×4, 3×10, 3×4. Vì sao cộng 4 ô lại thì bằng đúng 23 × 14?',
+    chot:'MÔ HÌNH DIỆN TÍCH (tích riêng phần): tách mỗi thừa số thành chục + đơn vị, 23 × 14 = (20 + 3) × (10 + 4). Vẽ hình chữ nhật chia 4 ô, diện tích từng ô là 20×10 = 200, 20×4 = 80, 3×10 = 30, 3×4 = 12. TỔNG BỐN Ô = diện tích cả hình = tích phải tìm: 200 + 80 + 30 + 12 = 322. Đây chính là bản chất của phép đặt tính nhân hai chữ số (nhân từng phần rồi cộng, nhớ hàng).',
+    obj:'tính 23 × 14 bằng 4 ô diện tích', mA10: 2, mA1: 3, mB10: 1, mB1: 4 },
 };
 
 const state = {
@@ -4955,6 +4959,73 @@ const MODELS = {
     },
     paint3d() {},
   },
+  areamult: {
+    res(st) {
+      const a10 = clamp(Math.round(st.mA10), 1, 9), a1 = clamp(Math.round(st.mA1), 0, 9);
+      const b10 = clamp(Math.round(st.mB10), 1, 9), b1 = clamp(Math.round(st.mB1), 0, 9);
+      const A = a10 * 10 + a1, B = b10 * 10 + b1;
+      const aT = a10 * 10, aO = a1, bT = b10 * 10, bO = b1;
+      const p11 = aT * bT, p12 = aT * bO, p21 = aO * bT, p22 = aO * bO;
+      const total = A * B;
+      return { A, B, aT, aO, bT, bO, p11, p12, p21, p22, total };
+    },
+    defaults(st, L) { st.mA10 = (L.mA10 != null ? L.mA10 : 2); st.mA1 = (L.mA1 != null ? L.mA1 : 3); st.mB10 = (L.mB10 != null ? L.mB10 : 1); st.mB1 = (L.mB1 != null ? L.mB1 : 4); },
+    geomSig(st) { const r = this.res(st); return 'am' + r.A + 'x' + r.B; },
+    params() { return [{ key: 'mA10', label: 'Chục của thừa số ①', min: 1, max: 9 }, { key: 'mA1', label: 'Đơn vị của thừa số ①', min: 0, max: 9 }, { key: 'mB10', label: 'Chục của thừa số ②', min: 1, max: 9 }, { key: 'mB1', label: 'Đơn vị của thừa số ②', min: 0, max: 9 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bốn thanh trượt: CHỤC (1–9) và ĐƠN VỊ (0–9) của từng thừa số → thành hai số có 2 chữ số. App TÁCH mỗi số thành chục+đơn vị rồi vẽ 4 ô diện tích (tích riêng phần). Giơ 1–9 ngón đặt chục của thừa số ①.'; },
+    hand(st, f) { st.mA10 = clamp(Math.round(f), 1, 9); },
+    handLabel(f) { return '→ chục của thừa số ① = ' + clamp(Math.round(f), 1, 9); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const gold = 'rgba(240,196,92,.65)', teal = 'rgba(127,201,191,.5)', dim = 'rgba(127,201,191,.2)';
+      const x0 = 78, y0 = 42, Wtot = 404, Htot = 96;
+      const cT = (r.aT / r.A) * Wtot, cO = (r.aO / r.A) * Wtot;
+      const rT = (r.bT / r.B) * Htot, rO = (r.bO / r.B) * Htot;
+      const F = (n) => n.toFixed(1);
+      const cell = (x, y, w, h, fill, label) => {
+        let s = `<rect x="${F(x)}" y="${F(y)}" width="${F(w)}" height="${F(h)}" fill="${fill}" stroke="rgba(242,240,230,.35)"></rect>`;
+        if (w >= 26 && h >= 18) s += `<text x="${F(x + w / 2)}" y="${F(y + h / 2 + 4)}" font-size="12" font-weight="700" text-anchor="middle" fill="var(--chalk)">${label}</text>`;
+        return s;
+      };
+      let g = `<text x="14" y="20" font-size="14" font-weight="700" fill="var(--chalk)">Nhân ${r.A} × ${r.B} = (${r.aT} + ${r.aO}) × (${r.bT} + ${r.bO})</text>`;
+      g += `<text x="${F(x0 + cT / 2)}" y="38" font-size="10" text-anchor="middle" fill="rgba(242,240,230,.75)">${r.aT}</text>`;
+      if (r.aO > 0) g += `<text x="${F(x0 + cT + cO / 2)}" y="38" font-size="10" text-anchor="middle" fill="rgba(242,240,230,.75)">${r.aO}</text>`;
+      g += `<text x="70" y="${F(y0 + rT / 2 + 3)}" font-size="10" text-anchor="end" fill="rgba(242,240,230,.75)">${r.bT}</text>`;
+      if (r.bO > 0) g += `<text x="70" y="${F(y0 + rT + rO / 2 + 3)}" font-size="10" text-anchor="end" fill="rgba(242,240,230,.75)">${r.bO}</text>`;
+      g += cell(x0, y0, cT, rT, gold, `${r.aT}×${r.bT}=${r.p11}`);
+      g += cell(x0 + cT, y0, cO, rT, teal, `${r.aT}×${r.bO}=${r.p12}`);
+      g += cell(x0, y0 + rT, cT, rO, teal, `${r.aO}×${r.bT}=${r.p21}`);
+      g += cell(x0 + cT, y0 + rT, cO, rO, dim, `${r.aO}×${r.bO}=${r.p22}`);
+      g += `<text x="14" y="160" font-size="14" font-weight="700" fill="var(--accent)">${r.p11} + ${r.p12} + ${r.p21} + ${r.p22} = ${r.total}</text>`;
+      const err = `<text x="14" y="182" font-size="10.5" fill="var(--warn)">❌ Phải đủ BỐN ô riêng phần (20×10, 20×4, 3×10, 3×4) rồi cộng lại — quên ô chéo (chục×đơn vị) là sai.</text>`;
+      host.innerHTML = `<svg id="areamult" width="520" height="190" viewBox="0 0 520 190">` + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: một khu đất dài ${r.A} m, rộng ${r.B} m; kẻ một đường dọc và một đường ngang theo chục & đơn vị thì chia thành 4 mảnh chữ nhật.`, hint: 'Tách mỗi chiều thành (chục + đơn vị).' };
+      if (s === 2) return { cap: `Sơ đồ: 4 ô diện tích — ${r.aT}×${r.bT}=${r.p11} (vàng), ${r.aT}×${r.bO}=${r.p12}, ${r.aO}×${r.bT}=${r.p21}, ${r.aO}×${r.bO}=${r.p22}.`, hint: '' };
+      if (s === 3) return { cap: `Phép tính: ${r.p11} + ${r.p12} + ${r.p21} + ${r.p22} = ${r.total}, tức ${r.A} × ${r.B} = ${r.total}.`, hint: '' };
+      return { cap: `Cả lớp: ${r.A} × ${r.B} = ${r.total}. Bốn tích riêng phần cộng lại đúng bằng kết quả đặt tính nhân hai chữ số.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.A} × ${r.B} = ${r.total}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mG = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.5 });
+      const mT = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mD = new THREE.MeshStandardMaterial({ color: 0x4f7d78, roughness: 0.7 });
+      const sx = (v) => Math.max(0.25, v / 10), sz = (v) => Math.max(0.25, v / 10);
+      const box = (w, d, xoff, zoff, mat) => { const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat); b.scale.set(w, 0.5, d); b.position.set(xoff + w / 2, 0, zoff + d / 2); g.add(b); };
+      box(sx(r.aT), sz(r.bT), 0, 0, mG);
+      box(sx(r.aO), sz(r.bT), sx(r.aT), 0, mT);
+      box(sx(r.aT), sz(r.bO), 0, sz(r.bT), mT);
+      box(sx(r.aO), sz(r.bO), sx(r.aT), sz(r.bT), mD);
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5188,6 +5259,11 @@ EX['lam-tron-so-thap-phan'] = [
   { prompt: 'Làm tròn 4,7 đến hàng đơn vị được:', choices: ['5', '4', '4,7'], answer: '5', explanation: 'Chữ số ngay sau hàng đơn vị là 7 (phần mười), 7 ≥ 5 → cộng 1 vào 4 được 5 rồi bỏ phần thập phân. Đáp án 4 là quên làm tròn, 4,7 là giữ nguyên.', errorTag: 'lam_tron_quen_xem_chu_so_sau' },
   { prompt: 'Làm tròn 2,34 đến hàng phần mười được:', choices: ['2,3', '2,4', '2,34'], answer: '2,3', explanation: 'Chỉ nhìn chữ số phần trăm = 4; 4 < 5 nên GIỮ hàng phần mười là 3 → 2,3. 2,4 là cộng nhầm, 2,34 là chưa bỏ hàng phần trăm.', errorTag: 'lam_tron_sai_hang' },
   { prompt: 'Làm tròn 6,85 đến hàng phần mười được:', choices: ['6,9', '6,8', '7'], answer: '6,9', explanation: 'Chữ số phần trăm = 5, bằng 5 → cộng 1 vào phần mười: 8 + 1 = 9 → 6,9. 6,8 là quên công 1; 7 là làm tròn overshoot tới tận đơn vị.', errorTag: 'lam_tron_day_chuyen' },
+];
+EX['nhan-hai-chu-so-dien-tich'] = [
+  { prompt: 'Dùng 4 tích riêng phần: 23 × 12 = ?', choices: ['276', '206', '270'], answer: '276', explanation: '(20+3)×(10+2) = 20×10 + 20×2 + 3×10 + 3×2 = 200 + 40 + 30 + 6 = 276. 206 là chỉ lấy hai ô góc (200 + 6), bỏ quên hai ô chéo (40 và 30); 270 là quên ô 3×2 = 6.', errorTag: 'bo_quen_o_cheo' },
+  { prompt: 'Dùng 4 tích riêng phần: 34 × 11 = ?', choices: ['374', '340', '344'], answer: '374', explanation: '30×10 + 30×1 + 4×10 + 4×1 = 300 + 30 + 40 + 4 = 374. 340 là chỉ tính 34×10 rồi quên nhân tiếp phần 1; 344 là bỏ sót ô 30×1 = 30.', errorTag: 'bo_quen_o_cheo' },
+  { prompt: 'Dùng 4 tích riêng phần: 45 × 12 = ?', choices: ['540', '530', '450'], answer: '540', explanation: '40×10 + 40×2 + 5×10 + 5×2 = 400 + 80 + 50 + 10 = 540. 530 là quên ô 5×2 = 10; 450 là chỉ lấy 45×10, bỏ hết ô hàng đơn vị của 12.', errorTag: 'bo_quen_o_don_vi' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
