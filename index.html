@@ -254,6 +254,10 @@ const LESSONS = {
     khoi_dong:'Ăn 1/4 cái bánh rồi ăn thêm 2/4 cái nữa. Làm sao nhìn một cái là thấy ngay 3/4?',
     chot:'Cùng mẫu số thì cộng hoặc trừ tử số và giữ nguyên mẫu; vượt quá một cái đầy thì viết thành hỗn số có phần nguyên.',
     obj:'trục phân số' },
+  'bieu-do-tranh': { model:'pic', ten:'Biểu đồ tranh: một hình bằng mấy đơn vị', piU:5, piH:false, piSel:0, pi0:3, pi1:5, pi2:2, pi3:4,
+    khoi_dong:'Biểu đồ vẽ 3 cái kẹo, nhưng chú giải ghi "1 hình = 5 cái". Vậy thực ra có mấy cái?',
+    chot:'Mở khung chú giải ra đọc trước rồi mới đếm hình; số hình nhân với giá trị một hình, còn nửa hình thì tính nửa giá trị.',
+    obj:'biểu đồ tranh' },
 };
 
 const state = {
@@ -277,6 +281,7 @@ const state = {
   lnAng: 15, lnExt: false,
   dvSo: 17, dvNhom: 5,
   foD: 4, foN1: 1, foN2: 2, foOp: true,
+  piU: 5, piH: false, piSel: 0, pi0: 3, pi1: 5, pi2: 2, pi3: 4,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -1470,6 +1475,67 @@ const MODELS = {
         const m = new THREE.Mesh(new THREE.BoxGeometry(cellW * 0.9, 0.5, 0.7), new THREE.MeshStandardMaterial({ color: col, roughness: .55 }));
         m.position.set(-1.8 + cellW * (j + 0.5), 0, 0); g.add(m); }
       const div = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.62, 0.82), new THREE.MeshStandardMaterial({ color: 0xffffff })); div.position.set(0, 0, 0); g.add(div);
+      return g;
+    },
+    paint3d() {},
+  },
+
+  // ======================= Model: pic (biểu đồ tranh — 1 hình = mấy đơn vị) =======================
+  // Repo bieu-do-tranh (props): "khung chú giải 1 hình = k đơn vị; số hình × k; nửa hình = nửa giá trị".
+  // Lỗi hay gặp (error-notes): "đếm hình rồi đoán ngay, bỏ qua khung chú giải". Bắt đọc chú giải trước.
+  pic: {
+    names() { return ['Kẹo', 'Bi', 'Búp bê', 'Ô tô']; },
+    colors() { return ['#5fb0a5', '#ffd166', '#e07a5f', '#4d9de0']; },
+    cols() { return [0x5fb0a5, 0xffd166, 0xe07a5f, 0x4d9de0]; },
+    keys() { return ['pi0', 'pi1', 'pi2', 'pi3']; },
+    counts(st) { return [st.pi0, st.pi1, st.pi2, st.pi3]; },
+    sel(st) { return clamp(st.piSel, 0, 3); },
+    total(st, j) { const c = this.counts(st)[j], u = Math.max(1, st.piU); return c * u + (st.piH && j === this.sel(st) ? Math.round(u / 2) : 0); },
+    defaults(st, L) { st.piU = L.piU; st.piH = L.piH; st.piSel = L.piSel; st.pi0 = L.pi0; st.pi1 = L.pi1; st.pi2 = L.pi2; st.pi3 = L.pi3; },
+    geomSig(st) { return 'pic' + st.piU + ':' + this.counts(st).join(',') + ':' + this.sel(st) + (st.piH ? 'h' : ''); },
+    params() { return [
+      { key:'piU', label:'Một hình = mấy cái', min:1, max:10 },
+      { key:'piSel', label:'Hàng đang chọn', min:0, max:3 }]; },
+    toggles() { return [{ key:'piH', label:'Thêm NỬA hình cho hàng đang chọn' }]; },
+    ctlHint() { return 'Giơ 0–8 ngón = số HÌNH của hàng đang chọn; chọn hàng và đổi "một hình = mấy cái" bằng +/−; gạt để thêm nửa hình.'; },
+    glyph(cx, cy, r, col, half) { return half
+      ? `<path d="M${cx} ${cy - r} A ${r} ${r} 0 0 0 ${cx} ${cy + r} Z" fill="${col}" stroke="rgba(0,0,0,.35)" stroke-width="1"></path>`
+      : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}" stroke="rgba(0,0,0,.35)" stroke-width="1"></circle>`; },
+    draw2d(host, st) {
+      const nm = this.names(), col = this.colors(), cnt = this.counts(st), sel = this.sel(st), U = Math.max(1, st.piU);
+      const W = 560, Hh = 250, x0 = 150, rowY = (j) => 74 + j * 42, slot = 28;
+      let s = `<text x="16" y="26" fill="rgba(242,240,230,.7)" font-size="13">Khung chú giải (ĐỌC TRƯỚC):</text>`
+        + this.glyph(120, 22, 10, '#cbd3d8', false)
+        + `<text x="138" y="27" fill="var(--accent)" font-size="15" font-weight="700">= ${U} cái</text>`;
+      for (let j = 0; j < 4; j++) {
+        const y = rowY(j), on = j === sel;
+        s += `<rect x="8" y="${y - 16}" width="${W - 16}" height="32" rx="6" fill="${on ? 'rgba(255,255,255,.08)' : 'transparent'}" stroke="${on ? 'var(--accent)' : 'transparent'}" stroke-width="${on ? 2 : 0}"></rect>`
+          + `<text x="16" y="${y + 5}" fill="var(--chalk)" font-size="14">${nm[j]}</text>`;
+        for (let k = 0; k < cnt[j]; k++) s += this.glyph(x0 + k * slot + 11, y, 11, col[j], false);
+        if (st.piH && on) s += this.glyph(x0 + cnt[j] * slot + 11, y, 11, col[j], true);
+      }
+      const tv = this.total(st, sel);
+      s += `<text x="${W / 2}" y="238" fill="var(--accent)" font-size="17" font-weight="700" text-anchor="middle">Hàng ${nm[sel]}: ${cnt[sel]} hình × ${U}${st.piH ? ' + nửa hình (' + Math.round(U / 2) + ')' : ''} = ${tv} cái</text>`;
+      host.innerHTML = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, cnt = this.counts(st), sel = this.sel(st), U = Math.max(1, st.piU), nm = this.names()[sel], tv = this.total(st, sel);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: biểu đồ tranh có 4 hàng, mỗi hàng vẽ các HÌNH giống nhau cho một loại đồ vật (hàng đang chọn: ${nm}).`, hint: 'Giơ 0–8 ngón để đặt số HÌNH của hàng đang chọn.' };
+      if (s === 2) return { cap: `Sơ đồ: ĐỌC KHUNG CHÚ GIẢI TRƯỚC — 1 hình = ${U} cái${st.piH ? ', và nửa hình = ' + Math.round(U / 2) + ' cái' : ''}. Đừng nhìn số hình mà đoán ngay.`, hint: 'Chú giải quyết định giá trị, không phải số hình.' };
+      if (s === 3) return { cap: `Phép tính: hàng ${nm} có ${cnt[sel]} hình × ${U}${st.piH ? ' + nửa hình ' + Math.round(U / 2) : ''} = ${tv} cái. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: hàng ${nm} thật ra có bao nhiêu cái? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const cnt = this.counts(st), sel = this.sel(st); return `${this.names()[sel]}: ${cnt[sel]}×${Math.max(1, st.piU)}${st.piH ? '+½' : ''} = ${this.total(st, sel)} cái`; },
+    showFromStep() { return 2; },
+    hand(st, f) { st[this.keys()[this.sel(st)]] = clamp(f, 0, 8); },
+    handLabel(f, st) { return `→ số HÌNH hàng '${this.names()[this.sel(st)]}' = ${clamp(f, 0, 8)}`; },
+    build3d(st) {
+      const g = new THREE.Group(), cnt = this.counts(st), sel = this.sel(st), cols = this.cols(); let i = 0;
+      for (let j = 0; j < 4; j++) for (let k = 0; k < cnt[j]; k++) {
+        const m = new THREE.Mesh(new THREE.SphereGeometry(j === sel ? 0.34 : 0.28, 16, 12), new THREE.MeshStandardMaterial({ color: cols[j], roughness: .5 }));
+        m.position.set((k - 2) * 0.8, 1.0 - j * 0.55, 0); g.add(m); }
+      if (st.piH) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 12), new THREE.MeshStandardMaterial({ color: cols[sel], roughness: .5 })); m.position.set((cnt[sel] - 2) * 0.8 + 0.4, 1.0 - sel * 0.55, 0); m.scale.x = 0.5; g.add(m); }
       return g;
     },
     paint3d() {},
