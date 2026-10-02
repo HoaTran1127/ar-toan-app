@@ -2516,11 +2516,11 @@ function renderEx() {
   const i = clamp(state.exIdx, 0, arr.length - 1); state.exIdx = i; const q = arr[i];
   let html = `<div class="ex-tag">LUYỆN TẬP · câu ${i + 1}/${arr.length}</div><div class="ex-q">${esc(q.prompt)}</div>`;
   if (q.choices && q.choices.length) {
-    html += '<div class="ex-choices">' + q.choices.map((c) => {
+    html += '<div class="ex-choices">' + q.choices.map((c, ci) => {
       const picked = state.exPick === c, good = picked && c === q.answer;
       const cls = picked ? (good ? 'ex-chosen good' : 'ex-chosen bad') : 'ex-chosen';
-      return `<button class="${cls}" data-ex="${esc(c)}">${esc(c)}</button>`; }).join('') + '</div>';
-    if (!state.exReveal) html += `<div class="hint">Cô bấm vào đáp án lớp mình chọn — hoặc cả lớp giơ tay, cô ghi nhận ở ô bên.</div>`;
+      return `<button class="${cls}" data-ex="${esc(c)}"><b>${ci + 1}.</b> ${esc(c)}</button>`; }).join('') + '</div>';
+    if (!state.exReveal) html += `<div class="hint">Cô bấm vào đáp án, hoặc cả lớp <b>giơ k ngón = chọn phương án số ${q.choices.length}</b> trở xuống (các phương án đã đánh số 1, 2, 3…). Máy bỏ sót thì cô ghi nhận thêm bằng +1/+5.</div>`;
   } else if (!state.exReveal) {
     html += `<button class="ex-reveal" data-exrev="1">Xem đáp án</button>`;
   }
@@ -2598,7 +2598,7 @@ $('exSec').addEventListener('click', (e) => {
   const ch = e.target.closest('[data-ex]'), rev = e.target.closest('[data-exrev]'), nav = e.target.closest('[data-exnav]');
   if (ch) { state.exPick = ch.dataset.ex; state.exReveal = true; renderEx(); }
   else if (rev) { state.exReveal = true; renderEx(); }
-  else if (nav) { const a = exOf() || []; state.exIdx = clamp(state.exIdx + (nav.dataset.exnav === 'next' ? 1 : -1), 0, a.length - 1); state.exPick = null; state.exReveal = false; renderEx(); }
+  else if (nav) { const a = exOf() || []; state.exIdx = clamp(state.exIdx + (nav.dataset.exnav === 'next' ? 1 : -1), 0, a.length - 1); state.exPick = null; state.exReveal = false; state.handApplied = -1; renderEx(); }
 });
 
 // ======================= Camera + MediaPipe (tuỳ chọn, lùi về chuột) =======================
@@ -2652,9 +2652,18 @@ function loopDetect() {
             drawVisual(); render();
           } else {
             const f = countFingers(lm);
-            stat += ` · ${f} ngón ${m.handLabel(f, state)}`;
-            if (f !== state.handApplied) { state.handApplied = f; m.hand(state, f); drawVisual(); render(); }
-            if (threeReady()) rotTargetFromHand(0.5 - lm[9].x);
+            const exs = (state.step === 4 && $('exSec').style.display !== 'none') ? exOf() : null;
+            const q = exs ? exs[clamp(state.exIdx, 0, exs.length - 1)] : null;
+            if (q && q.choices && q.choices.length) {
+              stat += ` · ${f} ngón → chọn phương án ${f}`;
+              if (f >= 1 && f <= q.choices.length && f !== state.handApplied) {
+                state.handApplied = f; state.exPick = q.choices[f - 1]; state.exReveal = true; renderEx();
+              }
+            } else {
+              stat += ` · ${f} ngón ${m.handLabel(f, state)}`;
+              if (f !== state.handApplied) { state.handApplied = f; m.hand(state, f); drawVisual(); render(); }
+              if (threeReady()) rotTargetFromHand(0.5 - lm[9].x);
+            }
           }
         } else state.handApplied = -1;
         $('handStat').textContent = stat;
