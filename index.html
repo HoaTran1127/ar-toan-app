@@ -403,6 +403,10 @@ const LESSONS = {
     khoi_dong:'Cô viết 2 + 3 × 4 lên bảng. Hai bạn tính ra hai kết quả khác nhau: một bạn nói 20, một bạn nói 14. Ai đúng? Vì sao cùng một biểu thức mà ra hai số — họ làm theo thứ tự nào?',
     chot:'Thứ tự: có DẤU NGOẶC thì làm TRONG NGOẶC trước; không có ngoặc thì làm × và ÷ TRƯỚC, rồi mới đến + và −. Cùng các số 2, 3, 4: 2 + 3 × 4 = 14 (× trước), nhưng (2 + 3) × 4 = 20 (ngoặc trước). ĐỪNG đọc bừa từ trái sang phải.',
     obj:'2 + 3 × 4', ordA:2, ordB:3, ordC:4, ordK:0 },
+  'chu-vi-dien-tich-hcn': { model:'rect', ten:'Chu vi và diện tích hình chữ nhật',
+    khoi_dong:'Một cái sân trường hình chữ nhật. Muốn QUANG RÀO quanh sân thì ta cần biết độ dài đường nào? Muốn LÁT GẠK kín mặt sân thì ta cần biết độ lớn nào? Hai cái đó có giống nhau không?',
+    chot:'CHU VI = độ dài đường bao QUANH hình = (dài + rộng) × 2, đo bằng cm (đơn vị dài). DIỆN TÍCH = độ lớn MẶT phủ kín hình = dài × rộng, đo bằng cm² (số ô vuông 1 cm). Cùng một hình chữ nhật nhưng là HAI đại lượng khác nhau — đừng lấy cái này trả lời cho câu hỏi của cái kia.',
+    obj:'sân dài 6 rộng 4', rcA:6, rcB:4 },
 };
 
 const state = {
@@ -449,6 +453,7 @@ const state = {
   tpA: 12, tpB: 6, tpH: 5,
   saA: 6, saB: 4, saC: 3,
   ordA: 2, ordB: 3, ordC: 4, ordK: 0,
+  rcA: 6, rcB: 4,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3210,6 +3215,61 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // beyond-bank 11: CHU VI vs DIỆN TÍCH HÌNH CHỮ NHẬT — cùng một miếng đất a×b, nhưng "đi vòng quanh" (viền, cm)
+  // khác hẳn "lấp kín mặt" (số ô, cm²). Chặn đúng lỗi kinh điển "nhầm chu vi với diện tích" (cộng 2 cạnh rồi nhân 2
+  // nhưng gọi là diện tích, hoặc lấy dài×rộng rồi gọi là chu vi).
+  rect: {
+    twoHands: true,
+    defaults(st, L) { st.rcA = (L.rcA != null ? L.rcA : 6); st.rcB = (L.rcB != null ? L.rcB : 4); },
+    fmt(n) { const s = Math.round(n * 100) / 100; if (Number.isInteger(s)) return String(s); let t = s.toFixed(2); if (t.endsWith('0')) t = t.slice(0, -1); return t.replace('.', ','); },
+    a(st) { return clamp(st.rcA, 1, 12); },
+    b(st) { return clamp(st.rcB, 1, 12); },
+    P(st) { return 2 * (this.a(st) + this.b(st)); },
+    S(st) { return this.a(st) * this.b(st); },
+    geomSig(st) { return 'rect' + this.a(st) + 'x' + this.b(st); },
+    params() { return [
+      { key: 'rcA', label: 'Chiều dài a (cm)', min: 1, max: 12 },
+      { key: 'rcB', label: 'Chiều rộng b (cm)', min: 1, max: 12 }]; },
+    ctlHint() { return 'Tay TRÁI đặt CHIỀU DÀI, tay PHẢI đặt CHIỀU RỘNG (tới 12). Viền vàng = Chu vi (đi vòng quanh, đo bằng cm); lưới ô tô = Diện tích (đếm ô 1 cm²).'; },
+    draw2d(host, st) {
+      const a = this.a(st), b = this.b(st);
+      const s = Math.min(360 / a, 118 / b), w = a * s, h = b * s, x0 = 66, y0 = 34;
+      let cells = '';
+      for (let i = 0; i < a; i++) for (let j = 0; j < b; j++)
+        cells += `<rect x="${(x0 + i * s).toFixed(1)}" y="${(y0 + j * s).toFixed(1)}" width="${s.toFixed(1)}" height="${s.toFixed(1)}" fill="rgba(127,201,191,.30)" stroke="rgba(242,240,230,.35)" stroke-width="0.8"></rect>`;
+      const border = `<rect x="${x0}" y="${y0}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="none" stroke="var(--warn)" stroke-width="4"></rect>`;
+      const labA = `<text x="${(x0 + w / 2).toFixed(1)}" y="${(y0 - 6).toFixed(1)}" fill="var(--accent)" font-size="13" font-weight="700" text-anchor="middle">dài = ${a} cm</text>`;
+      const labB = `<text x="${(x0 - 8)}" y="${(y0 + h / 2).toFixed(1)}" fill="var(--warn)" font-size="12" font-weight="700" text-anchor="end">rộng ${b}</text>`;
+      const info = `<text x="20" y="182" fill="var(--warn)" font-size="13" font-weight="700">CHU VI = đi vòng quanh = (a + b) × 2 = (${a} + ${b}) × 2 = ${this.P(st)} cm   (đơn vị: cm)</text>`
+        + `<text x="20" y="204" fill="var(--ok)" font-size="13" font-weight="700">DIỆN TÍCH = lấp kín = a × b = ${a} × ${b} = ${this.S(st)} cm²   (đơn vị: cm² — số ô)</text>`
+        + `<text x="20" y="228" fill="var(--accent)" font-size="12.5" font-weight="700">Cùng một hình nhưng HAI thứ khác nhau: viền đo bằng cm, mặt đong bằng số ô cm².</text>`;
+      host.innerHTML = `<svg id="rect" width="548" height="258" viewBox="0 0 548 258">`
+        + `<text x="16" y="16" fill="rgba(242,240,230,.72)" font-size="12.5">Chu vi = độ dài đường viền xung quanh · Diện tích = số ô vuông phủ kín mặt</text>`
+        + cells + border + labA + labB + info + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, a = this.a(st), b = this.b(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: một miếng đất / mặt bàn hình chữ nhật dài ${a} cm, rộng ${b} cm.`, hint: 'Tay trái đặt chiều dài, tay phải đặt chiều rộng.' };
+      if (s === 2) return { cap: `Sơ đồ: chạy một vòng theo VIỀN vàng = CHU VI = (${a} + ${b}) × 2 = ${this.P(st)} cm. Lấp đầy bằng LƯỚI Ô = DIỆN TÍCH = ${a} × ${b} = ${this.S(st)} ô cm². Hai việc KHÁC nhau.`, hint: 'Đừng nhầm: chu vi chỉ là đường bao, chưa lấp mặt.' };
+      if (s === 3) return { cap: `Chu vi = ${this.P(st)} cm; Diện tích = ${this.S(st)} cm². ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: hình chữ nhật dài ${a}, rộng ${b} — DIỆN TÍCH là bao nhiêu cm²? (đừng lấy chu vi!)`, hint: '' };
+    },
+    value(st) { return `P = ${this.P(st)} cm · S = ${this.S(st)} cm²`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.rcA = clamp(l, 1, 12);
+      if (r !== null) st.rcB = clamp(r, 1, 12);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), a = this.a(st), b = this.b(st), sc = Math.min(4 / Math.max(a, b), 0.6);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(a * sc, 0.12, b * sc), new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.5 }));
+      g.add(mesh); return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3315,6 +3375,10 @@ EX['dien-tich-hinh-hop'] = [
 EX['thu-tu-tinh'] = [
   { prompt: 'Tính: 4 + 5 × 3 = ?', choices: ['27', '19', '15'], answer: '19', explanation: 'Không có ngoặc nên × chạy trước: 5 × 3 = 15, rồi 4 + 15 = 19. Đọc trái→phải (4 + 5 = 9 rồi × 3 = 27) là SAI thứ tự.', errorTag: 'doc-trai-sang-phai-quen-nhan-truoc' },
   { prompt: 'Tính: (6 + 2) × 5 = ?', choices: ['16', '40', '34'], answer: '40', explanation: 'Có DẤU NGOẶC nên làm trong ngoặc trước: 6 + 2 = 8, rồi 8 × 5 = 40. Bỏ ngoặc nhảy sang 2 × 5 = 10 rồi cộng 6 = 16 là SAI.', errorTag: 'bo-ngoac-tinh-nhan-truoc' },
+];
+EX['chu-vi-dien-tich-hcn'] = [
+  { prompt: 'Một mảnh vườn hình chữ nhật dài 8 m, rộng 5 m. Người ta đóng hàng RÀO quanh vườn. Chiều dài hàng rào là bao nhiêu?', choices: ['26 m', '40 m', '13 m'], answer: '26 m', explanation: 'Hàng rào chạy QUANH vườn = chu vi = (8 + 5) × 2 = 26 m. Đừng lấy 8 × 5 = 40 (đó là diện tích, không phải độ dài đường bao).', errorTag: 'nham_dien_tich_thanh_chu_vi' },
+  { prompt: 'Với mảnh vườn dài 8 m, rộng 5 m ở trên, diện tích trồng rau là bao nhiêu?', choices: ['40 m²', '26 m²', '13 m²'], answer: '40 m²', explanation: 'Diện tích = dài × rộng = 8 × 5 = 40 m² (số ô vuông 1 m² phủ kín mặt vườn). 26 m là chu vi hàng rào — đơn vị m chứ không phải m².', errorTag: 'nham_chu_vi_thanh_dien_tich' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
