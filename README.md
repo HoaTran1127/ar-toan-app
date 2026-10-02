@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Mười tám mô hình đang có:
+Mười chín mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -69,8 +69,9 @@ Mười tám mô hình đang có:
 | `prob` | xác suất (chắc chắn / có thể / không thể), khả năng rút bóng | hộp bóng 3 màu + bảng tỉ lệ `số bóng màu : tổng` | các quả cầu màu xếp trong hộp | số ngón = số bóng **màu đang chọn** |
 | `lines` | hai đường thẳng vuông góc / song song | hai đường phấn + chế độ **kéo dài hết bảng** + ê-ke góc vuông | hai thanh 3D, một thanh xoay theo góc | đưa tay ngang = **xoay độ nghiêng của d′** |
 | `groups` | chia đều và số dư (băng chuyền + khay) | băng chở kẹo → N khay mỗi khay q cái, r cái còn trong **ô nét đứt** | khay + khối kẹo + khay số dư | đưa tay ngang = đặt **số kẹo trên băng** |
+| `fracops` | **cộng / trừ hai phân số cùng mẫu** | hai băng tô trên CÙNG trục (vàng = phần cộng, gạch chéo cam = phần trừ) + tổng hiệu rút gọn / hỗn số | hai hàng ô khối + vạch ngăn đơn vị | **hai tay**: trái = tử số PS 1, phải = tử số PS 2 |
 
-Bài hiện có (21 bài · 18 model): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (22 bài · 19 model): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -80,13 +81,13 @@ cộng* (mean — 7/4/6/3 → san đều ra **mực nước 5**; phần thừa m
 chỗ trống ở cột thấp, rồi `tổng : số phần = 20 : 4 = 5`), và *Tìm hai số khi biết tổng & tỉ số*
 (tape — **sơ đồ đoạn thẳng**: anh gấp đôi em, tổng 30 bi → 1 + 2 = 3 phần bằng nhau, mỗi phần
 `30 : 3 = 10` nên em 10, anh 20), và *Diện tích hình thoi* (rhomb — hai đường chéo vuông góc,
-nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d₂ : 2 = 6 × 4 : 2 = 12 cm²`), và **hai bài dùng chung `fracbar`**: *Hai phân số bằng nhau* (1/2 = 2/4) + *Quy đồng mẫu để so sánh* (1/3 > 1/4) — hai băng chia phần trên **cùng một trục**, đầu phần tô trùng khít ⟺ bằng nhau, và *Xác suất* (prob — hộp bóng 3 màu: chọn màu, đếm số bóng → `số bóng : tổng`, tự xếp loại **KHÔNG THỂ / CÓ THỂ (ít · ngang nhau · nhiều) / CHẮC CHẮN**, đúng ý repo là **không được bỏ qua khả năng ngang nhau**), và *Hai đường vuông góc – song song* (lines — d nằm ngang, đưa tay xoay d′; **phải bật "Kéo dài hết bảng"** mới được kết luận: cách đều mãi → SONG SONG, gặp nhau + ê-ke khít → VUÔNG GÓC — chặn đúng lỗi repo "kết luận song song khi chưa kéo dài"), và *Chia đều và số dư* (groups — băng chuyền 17 kẹo chia vào 5 khay: phát mỗi khay một cái tới khi không đủ chia → mỗi khay 3 (thương), còn 2 nằm lại trong **ô nét đứt** = số dư, và `số dư 2 < số chia 5`). Đây là bằng chứng kiến trúc
+nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d₂ : 2 = 6 × 4 : 2 = 12 cm²`), và **hai bài dùng chung `fracbar`**: *Hai phân số bằng nhau* (1/2 = 2/4) + *Quy đồng mẫu để so sánh* (1/3 > 1/4) — hai băng chia phần trên **cùng một trục**, đầu phần tô trùng khít ⟺ bằng nhau, và *Xác suất* (prob — hộp bóng 3 màu: chọn màu, đếm số bóng → `số bóng : tổng`, tự xếp loại **KHÔNG THỂ / CÓ THỂ (ít · ngang nhau · nhiều) / CHẮC CHẮN**, đúng ý repo là **không được bỏ qua khả năng ngang nhau**), và *Hai đường vuông góc – song song* (lines — d nằm ngang, đưa tay xoay d′; **phải bật "Kéo dài hết bảng"** mới được kết luận: cách đều mãi → SONG SONG, gặp nhau + ê-ke khít → VUÔNG GÓC — chặn đúng lỗi repo "kết luận song song khi chưa kéo dài"), và *Chia đều và số dư* (groups — băng chuyền 17 kẹo chia vào 5 khay: phát mỗi khay một cái tới khi không đủ chia → mỗi khay 3 (thương), còn 2 nằm lại trong **ô nét đứt** = số dư, và `số dư 2 < số chia 5`), và *Cộng trừ phân số cùng mẫu* (fracops — hai phân số **cùng mẫu số** đặt trên **cùng một trục**, hai tay lần lượt đặt hai tử số; tô vàng phần **cộng**, gạch chéo cam phần **trừ** → `1/4 + 2/4 = 3/4`; dạy đúng ý repo là **CHỈ cộng/trừ tử số, tuyệt đối không cộng mẫu số**, và khi tổng vượt 1 đơn vị thì đổi ra **hỗn số** `3/4 + 3/4 = 1 1/2`). Đây là bằng chứng kiến trúc
 **model-dispatch** mở rộng rất rẻ: thêm bài mới trùng kiểu minh hoạ = chỉ thêm một dòng
 `LESSONS` (kèm `fmt`), không đụng code render; thêm kiểu mới = một `MODELS.<kiểu>`. Mỗi mô
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **ba model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2).
 
-**Điểm mở rộng cho các vòng sau:** `LESSONS` còn ~15 cụm chưa lên app; mỗi khi cần
+**Điểm mở rộng cho các vòng sau:** `LESSONS` còn ~14 cụm chưa lên app; mỗi khi cần
 một kiểu minh hoạ mới (biểu đồ tranh/đường, tỉ lệ bản đồ, đại lượng F–S–P,
 tiền Việt/mua hàng, chuyển động…) thì viết thêm một `MODELS.<kiểu>` — các
 bài dùng lại kiểu đã có chỉ cần thêm dòng dữ liệu.
