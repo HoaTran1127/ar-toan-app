@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Năm mươi ba mô hình đang có:
+Năm mươi bốn mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -104,8 +104,9 @@ Năm mươi ba mô hình đang có:
 | `lenunits` | **Bảng đơn vị đo độ dài** (beyond-bank): km · hm · dam · m · dm · cm · mm, hơn kém **10 lần mỗi bậc** | **cột thang 7 bậc** — CÙNG MỘT độ dài nhưng mỗi đơn vị ghi một **số đo khác nhau**; đơn vị đang chọn viền vàng, bên cạnh ghi `= … m` và `= … mm`; giữa hai bậc kề có nhãn **×10**; xuống bậc (đơn vị nhỏ hơn) → số ×10, lên bậc → :10; dòng **❌** "3 m ≠ 30 mm (m→mm xuống 3 bậc = ×1000 = 3000 mm)" | cầu thang 7 bậc, bậc đang chọn sáng, khối đặt trên đúng số đo | **bấm một BẬC** chọn đơn vị đang đo; **giơ 1–9 ngón** đặt con số; +/− từng bậc |
 | `areaunits` | **Bảng đơn vị đo diện tích** (beyond-bank): km² · hm² · dam² · m² · dm² · cm² · mm², hơn kém **100 lần mỗi bậc** | **cột thang 7 bậc** như độ dài nhưng mỗi bậc kề ghi **×100**; ô giữa là **hình vuông 1×1** của đơn vị đang chọn **chia lưới 10×10 = 100 ô** đúng bằng đơn vị bé liền kề → nhìn thấy "1 m² = 100 dm²"; cột phải số đo ở m² · mm² và ghi rõ **"khác độ dài: chỉ ×10"**; dòng **❌** "2 m² ≠ 20 dm² (là 200 dm²)" | phiến vuông + **100 khối** xếp lưới 10×10 trong ô đang chọn | **bấm một BẬC** chọn đơn vị; **giơ 1–9 ngón** đặt con số; +/− từng bậc |
 | `volunits` | **Bảng đơn vị đo thể tích** (beyond-bank): m³ · dm³ · cm³, hơn kém **1000 lần mỗi bậc** | **cột thang 3 bậc** mỗi bậc kề ghi **×1000**; ô giữa là **hình lập phương 1×1×1** của đơn vị đang chọn: một MẶT chia lưới **10×10 = 100 ô** và cao **10 lớp ⇒ 1000** khối đơn vị bé liền kề → "1 m³ = 1000 dm³"; cột phải quy về m³ · cm³, ghi chú **"1 dm³ = 1 lít"** và **"khác diện tích ×100, độ dài ×10"**; dòng **❌** "1 m³ ≠ 100 dm³ (là 1000 dm³)" | khối lập phương lớn + một lớp **100 khối** con xếp lưới 10×10 (gợi 10 lớp = 1000) | **bấm một BẬC** chọn đơn vị; **giơ 1–9 ngón** đặt con số; +/− từng bậc |
+| `prop` | **Hai đại lượng tỉ lệ thuận** (beyond-bank): y = k·x, thương y:x không đổi | trái: **bảng** hai hàng x / y = k, 2k, 3k, 4k (cột đang đọc viền vàng) kèm "thương y:x = k không đổi"; phải: **đồ thị** các điểm (1,k)…(4,4k) nối thành **đường thẳng qua GỐC (0,0)**, điểm đang chọn tô to + ghi y; dòng **❌** "thêm vào ≠ tỉ lệ thuận — phải GẤP lên k lần" | 4 **cột** cao dần đúng k, 2k, 3k, 4k (cột đang chọn màu vàng) | **bấm một CỘT** (x = 1…4) để chọn; **giơ 1–4 ngón** đặt x; +/− đổi hệ số k |
 
-Bài hiện có (59 bài · 53 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 20 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri) + *Diện tích hình thang* (trap) + *Diện tích hình hộp* (sa) + *Thứ tự phép tính* (order) + *Chu vi vs diện tích HCN* (rect) + *Chia phân số cho số tự nhiên* (fracdiv) + *Nhân · chia 10 · 100 · 1000* (dotshift) + *Cộng · trừ khác mẫu số* (fracdiff) + *Nhân hai số thập phân* (decarea) + *Cộng · trừ số thập phân* (decadd) + *Chia STN ra thương thập phân* (natdivdec) + *Bảng đơn vị đo độ dài* (lenunits) + *Bảng đơn vị đo diện tích* (areaunits) + *Bảng đơn vị đo thể tích* (volunits), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (60 bài · 54 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 21 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri) + *Diện tích hình thang* (trap) + *Diện tích hình hộp* (sa) + *Thứ tự phép tính* (order) + *Chu vi vs diện tích HCN* (rect) + *Chia phân số cho số tự nhiên* (fracdiv) + *Nhân · chia 10 · 100 · 1000* (dotshift) + *Cộng · trừ khác mẫu số* (fracdiff) + *Nhân hai số thập phân* (decarea) + *Cộng · trừ số thập phân* (decadd) + *Chia STN ra thương thập phân* (natdivdec) + *Bảng đơn vị đo độ dài* (lenunits) + *Bảng đơn vị đo diện tích* (areaunits) + *Bảng đơn vị đo thể tích* (volunits) + *Hai đại lượng tỉ lệ thuận* (prop), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -121,7 +122,7 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` + `trap` + `sa` + `order` + `rect` + `fracdiv` + `dotshift` + `fracdiff` + `decarea` + `decadd` + `natdivdec` + `lenunits` + `areaunits` + `volunits` (Vòng 69–88):** SGK lớp 4 có mạch
+**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` + `trap` + `sa` + `order` + `rect` + `fracdiv` + `dotshift` + `fracdiff` + `decarea` + `decadd` + `natdivdec` + `lenunits` + `areaunits` + `volunits` + `prop` (Vòng 69–89):** SGK lớp 4 có mạch
 "Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
 giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
 (`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** các model cũ.
@@ -258,6 +259,14 @@ lập phương**: một MẶT chia lưới **10×10 = 100 ô**, cao **10 lớp �
 **❌** chặn lỗi: "1 m³ ≠ 100 dm³ (là 1000 dm³)." Cô **bấm một bậc** chọn đơn vị, **giơ 1–9 ngón** đặt con số, +/− từng bậc. build3d dựng
 khối lập phương lớn mờ và xếp một lớp **100 khối** con trên mặt trước (gợi mười lớp = 1000). Nối sang `cube` (thể tích ô vuông, cùng ý
 10×10×10), `areaunits`/`lenunits` (bộ ba nhảy bậc) và `sa` (hộp chữ nhật tính thể tích dm³·cm³).
+
+Vòng 89 thêm mạch thứ hai mươi mốt: `prop` — **hai đại lượng TỈ LỆ THUẬN** (y = k·x), một khái niệm lớp 5 mà app chưa có màn riêng. Đây là
+chỗ học sinh **nhầm "tăng theo" thành "cộng thêm"**: mua 1 bút 3 nghìn rồi đoán 4 bút = 3 + 4 = 7 nghìn. Màn chiếu chia hai nửa. Bên trái là
+**bảng** hai hàng x / y với bốn cột (1, 2, 3, 4) và y = k, 2k, 3k, 4k — cột đang đọc viền vàng, dưới ghi "thương y : x = k **không đổi**".
+Bên phải là **đồ thị**: bốn điểm (1, k)…(4, 4k) nối thành **đường thẳng đi qua GỐC (0, 0)**, điểm đang chọn tô to và ghi đúng giá trị y — cho
+học sinh **thấy** tỉ lệ thuận chính là "thẳng hàng qua gốc", khác hẳn `svt` (cùng đồ thị nhưng một tích cố định). Cô **bấm một cột** để chọn x,
+**giơ 1–4 ngón** đặt x, +/− đổi hệ số k. Dòng **❌** chỉ lỗi: "cho THÊM 2 là tỉ lệ thuận? Sai — phải GẤP lên k lần." build3d dựng 4 cột cao dần
+đúng k, 2k, 3k, 4k (cột đang chọn màu vàng). Nối sang `dtable` (cùng đọc bảng), `line` (cùng đọc đồ thị) và `tape` (cùng họ tỉ số).
 
 **Vòng 70 còn sửa một LỖI CHỨC NĂNG thật của điều khiển hai tay:** nhánh `twoHands` trong
 `loopDetect` vốn so `state.balL + '/' + state.balR` để quyết định vẽ lại — hai biến CHỈ model
