@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Bốn mươi sáu mô hình đang có:
+Bốn mươi bảy mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -96,9 +96,10 @@ Bốn mươi sáu mô hình đang có:
 | `order` | **Thứ tự thực hiện phép tính** (beyond-bank): ngoặc → × ÷ → + − | một biểu thức 3 số theo **3 DẠNG** (a+b×c · (a+b)×c · a×b+c); hai **thẻ bước** có thứ tự ①→② (phép ưu tiên chạy trước tô vàng), dòng **kết quả ĐÚNG**; dưới là thẻ **❌ cách SAI** gạch đỏ cùng lý do (cùng các số, khác thứ tự → khác đáp số) | chồng khối lập phương đếm = kết quả cuối (BoxGeometry) | **hai tay**: trái = a, phải = b; số c và **DẠNG** (0/1/2) chỉnh bằng +/− |
 | `rect` | **Chu vi vs diện tích hình chữ nhật** (beyond-bank): hai đại lượng trên CÙNG một hình | **lưới ô** a×b tô teal (= số ô cm² = diện tích) + **viền vàng dày** chạy quanh (= chu vi, cm); nhãn dài a / rộng b; hai dòng đối chiếu: **CHU VI = (a+b)×2 cm** (đi vòng) vs **DIỆN TÍCH = a×b cm²** (lấp mặt), kèm câu chốt "cm khác cm²" | tấm phẳng chữ nhật (BoxGeometry) to/nhỏ theo hai cạnh | **hai tay**: trái = CHIỀU DÀI, phải = CHIỀU RỘNG (tới 12) |
 | `fracdiv` | **Chia phân số cho số tự nhiên** (beyond-bank): tử giữ nguyên, **mẫu × n** | **hai thanh cùng trục**: trên = a/b (vàng, tô a trên b ô); dưới = cắt mỗi ô thành n → b×n ô, vẫn tô a ô nhưng ô NHỎ hơn (xanh) → phần tô ngắn đi đúng n lần; gạch đứt ngăn các cột gốc; dòng `a/b ÷ n = a/(b×n)` | hàng khối: a ô vàng + (b·n−a) ô xanh | **hai tay**: trái = TỬ a, phải = MẪU b; số chia n (2→6) bằng +/− |
-| `dotshift` | **Nhân · chia số thập phân với 10 · 100 · 1000** (beyond-bank): **dịch dấu phẩy**, không đổi chữ số | số hiện thành **dãy Ô CHỮ SỐ**, ô **dấu phẩy** tô sáng; hai hàng **TRƯỚC / SAU** so thẳng cột → thấy dấu phẩy **trượt** sang phải (nhân) hay trái (chia) mấy ô, khi nào **viết thêm số 0**; dòng phép tính `12,34 × 100 = 1234` | hàng khối = số chữ số của kết quả | **giơ 0–5 ngón = chọn phép** (×1 · ×10 · ×100 · ×1000 · :10 · :100); +/− đổi số gốc (4 preset) |
+| `dotshift` | **Nhân · chia số thập phân với 10 · 100 · 1000** (beyond-bank): **dịch dấu phẩy**, không đổi chữ số | số hiện thành **dãy Ô CHỮ SỐ**, ô **dấu phẩy** tô sáng; hai hàng **TRƯỚC / SAU xếp thẳng cột**, giữa ghi phép tính. Khi đổi phép, dấu phẩy **trượt** sang phải (nhân) hay trái (chia) đúng số chữ số 0 → thấy dấu phẩy **trượt** mấy ô, khi nào **viết thêm số 0**; dòng phép tính `12,34 × 100 = 1234` | hàng khối = số chữ số của kết quả | **giơ 0–5 ngón = chọn phép** (×1 · ×10 · ×100 · ×1000 · :10 · :100); +/− đổi số gốc (4 preset) |
+| `fracdiff` | **Cộng · trừ hai phân số khác mẫu số** (beyond-bank): quy đồng rồi chỉ cộng/trừ **tử** | **hai băng giấy** ① chia d₁ ô tô n₁ (vàng), ② chia d₂ ô tô n₂ (xanh) → **cắt lại trên LƯỚI CHUNG** = BCNN(d₁,d₂): mỗi ô ① ×k₁, mỗi ô ② ×k₂ thành ô bé bằng nhau; hai hàng quy đồng chồng thẳng cột + hàng **KẾT QUẢ** (tô số ô = n₁k₁ ± n₂k₂ trên mẫu chung) kèm thẻ **❌ SAI** "cộng cả mẫu" | hàng khối = số ô của kết quả | **hai tay**: trái = **TỬ ①**, phải = **TỬ ②**; hai MẪU số và phép +/− bằng dải +/− |
 
-Bài hiện có (52 bài · 46 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 13 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri) + *Diện tích hình thang* (trap) + *Diện tích hình hộp* (sa) + *Thứ tự phép tính* (order) + *Chu vi vs diện tích HCN* (rect) + *Chia phân số cho số tự nhiên* (fracdiv) + *Nhân · chia 10 · 100 · 1000* (dotshift), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (53 bài · 47 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 14 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri) + *Diện tích hình thang* (trap) + *Diện tích hình hộp* (sa) + *Thứ tự phép tính* (order) + *Chu vi vs diện tích HCN* (rect) + *Chia phân số cho số tự nhiên* (fracdiv) + *Nhân · chia 10 · 100 · 1000* (dotshift) + *Cộng · trừ khác mẫu số* (fracdiff), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -114,7 +115,7 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` + `trap` + `sa` + `order` + `rect` + `fracdiv` + `dotshift` (Vòng 69–81):** SGK lớp 4 có mạch
+**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` + `trap` + `sa` + `order` + `rect` + `fracdiv` + `dotshift` + `fracdiff` (Vòng 69–82):** SGK lớp 4 có mạch
 "Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
 giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
 (`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** các model cũ.
@@ -187,6 +188,14 @@ phép, dấu phẩy **trượt** sang phải (nhân) hay trái (chia) đúng s�
 không phải 123,4 (mới trượt 1 ô) hay 1234 bằng cách nhân từng chữ số**. Cô **giơ 0–5 ngón để chọn phép** (×1 · ×10 · ×100 · ×1000 · :10 · :100), +/− đổi số gốc trong
 4 preset; build3d xếp hàng khối theo số chữ số của kết quả. Chặn hai lỗi **"dịch sai số chữ số"** (dịch 2 ô khi nhân 1000) và
 **"cứ nhân/chia từng chữ số như số tự nhiên"**. Nối sang lưới 100 ô (`grid100` — cùng họ số thập phân) và so sánh số (`numcmp`).
+
+Vòng 82 thêm mạch thứ mười bốn: `fracdiff` — **cộng · trừ hai phân số khác mẫu số**. Hai **băng giấy** nằm thẳng cột: băng ① chia
+`d₁` ô tô `n₁`, băng ② chia `d₂` ô tô `n₂`; bên dưới mỗi băng được **cắt lại trên LƯỚI CHUNG** = BCNN(`d₁`,`d₂`) nên ô to hoá
+nhiều ô bé **bằng nhau** (`n₁·k₁` ô và `n₂·k₂` ô), rồi **cộng/trừ đúng số ô tô** trên cùng mẫu chung. Học sinh **nhìn thấy** vì
+sao `1/2 + 1/3 = 3/6 + 2/6 = 5/6`, **chứ không phải** `2/5`; thẻ **❌ SAI** ngay dưới hình ghi rõ phép cộng mẫu bị cấm. Cô **đưa hai
+tay = hai tử số**, còn hai mẫu số và phép +/− chỉnh bằng dải; build3d xếp hàng khối theo số ô kết quả. Chặn lỗi kinh điển **"cộng
+cả tử lẫn mẫu"** và **"quy đồng sai mẫu chung"**. Hoàn thiện họ phân số: `fracbar` (bằng nhau/quy đồng), `fracops` (cùng mẫu), `fracof`
+(phân số của một số), `fracdiv` (chia cho số tự nhiên) và nay là `fracdiff` (cộng trừ khác mẫu).
 
 **Vòng 70 còn sửa một LỖI CHỨC NĂNG thật của điều khiển hai tay:** nhánh `twoHands` trong
 `loopDetect` vốn so `state.balL + '/' + state.balR` để quyết định vẽ lại — hai biến CHỈ model
