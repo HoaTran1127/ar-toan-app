@@ -471,6 +471,10 @@ const LESSONS = {
     khoi_dong:'Cô viết 27 + 43 + 15. Nếu cộng lần lượt từ trái sang thì 27 + 43 đã phải nhớ lung tung. Nhưng nhìn chữ số tận cùng: 7 và 3 ghép lại vừa đủ thành 10! Vì sao nên ĐỔI CHỖ các số hạng, ghép 27 với 43 thành 70 trước rồi mới cộng 15? Kết quả ra bao nhiêu?',
     chot:'Muốn cộng nhiều số cho nhanh, ta vận dụng TÍNH CHẤT GIAO HOÁN và KẾT HỢP của phép cộng: ĐỔI CHỖ để các số hạng có chữ số tận cùng BÙ NHAU THÀNH 0 đứng cạnh nhau, rồi THÊM NGOẶC để cộng chúng trước tạo số TRÒN CHỤC (hoặc tròn trăm). Ví dụ 27 + 43 + 15 = (27 + 43) + 15 = 70 + 15 = 85. Tổng KHÔNG ĐỔI dù ta đổi thứ tự và cách nhóm.',
     obj:'27 + 43 + 15', agA:27, agB:43, agC:15 },
+  'hieu-va-ti': { model:'diffratio', ten:'Tìm hai số khi biết HIỆU và TỈ số của hai số đó',
+    khoi_dong:'Hai rổ cam hơn nhau đúng 24 quả. Rổ lớn theo tỉ số 5 phần, rổ bé 2 phần (5 : 2). Vì sao 24 quả đó ứng với (5 − 2) = 3 PHẦN, chứ KHÔNG phải 5 + 2 = 7 phần? Mỗi phần là bao nhiêu quả, rổ lớn và rổ bé có mấy quả?',
+    chot:'Dạng toán TÌM HAI SỐ KHI BIẾT HIỆU và TỈ SỐ: vẽ sơ đồ — số lớn gồm a phần bằng nhau, số bé gồm b phần (a lớn hơn b). HIỆU đúng bằng (a − b) phần, nên GIÁ TRỊ MỘT PHẦN = HIỆU : (a − b). Số bé = b × một phần, số lớn = a × một phần. CHÚ Ý: phải chia cho HIỆU SỐ PHẦN (a − b), KHÔNG phải TỔNG số phần (a + b) — đó là điểm khác căn bản so với dạng TỔNG và tỉ số.',
+    obj:'hiệu 24, tỉ 5 : 2', drBig:5, drSmall:2, drDiff:24 },
 };
 
 const state = {
@@ -534,6 +538,7 @@ const state = {
   dfExp: 1, dfNum: 7,
   zmMant: 3, zmZeros: 1, zmB: 4,
   agA: 27, agB: 43, agC: 15,
+  drBig: 5, drSmall: 2, drDiff: 24,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4400,6 +4405,58 @@ const MODELS = {
     },
     paint3d() {},
   },
+  diffratio: {
+    res(st) {
+      const a = clamp(Math.round(st.drBig), 2, 10), b = clamp(Math.round(st.drSmall), 1, 9), D = clamp(Math.round(st.drDiff), 1, 60);
+      const dp = a - b, ok = dp > 0;
+      const partVal = ok ? D / dp : 0, big = ok ? a * partVal : 0, small = ok ? b * partVal : 0;
+      return { a, b, D, dp, ok, partVal, big, small };
+    },
+    defaults(st, L) { st.drBig = (L.drBig != null ? L.drBig : 5); st.drSmall = (L.drSmall != null ? L.drSmall : 2); st.drDiff = (L.drDiff != null ? L.drDiff : 24); },
+    geomSig(st) { const d = this.res(st); return 'dr' + d.a + ',' + d.b + ',' + d.D; },
+    params() { return [{ key: 'drBig', label: 'Số phần của SỐ LỚN', min: 2, max: 10 }, { key: 'drSmall', label: 'Số phần của SỐ BÉ', min: 1, max: 9 }, { key: 'drDiff', label: 'HIỆU hai số', min: 1, max: 60 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Ba thanh trượt: số phần SỐ LỚN (2–10), số phần SỐ BÉ (1–9), HIỆU (1–60). Số phần lớn phải HƠN số phần bé. Giơ 2–9 ngón đặt số phần lớn. Một phần = HIỆU : (số phần lớn − số phần bé).'; },
+    hand(st, f) { st.drBig = clamp(Math.round(f), 2, 10); },
+    handLabel(f) { return '→ số phần lớn = ' + clamp(Math.round(f), 2, 10); },
+    draw2d(host, st) {
+      const d = this.res(st);
+      const nf = (x) => { const r = Math.round(x * 1000) / 1000; return Number.isInteger(r) ? String(r) : String(r).replace('.', ','); };
+      const sq = 34, ox = 150, rowBigY = 44, rowSmallY = rowBigY + sq + 18;
+      const cell = (x, y, fill, stroke) => `<rect x="${x.toFixed(0)}" y="${y}" width="${sq - 2}" height="${sq - 2}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"></rect>`;
+      let rowA = ''; for (let k = 0; k < d.a; k++) { rowA += cell(ox + k * sq, rowBigY, k >= d.b ? 'rgba(240,196,92,.28)' : 'rgba(127,201,191,.22)', 'var(--accent)'); }
+      let rowB = ''; for (let k = 0; k < d.b; k++) { rowB += cell(ox + k * sq, rowSmallY, 'rgba(127,201,191,.22)', 'rgba(127,201,191,.7)'); }
+      const lblA = `<text x="14" y="${rowBigY + sq / 2 + 4}" font-size="12" fill="var(--chalk)">số lớn · ${d.a} phần</text>`;
+      const lblB = `<text x="14" y="${rowSmallY + sq / 2 + 4}" font-size="12" fill="var(--chalk)">số bé · ${d.b} phần</text>`;
+      let eff = '';
+      if (d.ok) { const ex = ox + d.b * sq, exEnd = ox + d.a * sq; eff = `<path d="M ${ex.toFixed(0)} ${rowBigY - 6} L ${ex.toFixed(0)} ${rowBigY - 14} L ${exEnd.toFixed(0)} ${rowBigY - 14} L ${exEnd.toFixed(0)} ${rowBigY - 6}" fill="none" stroke="var(--accent)" stroke-width="2"></path><text x="${((ex + exEnd) / 2).toFixed(0)}" y="${rowBigY - 18}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--accent)">hiệu ${d.D} = ${d.dp} phần</text>`; }
+      const line1 = `<text x="14" y="${rowSmallY + sq + 22}" font-size="12" fill="rgba(242,240,230,.9)">${d.ok ? '1 phần = ' + d.D + ' : ' + d.dp + ' = ' + nf(d.partVal) : '⚠ Số phần của SỐ LỚN phải LỚN HƠN số phần của SỐ BÉ (để hiệu dương).'}</text>`;
+      const line2 = `<text x="14" y="${rowSmallY + sq + 44}" font-size="13" font-weight="700" fill="var(--chalk)">${d.ok ? 'Số lớn = ' + d.a + ' × ' + nf(d.partVal) + ' = ' + nf(d.big) + ' · Số bé = ' + d.b + ' × ' + nf(d.partVal) + ' = ' + nf(d.small) : ''}</text>`;
+      const err = `<text x="14" y="${rowSmallY + sq + 68}" font-size="10.5" fill="var(--warn)">❌ Chia hiệu cho TỔNG số phần (${d.a} + ${d.b})? Sai — phải chia cho HIỆU số phần (${d.a} − ${d.b} = ${d.dp}).</text>`;
+      const title = `<text x="170" y="16" font-size="13" font-weight="700" fill="var(--chalk)">Tìm hai số khi biết HIỆU và TỈ số</text>`;
+      host.innerHTML = `<svg id="diffratio" width="520" height="210" viewBox="0 0 520 210">` + title + eff + rowA + rowB + lblA + lblB + line1 + line2 + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st);
+      const nf = (x) => { const r = Math.round(x * 1000) / 1000; return Number.isInteger(r) ? String(r) : String(r).replace('.', ','); };
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hai đống hơn nhau ${d.D} cái, đúng bằng ${d.dp} phần thừa ra (số lớn ${d.a} phần, số bé ${d.b} phần).`, hint: d.ok ? 'Mỗi phần = hiệu : HIỆU số phần.' : 'Số phần lớn phải lớn hơn số phần bé.' };
+      if (s === 2) return { cap: `Sơ đồ: số lớn ${d.a} phần, số bé ${d.b} phần → lệch ${d.dp} phần = ${d.D}. 1 phần = ${d.D} : ${d.dp} = ${nf(d.partVal)}. Số lớn = ${d.a} × ${nf(d.partVal)} = ${nf(d.big)}, số bé = ${d.b} × ${nf(d.partVal)} = ${nf(d.small)}.`, hint: 'CHIA hiệu cho HIỆU số phần, không phải tổng số phần.' };
+      if (s === 3) return { cap: `Phép tính: ${d.D} : (${d.a} − ${d.b}) = ${nf(d.partVal)} · Số lớn ${nf(d.big)}, số bé ${nf(d.small)} (thử lại ${nf(d.big)} − ${nf(d.small)} = ${d.D}). ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: hiệu ${d.D}, tỉ số ${d.a} : ${d.b}. Lệch ${d.dp} phần = ${d.D} → 1 phần = ${nf(d.partVal)} → số lớn ${nf(d.big)}, số bé ${nf(d.small)}.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); const nf = (x) => { const r = Math.round(x * 1000) / 1000; return Number.isInteger(r) ? String(r) : String(r).replace('.', ','); }; return d.ok ? `Số lớn ${nf(d.big)}, số bé ${nf(d.small)} (hiệu ${d.D}, tỉ ${d.a}:${d.b})` : `cần ${d.a} > ${d.b}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), g = new THREE.Group();
+      const matBig = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const matSmall = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      for (let k = 0; k < d.a; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), k >= d.b ? matBig : matSmall); m.position.set(k * 0.9, 0.9, 0); g.add(m); }
+      for (let k = 0; k < d.b; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), matSmall); m.position.set(k * 0.9, 0, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4588,6 +4645,11 @@ EX['cong-nhom-tron'] = [
   { prompt: 'Tính nhanh: 18 + 25 + 2.', choices: ['45', '40', '65'], answer: '45', explanation: 'Nhóm 18 + 2 = 20 (tròn chục) trước, rồi 20 + 25 = 45. Cộng 18 + 25 trước thì phải nhớ, chậm và dễ sai.', errorTag: 'khong_nhom_tron_chuc' },
   { prompt: 'Tính nhanh: 34 + 19 + 6.', choices: ['59', '58', '69'], answer: '59', explanation: 'Tận cùng 4 và 6 bù nhau về 0: nhóm 34 + 6 = 40, rồi 40 + 19 = 59.', errorTag: 'nham_cap_bu_nhau' },
   { prompt: 'Tổng của 27 + 43 + 15 bằng:', choices: ['85', '75', '95'], answer: '85', explanation: '(27 + 43) + 15 = 70 + 15 = 85. Ghép 27 với 43 (7 và 3 bù thành 10) ra 70 tròn chục rồi mới cộng 15.', errorTag: 'quen_nhom_so_hang' },
+];
+EX['hieu-va-ti'] = [
+  { prompt: 'Hiệu hai số là 12, tỉ số của chúng là 3 : 1. Số lớn là:', choices: ['18', '6', '12'], answer: '18', explanation: 'Lệch 3 − 1 = 2 phần = 12 → 1 phần = 6. Số lớn = 3 × 6 = 18 (số bé = 6). Chia cho TỔNG 4 phần là sai.', errorTag: 'chia_cho_tong_phan' },
+  { prompt: 'Hai số hơn nhau 15, số lớn gấp 4 lần số bé (4 : 1). Số bé là:', choices: ['5', '15', '3'], answer: '5', explanation: 'Lệch 4 − 1 = 3 phần = 15 → 1 phần = 5 chính là số bé; số lớn = 4 × 5 = 20.', errorTag: 'chia_sai_hieu_so_phan' },
+  { prompt: 'Số lớn hơn số bé 30 và có tỉ số 5 : 3. Tổng hai số là:', choices: ['120', '60', '90'], answer: '120', explanation: 'Lệch 5 − 3 = 2 phần = 30 → 1 phần = 15. Số lớn = 75, số bé = 45, tổng = 120.', errorTag: 'tinh_nham_tong_phan' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
