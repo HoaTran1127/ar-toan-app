@@ -258,6 +258,10 @@ const LESSONS = {
     khoi_dong:'Biểu đồ vẽ 3 cái kẹo, nhưng chú giải ghi "1 hình = 5 cái". Vậy thực ra có mấy cái?',
     chot:'Mở khung chú giải ra đọc trước rồi mới đếm hình; số hình nhân với giá trị một hình, còn nửa hình thì tính nửa giá trị.',
     obj:'biểu đồ tranh' },
+  'chuyen-dong': { model:'motion', ten:'Quãng đường, vận tốc, thời gian và hai xe ngược chiều', mtS:120, mtV1:40, mtV2:20, mtT:1,
+    khoi_dong:'Hai xe đi ngược chiều từ hai đầu một con đường. Làm sao biết chúng gặp nhau ở chỗ nào?',
+    chot:'Quãng đường bằng vận tốc nhân thời gian; hai chuyển động ngược chiều thì mỗi đơn vị thời gian khoảng cách ngắn đi đúng bằng tổng hai vận tốc.',
+    obj:'con đường' },
 };
 
 const state = {
@@ -282,6 +286,7 @@ const state = {
   dvSo: 17, dvNhom: 5,
   foD: 4, foN1: 1, foN2: 2, foOp: true,
   piU: 5, piH: false, piSel: 0, pi0: 3, pi1: 5, pi2: 2, pi3: 4,
+  mtS: 120, mtV1: 40, mtV2: 20, mtT: 1,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -1539,6 +1544,76 @@ const MODELS = {
       return g;
     },
     paint3d() {},
+  },
+
+  // ======================= Model: motion (hai xe ngược chiều — S = (v1+v2) × t) =======================
+  // Repo chuyen-dong: "quãng đường = vận tốc × thời gian; hai xe ngược chiều thì mỗi giờ khoảng cách
+  // ngắn đi đúng bằng TỔNG hai vận tốc → gặp nhau sau S : (v1+v2) giờ". Đưa tay ngang cho xe chạy.
+  motion: {
+    usesPalm: true,
+    fmt(n) { return ('' + (Math.round(n * 100) / 100)).replace('.', ','); },
+    mt(st) { const S = Math.max(1, st.mtS), v1 = st.mtV1, v2 = st.mtV2, sum = v1 + v2, tmeet = S / sum;
+      const t = clamp(st.mtT, 0, tmeet); return { S, v1, v2, sum, tmeet, t, d1: v1 * t, d2: v2 * t, gap: S - (v1 + v2) * t }; },
+    defaults(st, L) { st.mtS = L.mtS; st.mtV1 = L.mtV1; st.mtV2 = L.mtV2; st.mtT = L.mtT; },
+    palmToValue(st, x) { const sum = Math.max(1, st.mtV1 + st.mtV2), tmeet = st.mtS / sum; st.mtT = clamp(Math.round((1 - x) * tmeet * 4) / 4, 0, tmeet); },
+    palmLabel(st) { const m = this.mt(st); return `đã đi ${this.fmt(m.t)} giờ · còn ${this.fmt(m.gap)} km`; },
+    geomSig(st) { return 'motion' + st.mtS + ':' + st.mtV1 + ':' + st.mtV2; },
+    params() { return [
+      { key:'mtT', label:'Thời gian đã đi (giờ)', min:0, max:6 },
+      { key:'mtV1', label:'Vận tốc xe A (km/giờ)', min:10, max:80 },
+      { key:'mtV2', label:'Vận tốc xe B (km/giờ)', min:10, max:80 },
+      { key:'mtS', label:'Tổng quãng đường (km)', min:40, max:240 }]; },
+    ctlHint() { return 'Đưa bàn tay ngang cho hai xe chạy tới lúc gặp nhau; đổi quãng đường và hai vận tốc bằng +/−.'; },
+    GEO() { return { W:560, H:250, xA:56, xB:504, y:120 }; },
+    draw2d(host, st) {
+      const g = this.GEO(), m = this.mt(st), f = this.fmt.bind(this);
+      const X = (km) => (g.xA + (km / m.S) * (g.xB - g.xA));
+      const x1 = X(m.d1), x2 = X(m.S - m.d2), met = m.gap < 0.5;
+      let s = `<text x="${g.xA}" y="34" fill="var(--chalk)" font-size="14">A (0 km)</text>`
+        + `<text x="${g.xB}" y="34" fill="var(--chalk)" font-size="14" text-anchor="end">B (${m.S} km)</text>`;
+      // đường + vùng còn cách nhau
+      s += `<line x1="${g.xA}" y1="${g.y}" x2="${g.xB}" y2="${g.y}" stroke="var(--chalk)" stroke-width="3"></line>`;
+      if (!met) s += `<rect x="${x1}" y="${g.y-9}" width="${(x2-x1).toFixed(1)}" height="18" fill="rgba(95,176,165,.22)" stroke="rgba(242,240,230,.25)" stroke-dasharray="4 3"></rect>`
+        + `<text x="${((x1+x2)/2).toFixed(1)}" y="${g.y-16}" fill="rgba(242,240,230,.7)" font-size="12" text-anchor="middle">còn ${f(m.gap)} km</text>`;
+      // vạch quãng đường mỗi xe đi được
+      s += `<line x1="${g.xA}" y1="${g.y+30}" x2="${x1.toFixed(1)}" y2="${g.y+30}" stroke="#5fb0a5" stroke-width="6"></line>`
+        + `<text x="${g.xA}" y="${g.y+48}" fill="#7fc9bf" font-size="12">xe A đi ${f(m.d1)} km</text>`;
+      s += `<line x1="${g.xB}" y1="${g.y+56}" x2="${x2.toFixed(1)}" y2="${g.y+56}" stroke="#ffd166" stroke-width="6"></line>`
+        + `<text x="${g.xB}" y="${g.y+74}" fill="#ffd166" font-size="12" text-anchor="end">xe B đi ${f(m.d2)} km</text>`;
+      // hai xe
+      s += `<path d="M ${(x1-14).toFixed(1)} ${g.y-10} L ${(x1+6).toFixed(1)} ${g.y-10} L ${(x1+14).toFixed(1)} ${g.y} L ${(x1+6).toFixed(1)} ${g.y+10} L ${(x1-14).toFixed(1)} ${g.y+10} Z" fill="#5fb0a5"></path>`;
+      s += `<path d="M ${(x2+14).toFixed(1)} ${g.y-10} L ${(x2-6).toFixed(1)} ${g.y-10} L ${(x2-14).toFixed(1)} ${g.y} L ${(x2-6).toFixed(1)} ${g.y+10} L ${(x2+14).toFixed(1)} ${g.y+10} Z" fill="#ffd166"></path>`;
+      if (met) s += `<line x1="${x1.toFixed(1)}" y1="${g.y-40}" x2="${x1.toFixed(1)}" y2="${g.y}" stroke="var(--warn)" stroke-width="3"></line>`
+        + `<text x="${x1.toFixed(1)}" y="${g.y-46}" fill="var(--warn)" font-size="15" font-weight="700" text-anchor="middle">GẶP NHAU</text>`;
+      s += `<text x="${g.W/2}" y="208" fill="var(--chalk)" font-size="15" text-anchor="middle">Mỗi giờ hai xe gần nhau thêm ${m.v1} + ${m.v2} = ${m.sum} km (tổng hai vận tốc)</text>`;
+      s += `<text x="${g.W/2}" y="234" fill="var(--accent)" font-size="17" font-weight="700" text-anchor="middle">Gặp nhau sau ${m.S} : ${m.sum} = ${f(m.tmeet)} giờ · cách A ${f(m.v1 * m.tmeet)} km</text>`;
+      host.innerHTML = `<svg id="motion" width="${g.W}" height="${g.H}" viewBox="0 0 ${g.W} ${g.H}" style="cursor:pointer">` + s + `</svg>`;
+      const svg = host.querySelector('#motion');
+      svg.addEventListener('pointerdown', (e) => { const r = svg.getBoundingClientRect();
+        const vbX = (e.clientX - r.left) / r.width * g.W; const km = (vbX - g.xA) / (g.xB - g.xA) * m.S;
+        state.mtT = clamp(km / m.sum, 0, m.tmeet); drawVisual(); render(); });
+    },
+    caption(st) {
+      const L = cur(), s = st.step, m = this.mt(st), f = this.fmt.bind(this);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hai xe xuất phát từ hai đầu con đường dài ${m.S} km, đi NGƯỢC chiều — xe A ${m.v1} km/giờ, xe B ${m.v2} km/giờ.`, hint: 'Đưa tay ngang để cho hai xe chạy.' };
+      if (s === 2) return { cap: `Sơ đồ: mỗi giờ cả hai lại gần nhau thêm ${m.v1} + ${m.v2} = ${m.sum} km. Đấy là TỔNG hai vận tốc, không phải một vận tốc.`, hint: 'Khoảng cách ngắn đi bằng tổng, vì hai xe đi ngược chiều.' };
+      if (s === 3) return { cap: `Phép tính: thời gian gặp = ${m.S} : ${m.sum} = ${f(m.tmeet)} giờ. Gặp nhau cách A ${m.v1} × ${f(m.tmeet)} = ${f(m.v1 * m.tmeet)} km. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: sau mấy giờ thì hai xe gặp nhau? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const m = this.mt(st), f = this.fmt.bind(this); return `gặp sau ${f(m.tmeet)} giờ · cách A ${f(m.v1 * m.tmeet)} km`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const g = new THREE.Group(), len = 6, m = this.mt(st);
+      const road = new THREE.Mesh(new THREE.BoxGeometry(len, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: 0x9fb0bd, roughness: .7 })); road.position.y = 0; g.add(road);
+      const mk = (col) => { const c = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.34, 0.44), new THREE.MeshStandardMaterial({ color: col, roughness: .45 })); c.position.y = 0.25; g.add(c); return c; };
+      const c1 = mk(0x5fb0a5), c2 = mk(0xffd166);
+      const px = (km) => -len / 2 + (km / m.S) * len;
+      c1.position.x = px(m.d1); c2.position.x = px(m.S - m.d2);
+      g.userData = { c1, c2, px };
+      return g;
+    },
+    paint3d(g, st) { if (!g.userData || !g.userData.c1) return; const m = this.mt(st); g.userData.c1.position.x = g.userData.px(m.d1); g.userData.c2.position.x = g.userData.px(m.S - m.d2); },
   },
 };
 
