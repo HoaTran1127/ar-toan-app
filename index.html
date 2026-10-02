@@ -375,6 +375,10 @@ const LESSONS = {
     khoi_dong:'Cô chiếu một vòng tròn chia thành các quạt về môn thể thao cả lớp thích. Không cần đếm từng em — nhìn quạt, em nói ngay môn nào chiếm nhiều phần trăm nhất không?',
     chot:'Cả hình tròn là 100% của TỔNG số em; mỗi quạt bằng số em của nhóm CHIA cho tổng rồi nhân 100. Quạt càng to thì càng nhiều phần trăm — đừng nhìn quạt mà đoán số tuyệt đối khi chưa biết tổng.',
     obj:'biểu đồ sở thích của 20 em', pc0:10, pc1:5, pc2:3, pc3:2, pcSel:0 },
+  'bieu-do-doan-thang': { model:'line', ten:'Biểu đồ đoạn thẳng: nhiệt độ trong một ngày',
+    khoi_dong:'Cô đo nhiệt độ lớp mình lúc 6 giờ, 9 giờ, 12 giờ, 15 giờ, 18 giờ rồi nối năm điểm thành một đường. Nhìn đường đi LÊN hay XUỐNG, em biết lúc nào nóng nhất không?',
+    chot:'Trục NGANG là thời gian, trục DỌC là nhiệt độ; đọc giá trị bằng cách dóng từ điểm ra trục, đừng nhầm hai trục. Đoạn đi lên = nhiệt độ tăng, đi xuống = giảm; điểm CAO NHẤT = nóng nhất.',
+    obj:'biểu đồ nhiệt độ một ngày', lg0:20, lg1:24, lg2:31, lg3:29, lg4:22, lgR:2 },
 };
 
 const state = {
@@ -414,6 +418,7 @@ const state = {
   mnC0: 3, mnC1: 2, mnC2: 1, mnC3: 1, mnSel: 0, mnPrice: 38000,
   dvT: 8, dvU: 4,
   pc0: 10, pc1: 5, pc2: 3, pc3: 2, pcSel: 0,
+  lg0: 20, lg1: 24, lg2: 31, lg3: 29, lg4: 22, lgR: 2,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -2689,6 +2694,84 @@ const MODELS = {
     },
     paint3d() {},
   },
+
+  // ======================= Model: line (biểu đồ đoạn thẳng) =======================
+  // beyond-bank THỨ 4: SGK lớp 5 có "Biểu đồ đoạn thẳng" (nhiệt độ trong ngày, số liệu theo thời gian) —
+  // họ biểu đồ lớp 4-5 giờ đủ cả BA kiểu: cột (so sánh), quạt (% của tổng), đoạn thẳng (XU THẾ theo thời gian).
+  // bank 39 cụm chưa có. Ý cốt + lỗi kinh điển: trục NGANG = thời gian, trục DỌC = đại lượng; đọc giá trị
+  // bằng cách DÓNG từ điểm ra trục, KHÔNG nhầm hai trục. Đoạn đi lên = tăng, đi xuống = giảm; điểm cao nhất = lớn nhất.
+  line: {
+    usesPalm: true,
+    times() { return ['6h', '9h', '12h', '15h', '18h']; },
+    tn() { return ['6 giờ', '9 giờ', '12 giờ', '15 giờ', '18 giờ']; },
+    keys() { return ['lg0', 'lg1', 'lg2', 'lg3', 'lg4']; },
+    vals(st) { return [st.lg0, st.lg1, st.lg2, st.lg3, st.lg4]; },
+    defaults(st, L) { st.lg0 = L.lg0; st.lg1 = L.lg1; st.lg2 = L.lg2; st.lg3 = L.lg3; st.lg4 = L.lg4; st.lgR = (L.lgR != null ? L.lgR : 2); },
+    geomSig(st) { return 'lg' + this.vals(st).join(':') + ':' + clamp(st.lgR, 0, 4); },
+    palmToValue(st, x) { st.lgR = clamp(Math.round((1 - x) * 4), 0, 4); },
+    palmLabel(st) { const v = this.vals(st), r = clamp(st.lgR, 0, 4); return `đọc ${this.tn()[r]}: ${v[r]}°C`; },
+    params() { const t = this.times(); const ps = t.map((x, i) => ({ key: this.keys()[i], label: x + ' (°C)', min: 0, max: 40 }));
+      ps.push({ key: 'lgR', label: 'Con đọc (mốc 0–4)', min: 0, max: 4 }); return ps; },
+    ctlHint() { return 'Bật camera rồi đưa bàn tay NGANG để dời con đọc dọc biểu đồ (quét trái ↔ phải); hoặc bấm vào điểm, hay +/− từng mốc giờ.'; },
+    draw2d(host, st) {
+      const v = this.vals(st), ts = this.times(), N = 5, ymax = 40,
+        X0 = 52, X1 = 512, YT = 26, YB = 208, r = clamp(st.lgR, 0, 4);
+      const px = (i) => X0 + (i / (N - 1)) * (X1 - X0), py = (val) => YB - (clamp(val, 0, ymax) / ymax) * (YB - YT);
+      let grid = '';
+      for (let gv = 0; gv <= ymax; gv += 10) { const y = py(gv).toFixed(1);
+        grid += `<line x1="${X0}" y1="${y}" x2="${X1}" y2="${y}" stroke="rgba(242,240,230,.13)" stroke-width="1"></line>`
+          + `<text x="${X0 - 8}" y="${(+y + 4).toFixed(1)}" fill="rgba(242,240,230,.6)" font-size="11" text-anchor="end">${gv}°</text>`; }
+      let xl = '';
+      for (let i = 0; i < N; i++) xl += `<text x="${px(i).toFixed(1)}" y="${YB + 20}" fill="${i === r ? 'var(--accent)' : 'rgba(242,240,230,.6)'}" font-size="12" font-weight="${i === r ? 700 : 400}" text-anchor="middle">${ts[i]}</text>`;
+      let poly = ''; for (let i = 0; i < N; i++) poly += `${px(i).toFixed(1)},${py(v[i]).toFixed(1)} `;
+      let dots = '';
+      for (let i = 0; i < N; i++) { const cx = px(i).toFixed(1), cy = py(v[i]).toFixed(1), hi = i === r;
+        dots += `<circle cx="${cx}" cy="${cy}" r="${hi ? 7 : 4.5}" fill="${hi ? 'var(--accent)' : 'rgba(242,240,230,.85)'}" stroke="${hi ? '#0e1b22' : 'none'}" stroke-width="${hi ? 2 : 0}"></circle>`; }
+      const rx = px(r).toFixed(1), ry = py(v[r]);
+      const reader = `<line x1="${rx}" y1="${ry.toFixed(1)}" x2="${rx}" y2="${YB}" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="4 3"></line>`
+        + `<text x="${rx}" y="${(ry - 12).toFixed(1)}" fill="var(--warn)" font-size="14" font-weight="700" text-anchor="middle">${v[r]}°C</text>`;
+      host.innerHTML = `<svg id="line" width="548" height="258" viewBox="0 0 548 258" style="cursor:pointer">`
+        + `<text x="16" y="20" fill="rgba(242,240,230,.72)" font-size="13">Nhiệt độ trong một ngày (°C) — trục ngang là GIỜ</text>`
+        + `<line x1="${X0}" y1="${YT}" x2="${X0}" y2="${YB}" stroke="var(--chalk)" stroke-width="2"></line>`
+        + `<line x1="${X0}" y1="${YB}" x2="${X1}" y2="${YB}" stroke="var(--chalk)" stroke-width="2"></line>`
+        + grid + xl
+        + `<polyline points="${poly.trim()}" fill="none" stroke="var(--accent)" stroke-width="2.5"></polyline>`
+        + reader + dots + `</svg>`;
+      const svg = host.querySelector('#line');
+      svg.addEventListener('pointerdown', (e) => {
+        const rc = svg.getBoundingClientRect();
+        const vbX = (e.clientX - rc.left) / rc.width * 548;
+        state.lgR = clamp(Math.round((vbX - X0) / (X1 - X0) * (N - 1)), 0, N - 1);
+        drawVisual(); render();
+      });
+    },
+    caption(st) {
+      const L = cur(), s = st.step, v = this.vals(st), tn = this.tn(), r = clamp(st.lgR, 0, 4);
+      let hi = 0, lo = 0; for (let i = 1; i < 5; i++) { if (v[i] > v[hi]) hi = i; if (v[i] < v[lo]) lo = i; }
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: đo nhiệt độ lúc ${tn.join(', ')} → ${v.map((x) => x + '°C').join(', ')}.`, hint: 'Đưa tay ngang dời con đọc, hoặc bấm vào điểm.' };
+      if (s === 2) return { cap: `Sơ đồ: nối 5 điểm theo giờ thành một đường gấp khúc. Con đọc đang ở ${tn[r]} — dóng ra trục dọc ta có ${v[r]}°C.`, hint: 'Trục ngang = THỜI GIAN, trục dọc = NHIỆT ĐỘ; dóng đúng trục rồi mới đọc.' };
+      if (s === 3) return { cap: `Đường đi LÊN rồi XUỐNG: nóng nhất ${v[hi]}°C lúc ${tn[hi]}, thấp nhất ${v[lo]}°C lúc ${tn[lo]}; ${tn[0]}→${tn[hi]} tăng ${v[hi] - v[0]}°C, ${tn[hi]}→${tn[4]} giảm ${v[hi] - v[4]}°C. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: nhiệt độ CAO NHẤT trong ngày vào lúc mấy giờ? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const v = this.vals(st), r = clamp(st.lgR, 0, 4); return `${this.tn()[r]}: ${v[r]}°C`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const g = new THREE.Group(), v = this.vals(st), n = 5, W = 6.4, sc = 0.05, step = W / (n - 1);
+      for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) * step, h = clamp(v[i], 0, 40) * sc;
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, Math.max(h, 0.02), 0.08), new THREE.MeshStandardMaterial({ color: 0x6f7f8c, roughness: .6 }));
+        post.position.set(x, h / 2, 0); g.add(post);
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: .45 }));
+        dot.position.set(x, h, 0); g.add(dot); }
+      const rd = new THREE.Mesh(new THREE.SphereGeometry(0.24, 18, 14), new THREE.MeshStandardMaterial({ color: 0xe0483d, roughness: .4 }));
+      const r0 = clamp(st.lgR, 0, 4); rd.position.set((r0 - (n - 1) / 2) * step, clamp(v[r0], 0, 40) * sc + 0.2, 0.2);
+      g.add(rd); g.userData.rd = rd; g.userData.meta = { W, sc, n, step }; return g;
+    },
+    paint3d(g, st) { if (!g.userData.rd || !g.userData.meta) return; const { sc, n, step } = g.userData.meta, v = [st.lg0, st.lg1, st.lg2, st.lg3, st.lg4], r = clamp(st.lgR, 0, 4);
+      g.userData.rd.position.set((r - (n - 1) / 2) * step, clamp(v[r], 0, 40) * sc + 0.2, 0.2); },
+    hand() {},
+    handLabel() { return ''; },
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -2760,6 +2843,11 @@ EX['dau-hieu-chia-het'] = [
 EX['bieu-do-hinh-quat'] = [
   { prompt: 'Một biểu đồ hình quạt cho biết 25% số em lớp 5 thích bơi lội. Lớp có 20 em. Hỏi có bao nhiêu em thích bơi lội?', choices: ['5 em', '10 em', '4 em'], answer: '5 em', explanation: '25% của 20 = 20 × 25 / 100 = 5 em.', errorTag: 'tinh-sai-phan-tram-cua-mot-so' },
   { prompt: 'Trong biểu đồ hình quạt, cả hình tròn đại diện cho bao nhiêu phần trăm?', choices: ['100%', '50%', 'Bằng số nhóm'], answer: '100%', explanation: 'Cả hình tròn là toàn bộ = 100%; các quạt cộng lại đúng 100%, không phụ thuộc số nhóm.', errorTag: 'khong-biet-ca-hinh-tron-bang-100-phan-tram' },
+];
+// Biểu đồ đoạn thẳng không có trong examples.mjs của bank → 2 câu SGK-style tự tác.
+EX['bieu-do-doan-thang'] = [
+  { prompt: 'Nhiệt độ lúc 6 giờ là 20°C, lúc 12 giờ là 31°C. Từ 6 giờ đến 12 giờ nhiệt độ TĂNG bao nhiêu độ?', choices: ['11°C', '9°C', '51°C'], answer: '11°C', explanation: 'Đoạn đi lên, độ tăng = hiệu hai giá trị: 31 − 20 = 11°C (lấy hiệu, không cộng hai số).', errorTag: 'cong-thay-vi-tru-khoang-tang' },
+  { prompt: 'Muốn biết lúc nào nhiệt độ CAO NHẤT trên biểu đồ đoạn thẳng, em nhìn vào đâu?', choices: ['Điểm cao nhất của đường', 'Điểm ngoài cùng bên phải', 'Đoạn nằm ngang dài nhất'], answer: 'Điểm cao nhất của đường', explanation: 'Trục DỌC là nhiệt độ, nên điểm cao nhất = nhiệt độ lớn nhất; trục ngang chỉ là giờ.', errorTag: 'nham-truc-doc-voi-truc-ngang' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
