@@ -495,6 +495,10 @@ const LESSONS = {
     khoi_dong:'Cô viết "a + 5". Khi a = 8 thì kết quả là bao nhiêu? Vì sao "a + 5" chưa tính được ngay mà phải đợi người ta nói a bằng mấy?',
     chot:'BIỂU THỨC CHỨA CHỮ (a, b, …) là một cách viết GỌI TÊN cho số chưa biết; nó chỉ có GIÁ TRỊ khi ta THAY chữ bằng một số cụ thể. Cùng một chữ xuất hiện nhiều lần phải lấy CÙNG một giá trị. Muốn tính giá trị biểu thức: thay số vào chỗ chữ, rồi làm theo thứ tự phép tính (× ÷ trước, + − sau, có ngoặc thì ngoặc trước).',
     obj:'tính a + b, a × b với a = 7, b = 5', exA: 7, exB: 5 },
+  'nhan-nham-11-25-99': { model:'nhamsam', ten:'Nhân nhẩm với 11, 25, 99 — biến về ×10 · ×100 rồi cộng/trừ',
+    khoi_dong:'Tính 24 × 11 mà không đặt tính. Vì sao 24 × 11 = 240 + 24 = 264 — chỉ cần "thêm một cái 24 nữa" vào số tròn chục?',
+    chot:'NHÂN NHẨM mẹo: ×11 = ×10 rồi CỘNG chính nó (a×11 = a0 + a). ×25 = ×100 rồi CHIA 4 (a×25 = a00 : 4). ×99 = ×100 rồi TRỪ chính nó (a×99 = a00 − a). Gốc của mẹo là đổi số khó nhân (11, 25, 99) về số tròn (10, 100) mà em đã biết, rồi hiệu chỉnh bằng đúng phần thừa/thiếu. CHÚ Ý: ×11 KHÔNG phải "viết a rồi thêm 0" — phải cộng thêm chính a.',
+    obj:'nhẩm 24 × 11', nhA: 24, nhM: 0 },
 };
 
 const state = {
@@ -564,6 +568,7 @@ const state = {
   psN: 12, psD: 18,
   fcA: 3, fcB: 4, fcC: 5, fcD: 6,
   exA: 7, exB: 5,
+  nhA: 24, nhM: 0,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4767,6 +4772,60 @@ const MODELS = {
     },
     paint3d() {},
   },
+  nhamsam: {
+    res(st) {
+      const a = clamp(Math.round(st.nhA), 1, 99), mi = clamp(Math.round(st.nhM), 0, 2);
+      const M = [11, 25, 99][mi], res = a * M;
+      return { a, mi, M, res, round: mi === 0 ? a * 10 : a * 100, adj: mi === 1 ? a * 100 / 4 : a };
+    },
+    defaults(st, L) { st.nhA = (L.nhA != null ? L.nhA : 24); st.nhM = (L.nhM != null ? L.nhM : 0); },
+    geomSig(st) { const r = this.res(st); return 'nm' + r.a + 'x' + r.M; },
+    params() { return [{ key: 'nhA', label: 'Số a', min: 1, max: 99 }, { key: 'nhM', label: 'Nhân với (0:11 · 1:25 · 2:99)', min: 0, max: 2 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Hai thanh trượt: SỐ a (1–99) và DẠNG (0 = ×11, 1 = ×25, 2 = ×99). Giơ 1–9 ngón đặt a. Đổi về ×10 hoặc ×100 rồi cộng/trừ/chia theo mẹo.'; },
+    hand(st, f) { st.nhA = clamp(Math.round(f), 1, 99); },
+    handLabel(f) { return '→ a = ' + clamp(Math.round(f), 1, 99); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const teal = 'rgba(127,201,191,.6)', gold = 'rgba(240,196,92,.65)';
+      const exp = r.mi === 0
+        ? { l1: `${r.a} × 11  =  ${r.a} × 10 + ${r.a}`, l2: `= ${r.a * 10} + ${r.a}`, err: '❌ ×11 KHÔNG phải "viết a rồi thêm 0"! Phải CỘNG thêm chính a (thiếu 1 nhóm a).' }
+        : r.mi === 1
+          ? { l1: `${r.a} × 25  =  ${r.a} × 100 : 4`, l2: `= ${r.a * 100} : 4`, err: '❌ ×25 là ¼ của ×100. Lấy a × 100 rồi CHIA 4, đừng nhân 25 bừa.' }
+          : { l1: `${r.a} × 99  =  ${r.a} × 100 − ${r.a}`, l2: `= ${r.a * 100} − ${r.a}`, err: '❌ 99 = 100 − 1. Phải TRỪ chính a, không phải chỉ viết a00 (thừa đúng 1 nhóm a).' };
+      let g = `<text x="14" y="20" font-size="14" font-weight="700" fill="var(--chalk)">Nhân nhẩm ${r.a} × ${r.M}</text>`;
+      g += `<rect x="14" y="28" width="470" height="26" rx="4" fill="rgba(242,240,230,.08)"></rect>`;
+      g += `<text x="24" y="46" font-size="13" fill="rgba(242,240,230,.85)">Đổi ${r.M} → số tròn ${r.mi === 0 ? '10' : '100'}, rồi hiệu chỉnh</text>`;
+      g += `<text x="14" y="78" font-size="14" fill="var(--chalk)" font-weight="700">${exp.l1}</text>`;
+      g += `<text x="14" y="102" font-size="15" fill="var(--accent)" font-weight="700">${exp.l2} = ${r.res}</text>`;
+      g += `<rect x="14" y="112" width="${(r.a * 4.5).toFixed(1)}" height="16" rx="3" fill="${teal}"></rect>`;
+      g += `<text x="${(20 + r.a * 4.5).toFixed(1)}" y="125" font-size="11.5" fill="rgba(242,240,230,.8)">a = ${r.a}</text>`;
+      g += `<rect x="14" y="134" width="${(Math.min(470, r.round * 0.5)).toFixed(1)}" height="16" rx="3" fill="${gold}"></rect>`;
+      g += `<text x="${(20 + Math.min(470, r.round * 0.5)).toFixed(1)}" y="147" font-size="11.5" fill="rgba(242,240,230,.8)">${r.mi === 0 ? 'a × 10' : 'a × 100'} = ${r.round}</text>`;
+      const err = `<text x="14" y="170" font-size="10.5" fill="var(--warn)">${exp.err}</text>`;
+      host.innerHTML = `<svg id="nhamsam" width="520" height="178" viewBox="0 0 520 178">` + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      const trick = r.mi === 0 ? '×11 = ×10 rồi cộng chính nó' : r.mi === 1 ? '×25 = ×100 rồi chia 4' : '×99 = ×100 rồi trừ chính nó';
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${r.a} nhóm, mỗi nhóm ${r.M} cái. Đổi ${r.M} thành số tròn dễ tính (${r.mi === 0 ? '10 + 1' : r.mi === 1 ? '100 : 4' : '100 − 1'}) rồi đếm.`, hint: trick };
+      if (s === 2) return { cap: `Sơ đồ: ${trick}. Bars: đoạn "a × ${r.mi === 0 ? '10' : '100'}" = ${r.round}${r.mi === 1 ? ', rồi chia 4' : r.mi === 2 ? ', rồi bớt đi 1 nhóm a' : ', rồi thêm 1 nhóm a'}.`, hint: '' };
+      if (s === 3) { const calc = r.mi === 0 ? `${r.a} × 10 + ${r.a} = ${r.a * 10} + ${r.a} = ${r.res}` : r.mi === 1 ? `${r.a} × 100 : 4 = ${r.a * 100} : 4 = ${r.res}` : `${r.a} × 100 − ${r.a} = ${r.a * 100} − ${r.a} = ${r.res}`; return { cap: `Phép tính: ${calc}.`, hint: '' }; }
+      return { cap: `Cả lớp: ${r.a} × ${r.M} = ${r.res} theo mẹo "${trick}". Kiểm tra lại bằng tính nhẩm thông thường.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.a} × ${r.M} = ${r.res}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mA = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mM = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.5 });
+      const barA = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mA); barA.scale.set(r.a, 0.6, 0.6); barA.position.set(r.a / 2, 1, 0); g.add(barA);
+      const barM = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mM); barM.scale.set(r.M, 0.6, 0.6); barM.position.set(r.M / 2, 0, 0); g.add(barM);
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4985,6 +5044,11 @@ EX['bieu-thuc-chua-chu'] = [
   { prompt: 'Với a = 8, giá trị của biểu thức a + 5 là:', choices: ['13', '12', '53'], answer: '13', explanation: 'Thay a = 8 → 8 + 5 = 13. 53 là lỗi ghép chữ số (8 và 5 viết cạnh) thay vì cộng.', errorTag: 'ghep_chu_so_thay_vi_tinh' },
   { prompt: 'Với a = 6, b = 4, giá trị của a × b là:', choices: ['24', '10', '64'], answer: '24', explanation: 'Thay a = 6, b = 4 → 6 × 4 = 24. 10 là a + b (nhầm phép).', errorTag: 'nham_phep_trong_bieu_thuc' },
   { prompt: 'Với a = 5, giá trị của biểu thức 3 × a + 2 là:', choices: ['17', '7', '15'], answer: '17', explanation: 'Thay a = 5: 3 × 5 + 2. Nhân trước: 3 × 5 = 15, rồi 15 + 2 = 17. Tính 3 + 2 = 5 rồi × 5 = 25 hoặc 5 + 2 = 7 đều sai thứ tự.', errorTag: 'nham_phep_trong_bieu_thuc' },
+];
+EX['nhan-nham-11-25-99'] = [
+  { prompt: 'Nhẩm nhanh: 24 × 11 = ?', choices: ['264', '242', '240'], answer: '264', explanation: '24 × 11 = 24 × 10 + 24 = 240 + 24 = 264. Nhầm "thêm 0" chỉ cho 240 (thiếu 1 nhóm 24); 242 là ghép chữ số sai.', errorTag: 'nham_11_sai_quy_tac' },
+  { prompt: 'Nhẩm nhanh: 16 × 25 = ?', choices: ['400', '40', '160'], answer: '400', explanation: '16 × 25 = 16 × 100 : 4 = 1600 : 4 = 400. Quên chia 4 (để 1600) hoặc chia sai hàng (40) là lỗi phổ biến.', errorTag: 'nham_25_quen_chia_4' },
+  { prompt: 'Nhẩm nhanh: 45 × 99 = ?', choices: ['4455', '4500', '495'], answer: '4455', explanation: '45 × 99 = 45 × 100 − 45 = 4500 − 45 = 4455. 4500 là quên trừ 45 (99 ≠ 100).', errorTag: 'nham_99_quen_tru_a' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
