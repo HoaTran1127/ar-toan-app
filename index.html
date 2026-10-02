@@ -503,6 +503,10 @@ const LESSONS = {
     khoi_dong:'Tính 25 × 7 × 4 mà không đặt tính. Vì sao ta ĐẢO chỗ 4 lên cạnh 25 rồi tính (25 × 4) × 7 = 100 × 7 = 700, nhanh hơn nhiều so với 25 × 7 = 175 rồi × 4?',
     chot:'GIAO HOÁN: đổi chỗ các thừa số thì tích KHÔNG đổi (a × b = b × a). KẾT HỢP: được nhóm hai thừa số lại trước (a × b) × c = a × (b × c). Mẹo tính nhanh: DÙNG giao hoán để KÉO hai thừa số nhân ra tròn chục/round trăm (25 với 4 → 100; 125 với 8 → 1000; 5 với số chẵn → tròn 10) đứng cạnh nhau, rồi KẾT HỢP nhóm chúng tính trước. Đáp số CUỐI luôn bằng nhau dù nhóm cách nào — chính hai tính chất này cho phép làm thế.',
     obj:'tính nhanh 25 × 7 × 4', mA: 25, mB: 7, mC: 4 },
+  'lam-tron-so-thap-phan': { model:'decrond', ten:'Làm tròn số thập phân đến hàng đơn vị / phần mười',
+    khoi_dong:'Làm tròn 3,47 đến hàng phần mười được số nào? Vì sao chỉ cần nhìn chữ số 7 (hàng phần trăm) mà KHÔNG cần để ý các chữ số còn lại?',
+    chot:'LÀM TRÒN SỐ THẬP PHÂN làm giống số tự nhiên: chọn HÀNG cần làm tròn, rồi chỉ nhìn CHỮ SỐ NGAY BÊN PHẢI nó. Chữ số đó từ 5 trở lên thì CỘNG 1 vào hàng đang làm tròn, nhỏ hơn 5 thì GIỮ; sau đó BỎ hết các chữ số bên phải. Làm tròn đến phần mười thì còn 1 chữ số sau dấu phẩy, đến đơn vị thì mất hết phần thập phân. KHÔNG làm tròn dây chuyền nhiều bước.',
+    obj:'làm tròn 3,47 đến hàng phần mười', rU: 3, rT: 4, rH: 7, rTar: 1 },
 };
 
 const state = {
@@ -4885,6 +4889,72 @@ const MODELS = {
     },
     paint3d() {},
   },
+  decrond: {
+    res(st) {
+      const U = clamp(Math.round(st.rU), 0, 12), T = clamp(Math.round(st.rT), 0, 9), H = clamp(Math.round(st.rH), 0, 9);
+      const t = clamp(Math.round(st.rTar), 0, 2);
+      const n = U * 100 + T * 10 + H;
+      const rn = t === 0 ? Math.floor((n + 50) / 100) * 100 : t === 1 ? Math.floor((n + 5) / 10) * 10 : n;
+      const decide = t === 0 ? T : t === 1 ? H : null;
+      const up = decide != null && decide >= 5;
+      const origStr = `${U},${T}${H}`;
+      const ip = Math.floor(rn / 100), rem = rn % 100;
+      const roundStr = t === 0 ? `${ip}` : t === 1 ? `${ip},${Math.floor(rem / 10)}` : `${ip},${Math.floor(rem / 10)}${rem % 10}`;
+      const placeLabel = t === 0 ? 'hàng ĐƠN VỊ' : t === 1 ? 'hàng PHẦN MƯỜI' : 'hàng PHẦN TRĂM';
+      return { U, T, H, t, n, rn, decide, up, origStr, roundStr, placeLabel };
+    },
+    defaults(st, L) { st.rU = (L.rU != null ? L.rU : 3); st.rT = (L.rT != null ? L.rT : 4); st.rH = (L.rH != null ? L.rH : 7); st.rTar = (L.rTar != null ? L.rTar : 1); },
+    geomSig(st) { const r = this.res(st); return 'dr' + r.U + r.T + r.H + 't' + r.t; },
+    params() { return [{ key: 'rU', label: 'Phần nguyên', min: 0, max: 12 }, { key: 'rT', label: 'Chữ số phần mười', min: 0, max: 9 }, { key: 'rH', label: 'Chữ số phần trăm', min: 0, max: 9 }, { key: 'rTar', label: 'Làm tròn đến (0:đơn vị · 1:phần mười · 2:phần trăm)', min: 0, max: 2 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bốn thanh trượt: PHẦN NGUYÊN (0–12), chữ số PHẦN MƯỜI (0–9), chữ số PHẦN TRĂM (0–9), và HÀNG làm tròn (0 = đơn vị, 1 = phần mười, 2 = phần trăm). Giơ 1–9 ngón đặt phần nguyên. App chỉ nhìn đúng MỘT chữ số ngay sau hàng làm tròn.'; },
+    hand(st, f) { st.rU = clamp(Math.round(f), 0, 9); },
+    handLabel(f) { return '→ phần nguyên = ' + clamp(Math.round(f), 0, 9); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const teal = 'rgba(127,201,191,.6)', gold = 'rgba(240,196,92,.65)';
+      const rule = r.t === 2
+        ? `Đã đến ${r.placeLabel} nên GIỮ nguyên = ${r.roundStr}.`
+        : `Chữ số quyết định (ngay sau ${r.placeLabel}) = ${r.decide} → ${r.up ? 'từ 5 trở lên, CỘNG 1 vào hàng làm tròn' : 'dưới 5, GIỮ hàng làm tròn'} rồi bỏ chữ số bên phải.`;
+      let g = `<text x="14" y="20" font-size="14" font-weight="700" fill="var(--chalk)">Làm tròn ${r.origStr} → ${r.placeLabel}</text>`;
+      g += `<rect x="14" y="28" width="470" height="26" rx="4" fill="rgba(242,240,230,.08)"></rect>`;
+      g += `<text x="24" y="46" font-size="13" fill="rgba(242,240,230,.85)">Chỉ nhìn ĐÚNG MỘT chữ số ngay bên phải hàng cần làm tròn</text>`;
+      const cells = [{ v: r.U, lab: 'ĐV', hl: r.t === 0 }, { v: r.T, lab: '1/10', hl: r.t === 1 }, { v: r.H, lab: '1/100', hl: false }];
+      cells.forEach((c, i) => {
+        const x = 14 + i * 66;
+        const isDecide = (r.t === 0 && i === 1) || (r.t === 1 && i === 2);
+        g += `<rect x="${x}" y="62" width="58" height="46" rx="4" fill="${isDecide ? gold : 'rgba(127,201,191,.18)'}" stroke="${c.hl ? 'var(--warn)' : 'transparent'}" stroke-width="2"></rect>`;
+        g += `<text x="${x + 29}" y="94" font-size="26" font-weight="700" text-anchor="middle" fill="var(--chalk)">${c.v}</text>`;
+        g += `<text x="${x + 29}" y="122" font-size="10" text-anchor="middle" fill="rgba(242,240,230,.7)">${c.lab}</text>`;
+        if (i === 0) g += `<text x="${x + 60}" y="94" font-size="24" font-weight="700" fill="var(--chalk)">,</text>`;
+      });
+      g += `<text x="230" y="82" font-size="13" fill="rgba(242,240,230,.85)">hàng làm tròn</text>`;
+      g += `<text x="230" y="102" font-size="15" font-weight="700" fill="var(--accent)">${r.origStr} ≈ ${r.roundStr}</text>`;
+      g += `<text x="14" y="146" font-size="12" fill="var(--chalk)">${rule}</text>`;
+      const err = `<text x="14" y="168" font-size="10.5" fill="var(--warn)">❌ Đừng làm tròn dây chuyền (làm tròn tiếp từ số vừa làm tròn) — chỉ nhìn MỘT chữ số sau hàng cần làm tròn rồi dừng.</text>`;
+      host.innerHTML = `<svg id="decrond" width="520" height="176" viewBox="0 0 520 176">` + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${r.origStr} nằm giữa hai vạch trên tia số; vạch nào GẦN nó hơn chính là kết quả làm tròn đến ${r.placeLabel}.`, hint: 'Chỉ chữ số ngay sau hàng làm tròn mới quyết định.' };
+      if (s === 2) return { cap: `Sơ đồ: hàng làm tròn = ${r.placeLabel}; chữ số quyết định = ${r.decide == null ? '(không có)' : r.decide} → ${r.up ? 'CỘNG 1' : r.t === 2 ? 'giữ (đã tới hàng)' : 'GIỮ'} rồi bỏ bên phải.`, hint: '' };
+      if (s === 3) return { cap: `Phép tính: ${r.origStr} ≈ ${r.roundStr}.`, hint: '' };
+      return { cap: `Cả lớp: làm tròn ${r.origStr} đến ${r.placeLabel} được ${r.roundStr}. Làm tròn số thập phân cũng chỉ nhìn MỘT chữ số sau hàng cần làm tròn.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.origStr} ≈ ${r.roundStr}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mT = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mG = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.5 });
+      const w = (x) => Math.max(0.4, (x / 100) * 6);
+      const bO = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mT); bO.scale.set(w(r.n), 0.6, 0.6); bO.position.set(w(r.n) / 2, 1, 0); g.add(bO);
+      const bR = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mG); bR.scale.set(w(r.rn), 0.6, 0.6); bR.position.set(w(r.rn) / 2, 0, 0); g.add(bR);
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5113,6 +5183,11 @@ EX['tinh-chat-nhan'] = [
   { prompt: 'Tính nhanh 25 × 9 × 4 bằng cách nhóm lại:', choices: ['900', '90', '9000'], answer: '900', explanation: '(25 × 4) × 9 = 100 × 9 = 900. Nhóm 25 với 4 ra tròn trăm rồi nhân 9. 90 là thiếu một chữ số 0 (nhầm 100 thành 10); 9000 là thừa 0.', errorTag: 'nhom_sai_cap_thua_so' },
   { prompt: 'Tính nhanh 125 × 7 × 8:', choices: ['7000', '700', '175'], answer: '7000', explanation: '125 × 8 = 1000 (giao hoán để 125 cạnh 8), rồi 1000 × 7 = 7000. 700 là quên một chữ số 0; 175 là mới tính 25 × 7 mà quên nhóm 125 × 8.', errorTag: 'nhom_sai_cap_thua_so' },
   { prompt: 'Tính nhanh 5 × 32 × 2:', choices: ['320', '160', '3200'], answer: '320', explanation: '(5 × 2) × 32 = 10 × 32 = 320. Nhóm 5 với 2 (số chẵn) ra tròn chục. 160 là 5 × 32 rồi quên × 2; 3200 là thừa 0.', errorTag: 'nhom_sai_cap_thua_so' },
+];
+EX['lam-tron-so-thap-phan'] = [
+  { prompt: 'Làm tròn 4,7 đến hàng đơn vị được:', choices: ['5', '4', '4,7'], answer: '5', explanation: 'Chữ số ngay sau hàng đơn vị là 7 (phần mười), 7 ≥ 5 → cộng 1 vào 4 được 5 rồi bỏ phần thập phân. Đáp án 4 là quên làm tròn, 4,7 là giữ nguyên.', errorTag: 'lam_tron_quen_xem_chu_so_sau' },
+  { prompt: 'Làm tròn 2,34 đến hàng phần mười được:', choices: ['2,3', '2,4', '2,34'], answer: '2,3', explanation: 'Chỉ nhìn chữ số phần trăm = 4; 4 < 5 nên GIỮ hàng phần mười là 3 → 2,3. 2,4 là cộng nhầm, 2,34 là chưa bỏ hàng phần trăm.', errorTag: 'lam_tron_sai_hang' },
+  { prompt: 'Làm tròn 6,85 đến hàng phần mười được:', choices: ['6,9', '6,8', '7'], answer: '6,9', explanation: 'Chữ số phần trăm = 5, bằng 5 → cộng 1 vào phần mười: 8 + 1 = 9 → 6,9. 6,8 là quên công 1; 7 là làm tròn overshoot tới tận đơn vị.', errorTag: 'lam_tron_day_chuyen' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
