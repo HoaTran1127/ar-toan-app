@@ -367,6 +367,10 @@ const LESSONS = {
     khoi_dong:'Cô mua bộ hộp bút giá 38 nghìn, rút ví đưa cô bán hàng một lúc mấy tờ tiền. Làm sao biết vừa đủ, phải thối lại, hay còn thiếu?',
     chot:'Đếm tiền theo TỪNG mệnh giá rồi cộng lại thành tổng; tổng lớn hơn giá thì phần hơn là tiền được thối, nhỏ hơn thì còn phải thêm.',
     obj:'bộ hộp bút 38 nghìn', mnC0:3, mnC1:2, mnC2:1, mnC3:1, mnSel:0, mnPrice:38000 },
+  'dau-hieu-chia-het': { model:'divis', ten:'Dấu hiệu chia hết cho 2, 5, 3 và 9',
+    khoi_dong:'Cô đố: số 84 có chia hết cho 2 không? Cho 5? Không cần đặt tính — nhìn vào đâu mà em trả lời được ngay?',
+    chot:'Chia hết cho 2 và 5 chỉ cần nhìn CHỮ SỐ TẬN CÙNG (2: chẵn; 5: tận cùng 0 hoặc 5); còn chia hết cho 3 và 9 phải lấy TỔNG các chữ số, KHÔNG phải chữ số cuối.',
+    obj:'số 84', dvT:8, dvU:4 },
 };
 
 const state = {
@@ -403,9 +407,11 @@ const state = {
   aLen: 1, aHi: 9, bLen: 2, bHi: 1,
   dtRow: 0, dtCol: 0,
   boT: 3, boO: 2, bsT: 1, bsO: 5,
+  mnC0: 3, mnC1: 2, mnC2: 1, mnC3: 1, mnSel: 0, mnPrice: 38000,
+  dvT: 8, dvU: 4,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
-  M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
+  M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
 };
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -2529,6 +2535,69 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // ======================= Model: divis (dấu hiệu chia hết 2·5·3·9 — beyond-bank) =======================
+  // SGK lớp 4 có mạch "dấu hiệu chia hết" nhưng bank 39 cụm chưa có → thêm MỘT mô hình MỚI + dòng LESSONS.
+  // Ý cốt + chặn LỖI KINH ĐIỂN: chia hết cho 2·5 nhìn CHỮ SỐ TẬN CÙNG, còn 3·9 nhìn TỔNG các chữ số —
+  // học trò hay nhầm lấy chữ số cuối để xét 3/9. Hai tay dựng chữ số hàng chục | hàng đơn vị.
+  divis: {
+    twoHands: true,
+    defaults(st, L) { st.dvT = L.dvT; st.dvU = L.dvU; },
+    num(st) { return st.dvT * 10 + st.dvU; },
+    sum(st) { return st.dvT + st.dvU; },
+    tests(st) { const last = st.dvU, s = this.sum(st); return [
+      { d: 2, ok: last % 2 === 0, why: `tận cùng ${last} ${last % 2 === 0 ? 'chẵn' : 'lẻ'}` },
+      { d: 5, ok: last === 0 || last === 5, why: `tận cùng ${last} ${last === 0 || last === 5 ? 'là 0/5' : '≠ 0,5'}` },
+      { d: 3, ok: s % 3 === 0, why: `${st.dvT}+${st.dvU}=${s} ${s % 3 === 0 ? '⋮ 3' : 'không ⋮ 3'}` },
+      { d: 9, ok: s % 9 === 0, why: `${st.dvT}+${st.dvU}=${s} ${s % 9 === 0 ? '⋮ 9' : 'không ⋮ 9'}` },
+    ]; },
+    geomSig(st) { return 'divis' + st.dvT + ':' + st.dvU; },
+    params() { return [
+      { key: 'dvT', label: 'Chữ số hàng chục', min: 0, max: 9 }, { key: 'dvU', label: 'Chữ số hàng đơn vị', min: 0, max: 9 }]; },
+    ctlHint() { return 'Tay TRÁI đặt chữ số hàng chục, tay PHẢI đặt chữ số hàng đơn vị (giơ 0–5 ngón, +/− tới 9). Số đổi → bốn dấu hiệu cập nhật ngay.'; },
+    cell(x, y, w, digit, lab, tint) {
+      return `<rect x="${x}" y="${y}" width="${w}" height="70" rx="8" fill="${tint}" stroke="var(--chalk)" stroke-width="2"></rect>`
+        + `<text x="${x + w / 2}" y="${y - 7}" fill="rgba(242,240,230,.6)" font-size="11.5" text-anchor="middle">${lab}</text>`
+        + `<text x="${x + w / 2}" y="${y + 47}" fill="#0e1b22" font-size="40" font-weight="700" text-anchor="middle">${digit}</text>`;
+    },
+    draw2d(host, st) {
+      const n = this.num(st), ts = this.tests(st), W = 548, Hh = 258;
+      let s = `<text x="${W / 2}" y="30" fill="var(--chalk)" font-size="22" font-weight="700" text-anchor="middle">Số ${n}</text>`;
+      s += this.cell(150, 62, 70, st.dvT, 'hàng chục', 'rgba(127,201,191,.85)')
+        + this.cell(260, 62, 70, st.dvU, 'hàng đơn vị (TẬN CÙNG)', 'rgba(255,209,102,.9)');
+      s += `<text x="40" y="172" fill="rgba(242,240,230,.72)" font-size="12.5">2 · 5 → nhìn tận cùng (${st.dvU})   |   3 · 9 → nhìn tổng ${st.dvT} + ${st.dvU} = ${this.sum(st)}</text>`;
+      let bx = 52;
+      for (const t of ts) { const col = t.ok ? 'var(--accent)' : 'var(--warn)';
+        s += `<g><rect x="${bx}" y="196" width="104" height="46" rx="8" fill="${t.ok ? 'rgba(255,209,102,.16)' : 'rgba(240,90,90,.14)'}" stroke="${col}" stroke-width="2"></rect>`
+          + `<text x="${bx + 52}" y="216" fill="${col}" font-size="13" font-weight="700" text-anchor="middle">${n} ${t.ok ? '✓' : '✗'} ⋮ ${t.d}</text>`
+          + `<text x="${bx + 52}" y="233" fill="rgba(242,240,230,.7)" font-size="10" text-anchor="middle">${t.why}</text></g>`;
+        bx += 112; }
+      host.innerHTML = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, n = this.num(st), ts = this.tests(st);
+      const yes = ts.filter((t) => t.ok).map((t) => t.d), no = ts.filter((t) => !t.ok).map((t) => t.d);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hai bàn tay dựng số ${n} — tay trái ${st.dvT} chục, tay phải ${st.dvU} đơn vị.`, hint: 'Đưa hai tay đổi từng chữ số, hoặc +/−.' };
+      if (s === 2) return { cap: `Sơ đồ: xét 2 · 5 bằng CHỮ SỐ TẬN CÙNG (${st.dvU}); xét 3 · 9 bằng TỔNG các chữ số (${st.dvT} + ${st.dvU} = ${this.sum(st)}).`, hint: 'Đừng lấy chữ số cuối để xét 3 hay 9 — đó là lỗi kinh điển.' };
+      if (s === 3) return { cap: `${n} chia hết cho ${yes.length ? yes.join(' · ') : 'không có số nào trong 2,3,5,9'}${no.length ? `; KHÔNG chia hết cho ${no.join(' · ')}` : ''}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: số ${n} chia hết cho những số nào trong 2, 5, 3, 9? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const n = this.num(st), yes = this.tests(st).filter((t) => t.ok).map((t) => t.d); return `${n} · ${yes.length ? '⋮ ' + yes.join(', ') : 'không ⋮ 2·3·5·9'}`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.dvT = clamp(l, 0, 9);
+      if (r !== null) st.dvU = clamp(r, 0, 9);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), ten = clamp(st.dvT, 0, 9), un = clamp(st.dvU, 0, 9);
+      for (let k = 0; k < ten; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.26, 1.2, 0.26), new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: .55 })); m.position.set((k - 4) * 0.34, 0.6, -1); g.add(m); }
+      for (let k = 0; k < un; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.32, 0.32), new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: .5 })); m.position.set((k % 5 - 2) * 0.5, 0.2, 1 + Math.floor(k / 5) * 0.5); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -2591,6 +2660,11 @@ EX['tien-viet-nam'] = [
   { prompt: 'Trong ví có 2 tờ 5 000 đồng và 3 tờ 2 000 đồng. Hỏi trong ví có tất cả bao nhiêu tiền?', choices: ['16 000 đồng', '14 000 đồng', '10 000 đồng'], answer: '16 000 đồng', explanation: 'Đếm theo từng mệnh giá: 2 × 5 000 = 10 000; 3 × 2 000 = 6 000; cộng lại 10 000 + 6 000 = 16 000 đồng.', errorTag: 'cong-nham-menh-gia' },
   { prompt: 'Món hàng giá 25 000 đồng, bạn Lan đưa cô bán hàng tờ 50 000 đồng. Cô bán hàng phải thối lại bao nhiêu tiền?', choices: ['25 000 đồng', '35 000 đồng', '75 000 đồng'], answer: '25 000 đồng', explanation: 'Tiền thối = tiền trả − giá tiền = 50 000 − 25 000 = 25 000 đồng (không cộng hai số lên).', errorTag: 'cong-thay-vi-tru-tien-thoi' },
 ];
+// Dấu hiệu chia hết không có trong examples.mjs của bank → 2 câu SGK-style tự tác.
+EX['dau-hieu-chia-het'] = [
+  { prompt: 'Số 63 có chia hết cho 3 không? Vì sao?', choices: ['Có, vì 6 + 3 = 9 chia hết cho 3', 'Có, vì chữ số tận cùng là 3', 'Không, vì 63 là số lẻ'], answer: 'Có, vì 6 + 3 = 9 chia hết cho 3', explanation: 'Muốn xét chia hết cho 3, lấy TỔNG các chữ số: 6 + 3 = 9, mà 9 ⋮ 3 nên 63 ⋮ 3.', errorTag: 'xet-chu-so-tan-cung-thay-vi-tong' },
+  { prompt: 'Số nào dưới đây chia hết cho CẢ 2 và 5?', choices: ['30', '25', '12'], answer: '30', explanation: 'Chia hết cho cả 2 và 5 ⇔ chữ số tận cùng là 0. Chỉ có 30 tận cùng bằng 0.', errorTag: 'quen-dau-hieu-ket-hop-tan-cung-0' },
+];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
   const sec = $('exSec'), arr = exOf();
@@ -2646,7 +2720,7 @@ function drawStepline() {
 
 // ======================= Chọn bài =======================
 function applyLesson(id) {
-  state.lesson = id; state.step = 0; state.boardWiped = false; state.handApplied = -1;
+  state.lesson = id; state.step = 0; state.boardWiped = false; state.handApplied = -1; state.twoApplied = '-1/-1';
   state.vote = { correct: 0, wrong: 0 };
   state.exIdx = 0; state.exPick = null; state.exReveal = false;
   MDL().defaults(state, LESSONS[id]);
@@ -2725,10 +2799,12 @@ function loopDetect() {
           const lm = res.landmarks[0], m = MDL();
           if (m.twoHands) {
             const hands = res.landmarks.map(h => ({ f: countFingers(h), x: h[0].x }));
-            const before = state.balL + '/' + state.balR;
+            let l = null, r = null;
+            for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+            const sig = (l === null ? -1 : l) + '/' + (r === null ? -1 : r);
             m.hand2(state, hands);
-            stat += ` · hai tay → trái ${state.balL} phải ${state.balR}`;
-            if (before !== state.balL + '/' + state.balR) { state.handApplied = -1; drawVisual(); render(); }
+            stat += ` · hai tay → trái ${l === null ? '—' : l} phải ${r === null ? '—' : r}`;
+            if (sig !== state.twoApplied) { state.twoApplied = sig; state.handApplied = -1; drawVisual(); render(); }
           } else if (m.usesPalm) {
             m.palmToValue(state, lm[9].x); state.handApplied = -1;
             stat += ` · ${m.palmLabel(state)}`;
