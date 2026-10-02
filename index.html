@@ -423,6 +423,10 @@ const LESSONS = {
     khoi_dong:'Cô có một ô vuông biểu diễn số 1, chia thành 100 ô nhỏ. 0,3 là tô 3 HÀNG, 0,4 là tô 4 CỘT. Chỗ vừa thuộc hàng vừa thuộc cột (phần giao) là mấy ô? Đó chính là 0,3 × 0,4. Vì sao tích lại BÉ hơn cả hai thừa số?',
     chot:'Khi nhân hai số thập phân, ta bỏ dấu phẩy, nhân như số tự nhiên, rồi ĐẾM xem cả hai thừa số có bao nhiêu chữ số thập phân để tách bấy nhiêu chữ số (từ phải sang) ở tích. 0,3 (1 chữ số) × 0,4 (1 chữ số) → tích có 1 + 1 = 2 chữ số thập phân = 0,12. Nhân hai số nhỏ hơn 1 thì tích BÉ đi, không lớn lên.',
     obj:'0,3 nhân 0,4', daM:3, daN:4 },
+  'cong-tru-so-thap-phan': { model:'decadd', ten:'Cộng · trừ hai số thập phân (thẳng dấu phẩy)',
+    khoi_dong:'Cô có hai dải ruy băng dài 3,4 dm và 2,5 dm. Nối hai dải lại thì được dài bao nhiêu đề-xi-mét? Có phải chỉ cần lấy 34 + 25 = 59 rồi… lúng túng không biết dấu phẩy đặt ở đâu? Vì sao khi tính phải đặt hai DẤU PHẨY THẲNG HÀNG nhau?',
+    chot:'Muốn cộng (hay trừ) hai số thập phân, ta viết sao cho các DẤU PHẨY THẲNG HÀNG nhau (đơn vị dưới đơn vị, phần mười dưới phần mười), rồi cộng/trừ như số tự nhiên, cuối cùng viết dấu phẩy của kết quả THẲNG HÀNG với các dấu phẩy bên trên. Nhớ: 10 phần mười = 1 đơn vị, nên khi tổng phần mười ≥ 10 ta NHỚ 1, khi phần mười không đủ trừ ta MƯỢN 1 của đơn vị.',
+    obj:'3,4 + 2,5', dcAW:3, dcAT:4, dcBW:2, dcBT:5, dcOp:1 },
 };
 
 const state = {
@@ -474,6 +478,7 @@ const state = {
   dsWhich: 0, dsK: 1,
   fmN1: 1, fmD1: 2, fmN2: 1, fmD2: 3, fmOp: 1,
   daM: 3, daN: 4,
+  dcAW: 3, dcAT: 4, dcBW: 2, dcBT: 5, dcOp: 1, dcSel: 0,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3519,6 +3524,101 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // ======================= Model: decadd (cộng · trừ số thập phân — thẳng dấu phẩy, beyond-bank) =======================
+  // Ý cốt: học trò cộng 34 + 25 = 59 rồi KHÔNG biết đặt dấu phẩy, hoặc quên nhớ 1 khi phần mười ≥ 10,
+  // hoặc quên mượn 1 khi phần mười trừ không đủ. Mô hình = thanh ĐỘ DÀI trên thước (trực quan) + CỘT ĐẶT
+  // TÍNH thẳng dấu phẩy (thuật toán), hai hàng số luôn có một ĐƯỜNG ĐỨT QUA DẤU PHẨY để nhấn "thẳng hàng".
+  decadd: {
+    keys() { return ['dcAW', 'dcAT', 'dcBW', 'dcBT']; },
+    g(st) { return this.keys().map((k) => clamp(Math.round(st[k]), 0, 9)); },
+    dfmt(v) { const neg = v < 0; v = Math.abs(Math.round(v)); const w = Math.floor(v / 10), t = v % 10; return (neg ? '−' : '') + w + ',' + t; },
+    res(st) {
+      const [aw, at, bw, bt] = this.g(st), sa = aw * 10 + at, sb = bw * 10 + bt, add = Math.round(clamp(st.dcOp, 0, 1)) >= 1;
+      const sr = add ? sa + sb : sa - sb, ok = sr >= 0, m = Math.abs(sr);
+      const carry = add && (at + bt >= 10), borrow = !add && ok && (at < bt);
+      return { aw, at, bw, bt, sa, sb, add, sr, ok, carry, borrow, wd: Math.floor(m / 10), td: m % 10 };
+    },
+    defaults(st, L) { st.dcAW = (L.dcAW != null ? L.dcAW : 3); st.dcAT = (L.dcAT != null ? L.dcAT : 4); st.dcBW = (L.dcBW != null ? L.dcBW : 2); st.dcBT = (L.dcBT != null ? L.dcBT : 5); st.dcOp = (L.dcOp != null ? L.dcOp : 1); st.dcSel = (L.dcSel != null ? L.dcSel : 0); },
+    geomSig(st) { return 'dc' + this.g(st).join('') + Math.round(clamp(st.dcOp, 0, 1)) + clamp(Math.round(st.dcSel), 0, 3); },
+    params() { return [{ key: 'dcAW', label: 'Số 1 · phần đơn vị', min: 0, max: 9 }, { key: 'dcAT', label: 'Số 1 · phần mười', min: 0, max: 9 }, { key: 'dcBW', label: 'Số 2 · phần đơn vị', min: 0, max: 9 }, { key: 'dcBT', label: 'Số 2 · phần mười', min: 0, max: 9 }, { key: 'dcOp', label: 'Phép (1 = cộng, 0 = trừ)', min: 0, max: 1 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bấm một CHỮ SỐ để chọn ô, giơ 0–9 ngón đặt chữ số đó, hoặc +/− từng ô. Phần mười ≥ 10 khi CỘNG → NHỚ 1 sang đơn vị; khi TRỪ mà phần mười bên trên nhỏ hơn → MƯỢN 1 (tức 10 phần mười) của hàng đơn vị.'; },
+    hand(st, f) { st[this.keys()[clamp(Math.round(st.dcSel), 0, 3)]] = clamp(Math.round(f), 0, 9); },
+    handLabel(f, st) { const nm = ['đơn vị của số 1', 'phần mười của số 1', 'đơn vị của số 2', 'phần mười của số 2']; return '→ ' + clamp(Math.round(f), 0, 9) + ' (' + nm[clamp(Math.round(st.dcSel), 0, 3)] + ')'; },
+    draw2d(host, st) {
+      const r = this.res(st), sel = clamp(Math.round(st.dcSel), 0, 3);
+      const x0 = 24, x1 = 250, upx = (x1 - x0) / 20, baseY = 92, barH = 20;
+      const X = (v) => x0 + (v / 10) * upx;
+      const rulerTitle = `<text x="${x0}" y="${baseY - barH - 24}" fill="rgba(242,240,230,.72)" font-size="11.5">Thước đề-xi-mét (mỗi vạch nhỏ = 0,1 dm)</text>`;
+      let ticks = '';
+      for (let u = 0; u <= 20; u++) { const tx = X(u * 10), big = u % 5 === 0;
+        ticks += `<line x1="${tx.toFixed(1)}" y1="${baseY}" x2="${tx.toFixed(1)}" y2="${baseY + (big ? 8 : 4)}" stroke="var(--chalk)" stroke-width="${big ? 1.4 : 0.7}" opacity="${big ? 0.85 : 0.4}"></line>`;
+        if (big) ticks += `<text x="${tx.toFixed(1)}" y="${baseY + 20}" fill="rgba(242,240,230,.55)" font-size="10" text-anchor="middle">${u}</text>`; }
+      const axis = `<line x1="${x0}" y1="${baseY}" x2="${x1}" y2="${baseY}" stroke="var(--chalk)" stroke-width="1.4" opacity="0.75"></line>`;
+      let bars = '';
+      if (r.add) {
+        const ax = X(0), aw = X(r.sa), bEnd = X(r.sr);
+        bars += `<rect x="${ax.toFixed(1)}" y="${baseY - barH}" width="${Math.max(0, aw - ax).toFixed(1)}" height="${barH}" fill="rgba(127,201,191,.8)" stroke="var(--chalk)" stroke-width="1.2"></rect>`;
+        bars += `<rect x="${aw.toFixed(1)}" y="${baseY - barH}" width="${Math.max(0, bEnd - aw).toFixed(1)}" height="${barH}" fill="rgba(240,196,92,.8)" stroke="var(--chalk)" stroke-width="1.2"></rect>`;
+        bars += `<text x="${((ax + aw) / 2).toFixed(1)}" y="${baseY - barH - 4}" fill="var(--accent)" font-size="12" font-weight="700" text-anchor="middle">${this.dfmt(r.sa)}</text>`;
+        bars += `<text x="${((aw + bEnd) / 2).toFixed(1)}" y="${baseY - barH - 4}" fill="var(--warn)" font-size="12" font-weight="700" text-anchor="middle">+${this.dfmt(r.sb)}</text>`;
+        bars += `<line x1="${bEnd.toFixed(1)}" y1="${baseY - barH - 1}" x2="${bEnd.toFixed(1)}" y2="${baseY + 2}" stroke="var(--ok)" stroke-width="2.2"></line>`;
+        bars += `<text x="${bEnd.toFixed(1)}" y="${baseY + 34}" fill="var(--ok)" font-size="13" font-weight="700" text-anchor="middle">= ${this.dfmt(r.sr)}</text>`;
+      } else if (r.ok) {
+        const ax = X(0), aw = X(r.sa), bs = X(r.sb);
+        bars += `<rect x="${ax.toFixed(1)}" y="${baseY - barH}" width="${Math.max(0, bs - ax).toFixed(1)}" height="${barH}" fill="rgba(240,90,90,.45)" stroke="var(--warn)" stroke-width="1.2"></rect>`;
+        bars += `<rect x="${bs.toFixed(1)}" y="${baseY - barH}" width="${Math.max(0, aw - bs).toFixed(1)}" height="${barH}" fill="var(--ok)" opacity="0.85" stroke="var(--chalk)" stroke-width="1.2"></rect>`;
+        bars += `<text x="${((ax + bs) / 2).toFixed(1)}" y="${baseY - barH - 4}" fill="var(--warn)" font-size="12" font-weight="700" text-anchor="middle">−${this.dfmt(r.sb)}</text>`;
+        bars += `<text x="${((bs + aw) / 2).toFixed(1)}" y="${baseY + 34}" fill="var(--ok)" font-size="13" font-weight="700" text-anchor="middle">còn ${this.dfmt(r.sr)}</text>`;
+      } else {
+        bars += `<text x="${x0}" y="${baseY - barH - 6}" fill="var(--warn)" font-size="11.5" font-weight="700">⚠ Số bị trừ ${this.dfmt(r.sa)} phải ≥ số trừ ${this.dfmt(r.sb)}.</text>`;
+        bars += `<text x="${x0}" y="${baseY + 4}" fill="rgba(242,240,230,.7)" font-size="11">Ở tiểu học kết quả chưa âm — cô chọn số trên lớn hơn.</text>`;
+      }
+      const cT = 322, cO = 360, cP = 416, cmX = 390, boxW = 32, boxH = 30;
+      const ryA = 74, ryB = 112, hrY = 140, ryR = 172;
+      const cell = (i, cx, cy, val) => { const on = i === sel;
+        return `<g data-dc="${i}" style="cursor:pointer"><rect x="${(cx - boxW / 2).toFixed(0)}" y="${(cy - boxH / 2).toFixed(0)}" width="${boxW}" height="${boxH}" rx="4" fill="${on ? 'rgba(240,196,92,.22)' : 'rgba(255,255,255,.04)'}" stroke="${on ? 'var(--accent)' : 'rgba(242,240,230,.28)'}" stroke-width="${on ? 2 : 1}"></rect>`
+          + `<text x="${cx}" y="${cy + 5}" fill="var(--chalk)" font-size="17" font-weight="700" text-anchor="middle">${val}</text></g>`; };
+      const st2 = (cx, cy, ch) => `<text x="${cx}" y="${cy + 5}" fill="var(--chalk)" font-size="16" font-weight="700" text-anchor="middle">${ch}</text>`;
+      let tbl = `<text x="${cT - 30}" y="18" fill="rgba(242,240,230,.72)" font-size="11.5">Đặt tính (thẳng dấu phẩy)</text>`;
+      tbl += `<text x="${cO}" y="42" fill="var(--accent)" font-size="11.5" text-anchor="middle">ĐV</text>`;
+      tbl += `<text x="${cP}" y="42" fill="var(--warn)" font-size="11.5" text-anchor="middle">PM</text>`;
+      tbl += `<line x1="${cmX}" y1="50" x2="${cmX}" y2="${ryR + 18}" stroke="var(--accent)" stroke-dasharray="3 3" stroke-width="1.2" opacity="0.6"></line>`;
+      tbl += cell(0, cO, ryA, r.aw) + st2(cmX, ryA, ',') + cell(1, cP, ryA, r.at);
+      tbl += `<text x="${cT - 24}" y="${ryB + 5}" fill="var(--chalk)" font-size="17" font-weight="700" text-anchor="middle">${r.add ? '+' : '−'}</text>`;
+      tbl += cell(2, cO, ryB, r.bw) + st2(cmX, ryB, ',') + cell(3, cP, ryB, r.bt);
+      tbl += `<line x1="${cT - 30}" y1="${hrY}" x2="${cP + boxW / 2}" y2="${hrY}" stroke="var(--chalk)" stroke-width="1.6"></line>`;
+      if (r.ok) { const tDigit = r.wd >= 10 ? st2(cT, ryR, Math.floor(r.wd / 10)) : ''; tbl += tDigit + st2(cO, ryR, r.wd % 10) + st2(cmX, ryR, ',') + st2(cP, ryR, r.td); }
+      else { tbl += `<text x="${(cO + 26)}" y="${ryR + 5}" fill="var(--warn)" font-size="15" font-weight="700" text-anchor="middle">? , ?</text>`; }
+      if (r.carry) tbl += `<text x="${cP}" y="${ryA - 16}" fill="var(--ok)" font-size="10.5" font-weight="700" text-anchor="middle">nhớ 1 ↖</text>`;
+      if (r.borrow) tbl += `<text x="${cP}" y="${ryB - 20}" fill="var(--warn)" font-size="10.5" font-weight="700" text-anchor="middle">mượn 1 (= 10 PM)</text>`;
+      const selLab = `<text x="${cT - 30}" y="${ryR + 40}" fill="var(--accent)" font-size="11">Đang chọn: ${['ĐV số 1', 'PM số 1', 'ĐV số 2', 'PM số 2'][sel]} — giơ 0–9 ngón để đặt.</text>`;
+      const rule1 = `<text x="16" y="216" fill="rgba(242,240,230,.85)" font-size="12">Thẳng hàng DẤU PHẨY rồi cộng/trừ như số tự nhiên. 10 phần mười = 1 đơn vị.</text>`;
+      const rule2 = `<text x="16" y="234" fill="var(--warn)" font-size="11.5">❌ Lỗi hay gặp: quên NHỚ 1 (phần mười ≥ 10) hoặc quên MƯỢN 1, hoặc quên dấu phẩy ở kết quả.</text>`;
+      host.innerHTML = `<svg id="decadd" width="548" height="258" viewBox="0 0 548 258">` + rulerTitle + ticks + axis + bars + tbl + selLab + rule1 + rule2 + `</svg>`;
+      const svg = host.querySelector('#decadd');
+      if (svg && svg.querySelectorAll) svg.querySelectorAll('g[data-dc]').forEach((g) => g.addEventListener('pointerdown', () => { state.dcSel = +g.dataset.dc; drawVisual(); render(); }));
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      const e1 = this.dfmt(r.sa), e2 = this.dfmt(r.sb), res = r.ok ? this.dfmt(r.sr) : '?', sign = r.add ? '+' : '−';
+      const pmNote = r.carry ? `Phần mười ${r.at} + ${r.bt} = ${r.at + r.bt} → NHỚ 1 sang đơn vị.` : r.borrow ? `Phần mười ${r.at} trừ ${r.bt} không đủ → MƯỢN 1 (= 10 phần mười) của đơn vị.` : 'Phần mười vừa đủ — không nhớ, không mượn.';
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hai dải giấy dài ${e1} dm và ${e2} dm. ${r.add ? 'Nối tiếp nhau thì' : 'Dải dài hơn hơn dải ngắn là'} bao nhiêu đề-xi-mét?`, hint: 'Nhìn phần mười: ≥ 10 thì nhớ, không đủ thì mượn.' };
+      if (s === 2) return { cap: `Sơ đồ: ${r.add ? `dải ${e1} nối tiếp dải ${e2} → mũi tên dừng ở ${res} dm` : `dải ${e1} cắt bỏ ${e2} dm → còn lại ${res} dm`}. ${pmNote}`, hint: `Ở cột đặt tính, dấu phẩy của ${e1}, ${e2} và ${res} thẳng hàng trên một đường đứt.` };
+      if (s === 3) return { cap: `Phép tính: ${e1} ${sign} ${e2} = ${res}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: ${e1} ${sign} ${e2} bằng bao nhiêu? Đặt thẳng dấu phẩy, xử lí phần mười trước (nhớ/mượn), rồi đọc kết quả.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${this.dfmt(r.sa)} ${r.add ? '+' : '−'} ${this.dfmt(r.sb)} = ${r.ok ? this.dfmt(r.sr) : 'số trên phải ≥ số dưới'}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), n = clamp(Math.abs(r.sr), 1, 100), side = Math.ceil(Math.sqrt(n)), sc = Math.min(3.6 / side, 0.5);
+      const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: r.add ? 0x7fc9bf : 0xf0c45c, roughness: 0.5 });
+      for (let j = 0; j < n; j++) { const rr = Math.floor(j / side), c = j % side; const msh = new THREE.Mesh(new THREE.BoxGeometry(sc * 0.8, sc * 0.3, sc * 0.8), mat); msh.position.set((c - (side - 1) / 2) * sc, 0, (rr - (side - 1) / 2) * sc); g.add(msh); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3647,6 +3747,11 @@ EX['nhan-hai-so-thap-phan'] = [
   { prompt: 'Tính: 0,3 × 0,4 = ?', choices: ['0,12', '1,2', '0,7'], answer: '0,12', explanation: 'Bỏ dấu phẩy: 3 × 4 = 12. Hai thừa số có tất cả 1 + 1 = 2 chữ số thập phân → tách 2 chữ số: 0,12. Trên lưới: 3 hàng × 4 cột = 12 ô = 12 phần trăm.', errorTag: 'dem_sai_so_chu_thap_phan' },
   { prompt: 'Tính: 0,5 × 0,6 = ?', choices: ['0,3', '0,03', '3'], answer: '0,3', explanation: '5 × 6 = 30 → tách 2 chữ số thập phân = 0,30 = 0,3 (bỏ chữ số 0 tận cùng). Lưới: 5 hàng × 6 cột = 30 ô = 0,30.', errorTag: 'khong_tru_so_0_du' },
   { prompt: 'Tính: 0,7 × 0,2 = ?', choices: ['0,14', '1,4', '0,9'], answer: '0,14', explanation: '7 × 2 = 14, tích có 1 + 1 = 2 chữ số thập phân → 0,14. Tích nhỏ hơn cả 0,7 và 0,2 vì nhân với số bé hơn 1.', errorTag: 'nham_tich_lon_hon_thua_so' },
+];
+EX['cong-tru-so-thap-phan'] = [
+  { prompt: 'Tính: 3,4 + 2,5 = ?', choices: ['5,9', '5,19', '59'], answer: '5,9', explanation: 'Thẳng dấu phẩy: phần mười 4 + 5 = 9 (bé hơn 10 nên KHÔNG nhớ), đơn vị 3 + 2 = 5 → 5,9.', errorTag: 'quen_dau_phay_o_ket_qua' },
+  { prompt: 'Tính: 5,6 + 2,7 = ?', choices: ['8,3', '7,13', '8,13'], answer: '8,3', explanation: 'Phần mười 6 + 7 = 13 → viết 3 NHỚ 1. Đơn vị 5 + 2 + 1 (nhớ) = 8 → 8,3. KHÔNG được viết 7,13.', errorTag: 'quen_nho_1_khi_tong_phan_muoi_du_10' },
+  { prompt: 'Tính: 5,2 − 2,7 = ?', choices: ['2,5', '3,5', '2,4'], answer: '2,5', explanation: 'Phần mười 2 trừ 7 không được → MƯỢN 1 của đơn vị (thành 12 − 7 = 5). Đơn vị còn 4 − 2 = 2 → 2,5.', errorTag: 'quen_muon_1_khi_tru_khong_du' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
