@@ -270,6 +270,10 @@ const LESSONS = {
     khoi_dong:'Một hòm có 12 đồng vàng, lấy ra 1/3 hòm. Lấy mấy đồng?',
     chot:'Chia số đó cho mẫu số để ra giá trị một phần, rồi nhân với tử số; phải chia thành nhóm bằng nhau trước rồi mới lấy phần.',
     obj:'hòm vàng' },
+  'gap-giam-khau-phan': { model:'recipe', ten:'Gấp và giảm khẩu phần theo tỉ số nguyên liệu', rpBase:2, rpNew:6,
+    khoi_dong:'Công thức nấu cho 2 người, nhưng nhà mình có 6 người ăn. Mỗi nguyên liệu phải làm gì?',
+    chot:'Mọi nguyên liệu cùng nhân một hệ số thì tỉ số giữa chúng không đổi; hệ số bằng số khẩu phần mới chia cho số khẩu phần cũ.',
+    obj:'nấu ăn' },
 };
 
 const state = {
@@ -297,6 +301,7 @@ const state = {
   mtS: 120, mtV1: 40, mtV2: 20, mtT: 1,
   scCm: 3, scReal: 10,
   fcTotal: 12, fcDen: 3, fcTu: 1,
+  rpBase: 2, rpNew: 6,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -1732,6 +1737,58 @@ const MODELS = {
       for (let j = 0; j < Total; j++) { const gi = Math.floor(j / e.part + 1e-9), on = gi < e.Tu;
         const m = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12), new THREE.MeshStandardMaterial({ color: on ? 0x5fb0a5 : 0x3a4a52, roughness: .5 }));
         m.position.set((j % cols - (cols - 1) / 2) * 0.62, 0.7 - Math.floor(j / cols) * 0.62, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
+
+  // ======================= Model: recipe (gấp / giảm khẩu phần theo tỉ số) =======================
+  // Repo gap-giam-khau-phan: "mọi nguyên liệu cùng nhân MỘT hệ số thì TỈ SỐ giữa chúng không đổi;
+  // hệ số = khẩu phần mới : khẩu phần cũ". Đưa tay ngang đổi số người ăn → cả ba cốc cùng × hệ số.
+  recipe: {
+    usesPalm: true,
+    ING() { return [['Gạo', 1], ['Nước', 2], ['Cà chua', 3]]; },
+    fmt(n) { return ('' + (Math.round(n * 100) / 100)).replace('.', ','); },
+    fac(st) { const b = Math.max(1, st.rpBase), nn = Math.max(1, st.rpNew); return nn / b; },
+    defaults(st, L) { st.rpBase = L.rpBase; st.rpNew = L.rpNew; },
+    palmToValue(st, x) { st.rpNew = clamp(Math.round((1 - x) * 12), 1, 12); },
+    palmLabel(st) { return `${st.rpNew} người · hệ số × ${this.fmt(this.fac(st))}`; },
+    geomSig(st) { return 'recipe' + st.rpBase + ':' + st.rpNew; },
+    params() { return [
+      { key:'rpNew', label:'Số người ăn (khẩu phần mới)', min:1, max:12 },
+      { key:'rpBase', label:'Số người (công thức gốc)', min:1, max:8 }]; },
+    ctlHint() { return 'Đưa bàn tay ngang (hoặc +/−) đổi số người ăn; cả ba nguyên liệu cùng nhân một hệ số, TỈ SỐ giữa chúng không đổi.'; },
+    draw2d(host, st) {
+      const ing = this.ING(), f = this.fmt.bind(this), base = Math.max(1, st.rpBase), nf = Math.max(1, st.rpNew), factor = this.fac(st);
+      const W = 560, Hh = 250, x0 = 120, len = 340, rowY = (i) => 78 + i * 52, maxV = Math.max(3 * factor, 3, 6);
+      const bar = (x, w, col, y, h) => `<rect x="${x.toFixed(1)}" y="${y}" width="${Math.max(0, w).toFixed(1)}" height="${h}" rx="3" fill="${col}"></rect>`;
+      let s = `<text x="16" y="30" fill="var(--chalk)" font-size="14">${base} người → ${nf} người (hệ số = ${nf} : ${base} = ${f(factor)})</text>`
+        + `<text x="${x0}" y="50" fill="#7fc9bf" font-size="11">cũ</text><text x="${x0+40}" y="50" fill="#ffd166" font-size="11">mới (× ${f(factor)})</text>`;
+      for (let i = 0; i < ing.length; i++) { const y = rowY(i), amt = ing[i][1], scaled = amt * factor;
+        s += `<text x="14" y="${y+13}" fill="var(--chalk)" font-size="13">${ing[i][0]}</text>`
+          + `<rect x="${x0}" y="${y-6}" width="${len}" height="26" fill="rgba(255,255,255,.05)" stroke="rgba(242,240,230,.14)"></rect>`
+          + bar(x0, (amt / maxV) * len, 'rgba(95,176,165,.55)', y-4, 10)
+          + bar(x0, (scaled / maxV) * len, 'rgba(255,209,102,.8)', y+8, 10)
+          + `<text x="${(x0 + (scaled / maxV) * len + 6).toFixed(1)}" y="${y+17}" fill="#ffd166" font-size="12">${f(scaled)}</text>`;
+      }
+      s += `<text x="${W/2}" y="234" fill="var(--accent)" font-size="15" font-weight="700" text-anchor="middle">Tỉ số ${ing.map(x=>x[1]).join(' : ')} giữa các nguyên liệu KHÔNG đổi</text>`;
+      host.innerHTML = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}" style="cursor:ew-resize">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, ing = this.ING(), f = this.fmt.bind(this), base = Math.max(1, st.rpBase), nf = Math.max(1, st.rpNew), factor = this.fac(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: công thức gốc cho ${base} người cần ${ing.map(x=>x[1] + ' ' + x[0]).join(', ')}.`, hint: 'Đưa tay ngang để đổi số người ăn.' };
+      if (s === 2) return { cap: `Sơ đồ: nhà có ${nf} người → hệ số = ${nf} : ${base} = ${f(factor)}. Muốn gấp khẩu phần thì MỖI nguyên liệu đều × cùng một hệ số.`, hint: 'Cùng × một hệ số ⇒ TỈ số giữa các nguyên liệu giữ nguyên.' };
+      if (s === 3) return { cap: `Phép tính: ${ing.map(x=>x[0] + ' ' + x[1] + ' × ' + f(factor) + ' = ' + f(x[1] * factor)).join('; ')}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: ${nf} người thì cần bao nhiêu ${ing[0][0].toLowerCase()}? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { return `hệ số = ${Math.max(1, st.rpNew)} : ${Math.max(1, st.rpBase)} = ${this.fmt(this.fac(st))}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const g = new THREE.Group(), ing = this.ING(), factor = this.fac(st), maxV = Math.max(3 * factor, 6), cols = [0x5fb0a5, 0x9fd0e0, 0xe0483d];
+      for (let i = 0; i < ing.length; i++) { const scaled = ing[i][1] * factor, h = (scaled / maxV) * 2.2 + 0.2;
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.7, h, 0.7), new THREE.MeshStandardMaterial({ color: cols[i], roughness: .5 }));
+        m.position.set((i - 1) * 1.1, h / 2 - 0.8, 0); g.add(m); }
       return g;
     },
     paint3d() {},
