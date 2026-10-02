@@ -411,6 +411,10 @@ const LESSONS = {
     khoi_dong:'Mẹ cắt cho Hai chị em ăn 3/4 cái bánh. Giờ chị chia đều phần bánh đó cho 2 em. Mỗi em được bao nhiêu phần của CẢ cái bánh? Có phải lấy 3 chia 2 không, hay làm cách khác?',
     chot:'Muốn chia một phân số cho một số tự nhiên (khác 0), ta GIỮ NGUYÊN tử số rồi NHÂN mẫu số với số đó: a/b ÷ n = a/(b × n). Lí do: chia phần đã tô ra n phần bằng nhau làm MỖI Ô NHỎ ĐI n lần (mẫu × n), còn số ô tô vẫn là a.',
     obj:'3/4 cái bánh chia cho 2 em', fdNum:3, fdDen:4, fdDiv:2 },
+  'nhan-chia-10-100-1000': { model:'dotshift', ten:'Nhân · chia số thập phân với 10, 100, 1000',
+    khoi_dong:'Cô có số 12,34. Nếu nhân nó với 10, các chữ số 1, 2, 3, 4 có đổi đi không, hay chỉ có dấu phẩy là dời chỗ? Dời sang bên nào, dời mấy chữ số?',
+    chot:'Nhân số thập phân với 10, 100, 1000… ta DỊCH dấu phẩy sang PHẢI đúng số chữ số 0 của số ấy (10→1 chữ số, 100→2, 1000→3); chia thì DỊCH sang TRÁI bấy nhiêu chữ số. Thiếu chữ số thì VIẾT THÊM số 0. Thứ tự các chữ số KHÔNG bao giờ thay đổi — chỉ dấu phẩy dời chỗ.',
+    obj:'12,34 nhân 10', dsWhich:0, dsK:1 },
 };
 
 const state = {
@@ -459,6 +463,7 @@ const state = {
   ordA: 2, ordB: 3, ordC: 4, ordK: 0,
   rcA: 6, rcB: 4,
   fdNum: 3, fdDen: 4, fdDiv: 2,
+  dsWhich: 0, dsK: 1,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3331,6 +3336,55 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // beyond-bank 13: DỊCH DẤU PHẨY khi nhân/chia 10·100·1000. Giơ ngón chọn phép; số hiện thành Ô CHỮ SỐ với
+  // Ô DẤU PHẨY sáng, so TRƯỚC/SAU → thấy dấu phẩy trượt mấy ô & khi nào chèn/bớt số 0. Chặn lỗi "dịch sai số
+  // chữ số" và "cứ nhân chia từng chữ số như số tự nhiên".
+  dotshift: {
+    defaults(st, L) { st.dsWhich = (L.dsWhich != null ? L.dsWhich : 0); st.dsK = (L.dsK != null ? L.dsK : 1); },
+    fmt(n) { const s = Math.round(n * 100) / 100; if (Number.isInteger(s)) return String(s); let t = s.toFixed(2); if (t.endsWith('0')) t = t.slice(0, -1); return t.replace('.', ','); },
+    k(st) { return clamp(Math.round(st.dsK), -2, 3); },
+    presets() { return [{ base: 1234, pos0: 2 }, { base: 36, pos0: 1 }, { base: 25, pos0: 0 }, { base: 1457, pos0: 2 }]; },
+    vf(base, e) { const d = String(base); if (e >= 0) return d + '0'.repeat(e); const neg = -e; let s = d; if (s.length <= neg) s = '0'.repeat(neg - s.length + 1) + s; return s.slice(0, s.length - neg) + ',' + s.slice(s.length - neg); },
+    preset(st) { const p = this.presets()[clamp(Math.round(st.dsWhich), 0, 3)]; const len = String(p.base).length; return { base: p.base, len, pos0: p.pos0, orig: this.vf(p.base, -(len - p.pos0)) }; },
+    exp(st) { const P = this.preset(st); return this.k(st) - (P.len - P.pos0); },
+    after(st) { const P = this.preset(st); return this.vf(P.base, this.exp(st)); },
+    opMenu() { return [0, 1, 2, 3, -1, -2]; },
+    opLabel(k) { return k === 0 ? '× 1' : k === 1 ? '× 10' : k === 2 ? '× 100' : k === 3 ? '× 1000' : k === -1 ? ': 10' : ': 100'; },
+    geomSig(st) { return 'dot' + clamp(Math.round(st.dsWhich), 0, 3) + ':' + this.k(st); },
+    params() { return [{ key: 'dsWhich', label: 'Số thập phân gốc (0-3)', min: 0, max: 3 }]; },
+    ctlHint() { return 'Giơ 0–5 ngón để CHỌN phép: 0→×1, 1→×10, 2→×100, 3→×1000, 4→:10, 5→:100. +/− đổi số gốc (4 preset). Xem ô DẤU PHẨY trượt sang phải/trái.'; },
+    hand(st, f) { const m = this.opMenu(); st.dsK = m[clamp(Math.round(f), 0, m.length - 1)]; },
+    handLabel(f, st) { const m = this.opMenu(); return '→ ' + this.opLabel(m[clamp(Math.round(f), 0, m.length - 1)]); },
+    draw2d(host, st) {
+      const P = this.preset(st), k = this.k(st), after = this.after(st), op = this.opLabel(k);
+      const boxes = (str, y, hot) => { let x = 60, out = ''; for (const ch of str) { if (ch === ',') { out += `<text x="${(x + 2)}" y="${y + 22}" fill="${hot ? 'var(--accent)' : 'var(--warn)'}" font-size="24" font-weight="700">,</text>`; x += 15; } else { out += `<rect x="${x}" y="${y}" width="27" height="27" fill="rgba(242,240,230,.06)" stroke="var(--chalk)" stroke-width="1.2"></rect>` + `<text x="${(x + 13.5)}" y="${y + 19}" fill="var(--chalk)" font-size="17" font-weight="700" text-anchor="middle">${ch}</text>`; x += 29; } } return out; };
+      const shift = k > 0 ? `trượt sang PHẢI ${k} chữ số` : k < 0 ? `trượt sang TRÁI ${-k} chữ số` : 'đứng yên (× 1)';
+      const head = `<text x="16" y="15" fill="rgba(242,240,230,.72)" font-size="12.5">Nhân / chia số thập phân với 10 · 100 · 1000 = TRƯỢT dấu phẩy, giữ nguyên thứ tự chữ số</text>`;
+      const labB = `<text x="16" y="46" fill="var(--warn)" font-size="12" font-weight="700">TRƯỚC</text>` + boxes(P.orig, 34, false);
+      const opEl = `<text x="300" y="80" fill="var(--ok)" font-size="20" font-weight="700">${op} →</text>`;
+      const labA = `<text x="16" y="112" fill="var(--accent)" font-size="12" font-weight="700">SAU</text>` + boxes(after, 100, true);
+      const formula = `<text x="20" y="162" fill="var(--chalk)" font-size="16" font-weight="700">${P.orig} ${op} = ${after}</text>`;
+      const note = `<text x="20" y="188" fill="rgba(242,240,230,.82)" font-size="12.5">Dấu phẩy ${shift}. Thiếu chữ số thì VIẾT THÊM số 0 (nhân) hoặc dời vào phần thập phân (chia); bản thân các chữ số không đổi.</text>`;
+      host.innerHTML = `<svg id="dotshift" width="548" height="258" viewBox="0 0 548 258">` + head + labB + opEl + labA + formula + note + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, P = this.preset(st), k = this.k(st), after = this.after(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: cô có số ${P.orig}. Giơ ngón tay để chọn phép tính: 0→×1, 1→×10, 2→×100, 3→×1000, 4→:10, 5→:100.`, hint: 'Đếm ngón = chọn phép. +/− đổi số gốc.' };
+      if (s === 2) return { cap: `Sơ đồ: ${P.orig} ${this.opLabel(k)} = ${after}. Dấu phẩy ${k > 0 ? 'dịch sang PHẢI ' + k + ' ô' : k < 0 ? 'dịch sang TRÁI ' + (-k) + ' ô' : 'đứng yên'}.`, hint: 'Không đổi chữ số, chỉ đổi chỗ dấu phẩy.' };
+      if (s === 3) return { cap: `${P.orig} ${this.opLabel(k)} = ${after}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: ${P.orig} ${this.opLabel(k)} bằng bao nhiêu? Cô đếm tay giơ, hoặc +/− đổi số.`, hint: '' };
+    },
+    value(st) { const P = this.preset(st); return `${P.orig} ${this.opLabel(this.k(st))} = ${this.after(st)}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const g = new THREE.Group(), after = this.after(st), dg = [...after].filter(c => c !== ','), n = Math.max(dg.length, 1), sc = Math.min(3.4 / n, 0.5);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.5 });
+      for (let j = 0; j < n; j++) { const m = new THREE.Mesh(new THREE.BoxGeometry(sc * 0.85, sc * 0.6, sc * 0.6), mat); m.position.set((j - (n - 1) / 2) * sc, 0, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3444,6 +3498,11 @@ EX['chu-vi-dien-tich-hcn'] = [
 EX['chia-phan-so-cho-so-tu-nhien'] = [
   { prompt: 'Tính: 3/4 : 2 = ?', choices: ['3/8', '3/2', '1/4'], answer: '3/8', explanation: 'Giữ nguyên tử 3, nhân mẫu với 2: 4 × 2 = 8 → 3/8. Không được chia tử cho 2 (3 : 2 ra 1,5 vô lý) cũng không nhân tử.', errorTag: 'chia_tu_thay_vi_nhan_mau' },
   { prompt: 'Tính: 2/5 : 3 = ?', choices: ['2/15', '6/5', '2/8'], answer: '2/15', explanation: 'Tử giữ nguyên 2, mẫu nhân 3: 5 × 3 = 15 → 2/15. Chia phân số cho số tự nhiên làm phần lấy nhỏ đi 3 lần.', errorTag: 'nham_cach_chia_phan_so' },
+];
+EX['nhan-chia-10-100-1000'] = [
+  { prompt: 'Tính: 2,5 × 100 = ?', choices: ['250', '25', '2500'], answer: '250', explanation: 'Nhân 100 → dịch dấu phẩy sang PHẢI 2 chữ số (100 có 2 số 0): 2,5 → 25 → 250 (thêm 1 chữ số 0 vì hết chỗ). Các chữ số 2 và 5 không đổi.', errorTag: 'dich_sai_so_chu_so' },
+  { prompt: 'Tính: 3,7 : 10 = ?', choices: ['0,37', '37', '0,037'], answer: '0,37', explanation: 'Chia 10 → dịch dấu phẩy sang TRÁI 1 chữ số: 3,7 → 0,37 (thiếu chỗ bên trái thì viết thêm chữ số 0 ở trước dấu phẩy).', errorTag: 'dich_nguon_huong_trai_phai' },
+  { prompt: 'Tính: 0,45 × 1000 = ?', choices: ['450', '45', '4,5'], answer: '450', explanation: 'Nhân 1000 → dịch dấu phẩy sang PHẢI 3 chữ số: 0,45 → 4,5 → 45 → 450 (thêm 1 số 0). Thứ tự chữ số 4, 5 giữ nguyên.', errorTag: 'dich_sai_so_chu_so' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
