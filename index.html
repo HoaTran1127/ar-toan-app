@@ -419,6 +419,10 @@ const LESSONS = {
     khoi_dong:'Cô có 1/2 băng giấy màu vàng và 1/3 băng giấy màu xanh (hai băng dài bằng nhau). Đem tô lại rồi cộng thì được bao nhiêu phần của cả băng? Có phải lấy 1+2 tử và 2+3 mẫu thành 2/5 không?',
     chot:'Muốn cộng (hoặc trừ) hai phân số KHÁC mẫu số, ta phải QUY ĐỒNG về CÙNG một mẫu số trước (thông thường lấy BCNN của hai mẫu), rồi chỉ CỘNG/TRỪ hai TỬ số, GIỮ NGUYÊN mẫu chung. TUYỆT đối không cộng cả mẫu: 1/2 + 1/3 = 3/6 + 2/6 = 5/6, KHÔNG phải 2/5.',
     obj:'1/2 + 1/3', fmN1:1, fmD1:2, fmN2:1, fmD2:3, fmOp:1 },
+  'nhan-hai-so-thap-phan': { model:'decarea', ten:'Nhân hai số thập phân (lưới diện tích)',
+    khoi_dong:'Cô có một ô vuông biểu diễn số 1, chia thành 100 ô nhỏ. 0,3 là tô 3 HÀNG, 0,4 là tô 4 CỘT. Chỗ vừa thuộc hàng vừa thuộc cột (phần giao) là mấy ô? Đó chính là 0,3 × 0,4. Vì sao tích lại BÉ hơn cả hai thừa số?',
+    chot:'Khi nhân hai số thập phân, ta bỏ dấu phẩy, nhân như số tự nhiên, rồi ĐẾM xem cả hai thừa số có bao nhiêu chữ số thập phân để tách bấy nhiêu chữ số (từ phải sang) ở tích. 0,3 (1 chữ số) × 0,4 (1 chữ số) → tích có 1 + 1 = 2 chữ số thập phân = 0,12. Nhân hai số nhỏ hơn 1 thì tích BÉ đi, không lớn lên.',
+    obj:'0,3 nhân 0,4', daM:3, daN:4 },
 };
 
 const state = {
@@ -469,6 +473,7 @@ const state = {
   fdNum: 3, fdDen: 4, fdDiv: 2,
   dsWhich: 0, dsK: 1,
   fmN1: 1, fmD1: 2, fmN2: 1, fmD2: 3, fmOp: 1,
+  daM: 3, daN: 4,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3454,6 +3459,66 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // beyond-bank 15: NHÂN HAI SỐ THẬP PHÂN bằng LƯỚI DIỆN TÍCH. Lưới 10×10 = 1 (100 ô = 1 phần trăm). Tô m HÀNG (0,m)
+  // giao với n CỘT (0,n) → phần giao m×n ô sáng = tích (phần trăm). Học sinh thấy 0,3×0,4 = 12 ô = 0,12 và vì sao
+  // "1 + 1 = 2" — tích có SỐ CHỮ SỐ THẬP PHÂN bằng TỔNG số chữ số thập phân của hai thừa số. Chặn lỗi đếm sai chữ số ở
+  // tích và lầm tưởng "nhân luôn làm số to ra" (nhân hai số < 1 thì tích BÉ đi).
+  decarea: {
+    twoHands: true,
+    defaults(st, L) { st.daM = (L.daM != null ? L.daM : 3); st.daN = (L.daN != null ? L.daN : 4); },
+    mv(st) { return clamp(Math.round(st.daM), 1, 9); },
+    nv(st) { return clamp(Math.round(st.daN), 1, 9); },
+    pv(st) { return this.mv(st) * this.nv(st); },
+    vnf(x) { const s = Math.round(x * 100) / 100; if (Number.isInteger(s)) return String(s); let t = s.toFixed(2); if (t.endsWith('0')) t = t.slice(0, -1); return t.replace('.', ','); },
+    geomSig(st) { return `da${this.mv(st)},${this.nv(st)}`; },
+    params() { return [{ key: 'daM', label: 'Thừa số 1 (phần mười)', min: 1, max: 9 }, { key: 'daN', label: 'Thừa số 2 (phần mười)', min: 1, max: 9 }]; },
+    ctlHint() { return 'HAI TAY = hai THỪA SỐ (trái = số HÀNG, phải = số CỘT, mỗi bàn tay 1→9 ô phần mười). Phần GIAO sáng = tích. Nhân hai số bé hơn 1 thì tích càng BÉ.'; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.daM = clamp(Math.round(l), 1, 9);
+      if (r !== null) st.daN = clamp(Math.round(r), 1, 9);
+    },
+    draw2d(host, st) {
+      const m = this.mv(st), n = this.nv(st), P = this.pv(st);
+      const x0 = 150, y0 = 30, cs = 18, G = 10 * cs;
+      let grid = '';
+      for (let i = 0; i <= 10; i++) {
+        const gx = x0 + i * cs, gy = y0 + i * cs, w = i === 5 ? 2 : 0.7, op = i === 5 ? 0.9 : 0.45;
+        grid += `<line x1="${gx}" y1="${y0}" x2="${gx}" y2="${y0 + G}" stroke="var(--chalk)" stroke-width="${w}" opacity="${op}"></line>`;
+        grid += `<line x1="${x0}" y1="${gy}" x2="${x0 + G}" y2="${gy}" stroke="var(--chalk)" stroke-width="${w}" opacity="${op}"></line>`;
+      }
+      const rowBand = `<rect x="${x0}" y="${y0}" width="${G}" height="${m * cs}" fill="rgba(240,196,92,.24)"></rect>`;
+      const colBand = `<rect x="${x0}" y="${y0}" width="${n * cs}" height="${G}" fill="rgba(127,201,191,.22)"></rect>`;
+      const over = `<rect x="${x0}" y="${y0}" width="${n * cs}" height="${m * cs}" fill="var(--ok)" opacity="0.85" stroke="var(--chalk)" stroke-width="1.4"></rect>`;
+      const frame = `<rect x="${x0}" y="${y0}" width="${G}" height="${G}" fill="none" stroke="var(--chalk)" stroke-width="2"></rect>`;
+      const topLab = `<text x="${x0 + (n * cs) / 2}" y="${y0 - 8}" fill="var(--accent)" font-size="12.5" font-weight="700" text-anchor="middle">0,${n} → ${n} cột</text>`;
+      const leftLab = `<text x="132" y="${y0 + (m * cs) / 2 + 4}" fill="var(--warn)" font-size="12.5" font-weight="700" text-anchor="end">0,${m} ↓ ${m} hàng</text>`;
+      const head = `<text x="150" y="18" fill="rgba(242,240,230,.72)" font-size="12">Lưới 100 ô = 1 → mỗi ô nhỏ là 0,01 (một phần trăm)</text>`;
+      const res = `<text x="360" y="52" fill="var(--chalk)" font-size="15" font-weight="700">0,${m} × 0,${n}</text>`
+        + `<text x="360" y="76" fill="var(--ok)" font-size="15" font-weight="700">= ${P} ô = ${P}/100</text>`
+        + `<text x="360" y="100" fill="var(--accent)" font-size="18" font-weight="700">= ${this.vnf(P / 100)}</text>`;
+      const rule = `<text x="20" y="242" fill="rgba(242,240,230,.82)" font-size="12">Quy tắc: 1 chữ số thập phân × 1 chữ số thập phân → tích có 1 + 1 = 2 chữ số thập phân (bỏ chữ số 0 tận cùng nếu có).</text>`;
+      host.innerHTML = `<svg id="decarea" width="548" height="258" viewBox="0 0 548 258">` + head + rowBand + colBand + over + grid + frame + topLab + leftLab + res + rule + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, m = this.mv(st), n = this.nv(st), P = this.pv(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: một ô vuông lớn = 1, chia thành 100 ô nhỏ (mỗi ô = 0,01). Tô ${m} hàng = 0,${m}, rồi ${n} cột = 0,${n}.`, hint: 'Đếm số ô nơi HÀNG và CỘT chồng lên nhau.' };
+      if (s === 2) return { cap: `Sơ đồ: ${m} hàng × ${n} cột = ${P} ô sáng, mà mỗi ô = 0,01 → 0,${m} × 0,${n} = ${P}/100 = ${this.vnf(P / 100)}.`, hint: 'Tích có 2 chữ số thập phân (1 + 1).' };
+      if (s === 3) return { cap: `Phép tính: 0,${m} × 0,${n} = ${this.vnf(P / 100)}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: 0,${m} × 0,${n} bằng bao nhiêu? Đếm ${P} ô sáng rồi đổi ra số thập phân.`, hint: '' };
+    },
+    value(st) { const m = this.mv(st), n = this.nv(st), P = this.pv(st); return `0,${m} × 0,${n} = ${this.vnf(P / 100)}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const P = this.pv(st), n = clamp(P, 1, 81), sc = Math.min(3.6 / Math.ceil(Math.sqrt(n)), 0.5), side = Math.ceil(Math.sqrt(n));
+      const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.5 });
+      for (let j = 0; j < n; j++) { const r = Math.floor(j / side), c = j % side; const msh = new THREE.Mesh(new THREE.BoxGeometry(sc * 0.8, sc * 0.3, sc * 0.8), mat); msh.position.set((c - (side - 1) / 2) * sc, 0, (r - (side - 1) / 2) * sc); g.add(msh); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3577,6 +3642,11 @@ EX['cong-tru-phan-so-khac-mau'] = [
   { prompt: 'Tính: 1/2 + 1/3 = ?', choices: ['5/6', '2/5', '2/6'], answer: '5/6', explanation: 'Mẫu chung 6: 1/2 = 3/6, 1/3 = 2/6 → 3/6 + 2/6 = 5/6. KHÔNG được lấy (1+1)/(2+3) = 2/5 — mẫu số KHÔNG cộng được.', errorTag: 'cong_ca_tu_va_mau' },
   { prompt: 'Tính: 3/4 + 1/2 = ?', choices: ['5/4', '4/6', '5/6'], answer: '5/4', explanation: 'Mẫu chung 4: 1/2 = 2/4 → 3/4 + 2/4 = 5/4 (băng giấy tô vượt 1 lần, kết quả là phân số lớn hơn 1). Giữ mẫu chung, chỉ cộng tử.', errorTag: 'quy_dong_sai_mau_chung' },
   { prompt: 'Tính: 2/3 − 1/6 = ?', choices: ['1/2', '3/6', '1/3'], answer: '1/2', explanation: 'Mẫu chung 6: 2/3 = 4/6 → 4/6 − 1/6 = 3/6 = 1/2 (rút gọn). Trừ tử số trên cùng mẫu chung rồi mới rút gọn.', errorTag: 'tru_ca_tu_va_mau' },
+];
+EX['nhan-hai-so-thap-phan'] = [
+  { prompt: 'Tính: 0,3 × 0,4 = ?', choices: ['0,12', '1,2', '0,7'], answer: '0,12', explanation: 'Bỏ dấu phẩy: 3 × 4 = 12. Hai thừa số có tất cả 1 + 1 = 2 chữ số thập phân → tách 2 chữ số: 0,12. Trên lưới: 3 hàng × 4 cột = 12 ô = 12 phần trăm.', errorTag: 'dem_sai_so_chu_thap_phan' },
+  { prompt: 'Tính: 0,5 × 0,6 = ?', choices: ['0,3', '0,03', '3'], answer: '0,3', explanation: '5 × 6 = 30 → tách 2 chữ số thập phân = 0,30 = 0,3 (bỏ chữ số 0 tận cùng). Lưới: 5 hàng × 6 cột = 30 ô = 0,30.', errorTag: 'khong_tru_so_0_du' },
+  { prompt: 'Tính: 0,7 × 0,2 = ?', choices: ['0,14', '1,4', '0,9'], answer: '0,14', explanation: '7 × 2 = 14, tích có 1 + 1 = 2 chữ số thập phân → 0,14. Tích nhỏ hơn cả 0,7 và 0,2 vì nhân với số bé hơn 1.', errorTag: 'nham_tich_lon_hon_thua_so' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
