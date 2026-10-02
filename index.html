@@ -407,6 +407,10 @@ const LESSONS = {
     khoi_dong:'Một cái sân trường hình chữ nhật. Muốn QUANG RÀO quanh sân thì ta cần biết độ dài đường nào? Muốn LÁT GẠK kín mặt sân thì ta cần biết độ lớn nào? Hai cái đó có giống nhau không?',
     chot:'CHU VI = độ dài đường bao QUANH hình = (dài + rộng) × 2, đo bằng cm (đơn vị dài). DIỆN TÍCH = độ lớn MẶT phủ kín hình = dài × rộng, đo bằng cm² (số ô vuông 1 cm). Cùng một hình chữ nhật nhưng là HAI đại lượng khác nhau — đừng lấy cái này trả lời cho câu hỏi của cái kia.',
     obj:'sân dài 6 rộng 4', rcA:6, rcB:4 },
+  'chia-phan-so-cho-so-tu-nhien': { model:'fracdiv', ten:'Chia một phân số cho số tự nhiên',
+    khoi_dong:'Mẹ cắt cho Hai chị em ăn 3/4 cái bánh. Giờ chị chia đều phần bánh đó cho 2 em. Mỗi em được bao nhiêu phần của CẢ cái bánh? Có phải lấy 3 chia 2 không, hay làm cách khác?',
+    chot:'Muốn chia một phân số cho một số tự nhiên (khác 0), ta GIỮ NGUYÊN tử số rồi NHÂN mẫu số với số đó: a/b ÷ n = a/(b × n). Lí do: chia phần đã tô ra n phần bằng nhau làm MỖI Ô NHỎ ĐI n lần (mẫu × n), còn số ô tô vẫn là a.',
+    obj:'3/4 cái bánh chia cho 2 em', fdNum:3, fdDen:4, fdDiv:2 },
 };
 
 const state = {
@@ -454,6 +458,7 @@ const state = {
   saA: 6, saB: 4, saC: 3,
   ordA: 2, ordB: 3, ordC: 4, ordK: 0,
   rcA: 6, rcB: 4,
+  fdNum: 3, fdDen: 4, fdDiv: 2,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3270,6 +3275,62 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // beyond-bank 12: CHIA MỘT PHÂN SỐ CHO SỐ TỰ NHIÊN. Cùng một trục, thanh trên tô a/b (vàng), thanh dưới cắt
+  // mỗi ô thành n ô con rồi lấy a ô (xanh) → phần tô NGẮN ĐI n LẦN. Insight: tử giữ nguyên, MẪU nhân n.
+  // Chặn lỗi "chia tử" (3/4 : 2 → 1,5/4 vô lý) và "nhân cả tử".
+  fracdiv: {
+    twoHands: true,
+    defaults(st, L) { st.fdNum = (L.fdNum != null ? L.fdNum : 3); st.fdDen = (L.fdDen != null ? L.fdDen : 4); st.fdDiv = (L.fdDiv != null ? L.fdDiv : 2); },
+    fmt(n) { const s = Math.round(n * 100) / 100; if (Number.isInteger(s)) return String(s); let t = s.toFixed(2); if (t.endsWith('0')) t = t.slice(0, -1); return t.replace('.', ','); },
+    a(st) { return clamp(st.fdNum, 1, 6); },
+    b(st) { return clamp(st.fdDen, 2, 8); },
+    n(st) { return clamp(st.fdDiv, 2, 6); },
+    dn(st) { return this.b(st) * this.n(st); },
+    q(st) { return this.a(st) / this.dn(st); },
+    geomSig(st) { return 'fracdiv' + this.a(st) + '_' + this.b(st) + '_' + this.n(st); },
+    params() { return [
+      { key: 'fdNum', label: 'Tử số a', min: 1, max: 6 },
+      { key: 'fdDen', label: 'Mẫu số b', min: 2, max: 8 },
+      { key: 'fdDiv', label: 'Số chia n', min: 2, max: 6 }]; },
+    ctlHint() { return 'Tay TRÁI đặt TỬ (số ô tô), tay PHẢI đặt MẪU (số ô); số chia n chỉnh bằng +/− (2→6). Thanh dưới = phép chia: phần tô ngắn đi n lần vì mẫu × n.'; },
+    draw2d(host, st) {
+      const a = this.a(st), b = this.b(st), n = this.n(st), dn = this.dn(st);
+      const W = 428, x0 = 64, top = 50, bot = 122, ch = 30, bw = W / b, cw = W / dn;
+      let gtop = ''; for (let j = 0; j < b; j++) { const f = j < a ? 'rgba(255,209,102,.55)' : 'rgba(242,240,230,.06)'; gtop += `<rect x="${(x0 + j * bw).toFixed(1)}" y="${top}" width="${bw.toFixed(1)}" height="${ch}" fill="${f}" stroke="var(--chalk)" stroke-width="1"></rect>`; }
+      let gbot = ''; for (let j = 0; j < dn; j++) { const f = j < a ? 'rgba(127,201,191,.62)' : 'rgba(242,240,230,.06)'; gbot += `<rect x="${(x0 + j * cw).toFixed(1)}" y="${bot}" width="${cw.toFixed(1)}" height="${ch}" fill="${f}" stroke="rgba(242,240,230,.4)" stroke-width="0.6"></rect>`; }
+      let sep = ''; for (let c = 1; c < b; c++) { const xx = (x0 + c * n * cw).toFixed(1); sep += `<line x1="${xx}" y1="${bot}" x2="${xx}" y2="${bot + ch}" stroke="var(--chalk)" stroke-width="1.2" stroke-dasharray="4 3"></line>`; }
+      const labTop = `<text x="${x0}" y="${top - 6}" fill="var(--warn)" font-size="12.5" font-weight="700">${a}/${b}  (tô ${a} trên ${b} ô)</text>`;
+      const labBot = `<text x="${x0}" y="${bot - 6}" fill="var(--ok)" font-size="12.5" font-weight="700">÷ ${n}: mỗi ô cắt thành ${n} → ${b}×${n} = ${dn} ô, vẫn lấy ${a} ô (nhỏ hơn)</text>`;
+      const res = `<text x="20" y="186" fill="var(--chalk)" font-size="14.5" font-weight="700">${a}/${b} ÷ ${n} = ${a}/(${b} × ${n}) = ${a}/${dn} = ${this.fmt(this.q(st))}</text>`;
+      const note = `<text x="20" y="210" fill="rgba(242,240,230,.82)" font-size="12">Tử GIỮ NGUYÊN (${a}); MẪU nhân ${n} thành ${dn} — mỗi ô nhỏ hơn ${n} lần nên phần tô ngắn đi đúng ${n} lần.</text>`;
+      host.innerHTML = `<svg id="fracdiv" width="548" height="258" viewBox="0 0 548 258">`
+        + `<text x="16" y="16" fill="rgba(242,240,230,.72)" font-size="12.5">Chia phân số cho số tự nhiên = thu hẹp phần đã tô đi n lần</text>`
+        + labTop + gtop + labBot + gbot + sep + res + note + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, a = this.a(st), b = this.b(st), n = this.n(st), dn = this.dn(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: có ${a}/${b} cái bánh, chia đều cho ${n} bạn. Mỗi bạn được bao nhiêu phần cái bánh?`, hint: 'Tay trái đặt tử, tay phải đặt mẫu, +/− cho số bạn.' };
+      if (s === 2) return { cap: `Sơ đồ: thanh vàng = ${a}/${b}. Chia cho ${n} → cắt mỗi ô thành ${n} ô con (${dn} ô), mỗi bạn lấy ${a} ô con = ${a}/${dn}. Phần xanh ngắn hơn phần vàng đúng ${n} lần.`, hint: 'Tử giữ nguyên, MẪU × ' + n + '.' };
+      if (s === 3) return { cap: `${a}/${b} ÷ ${n} = ${a}/${dn} = ${this.fmt(this.q(st))}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: ${a}/${b} chia cho ${n} bằng mấy phần mấy? (đừng chia tử!)`, hint: '' };
+    },
+    value(st) { return `${this.a(st)}/${this.b(st)} ÷ ${this.n(st)} = ${this.a(st)}/${this.dn(st)} = ${this.fmt(this.q(st))}`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.fdNum = clamp(l, 1, 6);
+      if (r !== null) st.fdDen = clamp(r, 2, 8);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), a = this.a(st), dn = this.dn(st), sc = Math.min(3.2 / dn, 0.3);
+      const gold = new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: 0.5 }), teal = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.5 });
+      for (let j = 0; j < dn; j++) { const m = new THREE.Mesh(new THREE.BoxGeometry(sc * 0.9, 0.3, 0.6), j < a ? gold : teal); m.position.set((j - (dn - 1) / 2) * sc, 0, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3379,6 +3440,10 @@ EX['thu-tu-tinh'] = [
 EX['chu-vi-dien-tich-hcn'] = [
   { prompt: 'Một mảnh vườn hình chữ nhật dài 8 m, rộng 5 m. Người ta đóng hàng RÀO quanh vườn. Chiều dài hàng rào là bao nhiêu?', choices: ['26 m', '40 m', '13 m'], answer: '26 m', explanation: 'Hàng rào chạy QUANH vườn = chu vi = (8 + 5) × 2 = 26 m. Đừng lấy 8 × 5 = 40 (đó là diện tích, không phải độ dài đường bao).', errorTag: 'nham_dien_tich_thanh_chu_vi' },
   { prompt: 'Với mảnh vườn dài 8 m, rộng 5 m ở trên, diện tích trồng rau là bao nhiêu?', choices: ['40 m²', '26 m²', '13 m²'], answer: '40 m²', explanation: 'Diện tích = dài × rộng = 8 × 5 = 40 m² (số ô vuông 1 m² phủ kín mặt vườn). 26 m là chu vi hàng rào — đơn vị m chứ không phải m².', errorTag: 'nham_chu_vi_thanh_dien_tich' },
+];
+EX['chia-phan-so-cho-so-tu-nhien'] = [
+  { prompt: 'Tính: 3/4 : 2 = ?', choices: ['3/8', '3/2', '1/4'], answer: '3/8', explanation: 'Giữ nguyên tử 3, nhân mẫu với 2: 4 × 2 = 8 → 3/8. Không được chia tử cho 2 (3 : 2 ra 1,5 vô lý) cũng không nhân tử.', errorTag: 'chia_tu_thay_vi_nhan_mau' },
+  { prompt: 'Tính: 2/5 : 3 = ?', choices: ['2/15', '6/5', '2/8'], answer: '2/15', explanation: 'Tử giữ nguyên 2, mẫu nhân 3: 5 × 3 = 15 → 2/15. Chia phân số cho số tự nhiên làm phần lấy nhỏ đi 3 lần.', errorTag: 'nham_cach_chia_phan_so' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
