@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Ba mươi tám mô hình đang có:
+Ba mươi chín mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -89,8 +89,9 @@ Ba mươi tám mô hình đang có:
 | `piechart` | **Biểu đồ hình quạt** (beyond-bank): mỗi nhóm = một quạt, đọc **% của tổng** | vòng tròn chia quạt theo tỉ lệ + **chú giải** từng nhóm "{n} em · {p}%"; quạt đang chọn **lồi ra** & viền vàng, trong quạt ghi % (bỏ ghi nếu quạt quá nhỏ) | 4 lát **trụ tròn** (CylinderGeometry theo góc) xếp thành chiếc bánh | bấm quạt/chú giải để chọn, **số ngón = số em** của nhóm đang chọn; +/− từng nhóm → quạt chia lại đúng tỉ lệ |
 | `line` | **Biểu đồ đoạn thẳng** (beyond-bank): đọc **xu thế theo thời gian** (nhiệt độ trong ngày) | trục ngang = GIỜ, trục dọc = °C; **5 điểm** nối thành đường gấp khúc + lưới ngang; **con đọc** (gạch đứt cam) chỉ mốc đang xem, dóng ra trục dọc đọc đúng giá trị | 5 cột + 5 khối cầu, cầu đỏ = con đọc | **lòng bàn tay ngang** quét trái↔phải để dời con đọc; hoặc bấm vào điểm, +/− từng giờ |
 | `svt` | **Tam giác đại lượng S–v–t** (beyond-bank): che ô cần tìm → ra phép tính | **tam giác**: S ở chóp, v·t ở đáy (kẻ gạch ngang + dọc chia 3 ô); ô ĐANG CHE nền vàng ghi `? = kết quả`, hai ô kia hiện số; dưới tam giác là **dòng công thức** đầy đủ | 3 hộp, hộp đang che màu vàng, hai hộp xanh | **giơ ngón = chọn ô che**: 1 → S, 2 → v, 3 → t; +/− hai số còn lại đổi đề → ô che tự tính |
+| `circle` | **Hình tròn** (beyond-bank): bán kính → đường kính, chu vi, diện tích | vòng tròn + 12 nan hoa; **bán kính r** (cạnh vàng, tâm→mép), **đường kính d = 2r** (nét đứt cam ngang qua tâm); dưới là **chu vi khai triển** thành một đoạn thẳng = π×d; cột phải ghi d, C = 2πr, S = πr² (π ≈ 3,14) | đĩa trụ (CylinderGeometry) to/nhỏ theo r | **lòng bàn tay ngang** đổi bán kính; hoặc bấm vào hình (khoảng cách tới tâm = r), +/− bán kính |
 
-Bài hiện có (44 bài · 38 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 5 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (45 bài · 39 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 6 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -106,7 +107,7 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` (Vòng 69–73):** SGK lớp 4 có mạch
+**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` (Vòng 69–74):** SGK lớp 4 có mạch
 "Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
 giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
 (`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** các model cũ.
@@ -126,6 +127,10 @@ lượng)". Với `bar`/`piechart`/`line`, họ **biểu đồ lớp 4–5 đã 
 lượng** S (chóp) / v·t (đáy). Giơ 1·2·3 ngón để CHE đúng ô cần tìm, hai số còn lại đặt bằng +/−, ô bị
 che **tự tính** kèm dòng công thức (`S = v × t`, `v = S ÷ t`, `t = S ÷ v`); có chặn chia cho 0. Đây là
 công cụ "che tam giác" kinh điển để học sinh nhớ quan hệ ba đại lượng mà không thuộc máy móc.
+Vòng 74 thêm mạch thứ sáu: `circle` — **hình tròn** (bán kính → đường kính d = 2r, chu vi C = 2πr, diện
+tích S = πr²). Bán kính đổi bằng **lòng bàn tay ngang** hoặc bấm (khoảng cách tới tâm = r); vẽ thêm
+**"chu vi khai triển"** thành một đoạn thẳng để thấy C trải đúng π lần đường kính. Chặn lỗi lẫn r với d,
+quên ×2 ở chu vi, và lẫn chu vi với diện tích. Số thập phân hiển thị theo kiểu Việt (dấu phẩy).
 
 **Vòng 70 còn sửa một LỖI CHỨC NĂNG thật của điều khiển hai tay:** nhánh `twoHands` trong
 `loopDetect` vốn so `state.balL + '/' + state.balR` để quyết định vẽ lại — hai biến CHỈ model
