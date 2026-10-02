@@ -391,6 +391,10 @@ const LESSONS = {
     khoi_dong:'Cô có một hình chữ nhật và cắt nó dọc theo đường chéo → được hai tam giác y hệt nhau. Vậy một tam giác bằng bao nhiêu phần của hình chữ nhật? Muốn tính diện tích tam giác, ta làm thế nào?',
     chot:'Diện tích tam giác = đáy × chiều cao ÷ 2. Sở dĩ có "÷ 2" vì hai tam giác giống hệt ghép lại mới thành hình chữ nhật đáy × cao. QUÊN CHIA 2 là lỗi hay gặp nhất.',
     obj:'tam giác đáy 10 cao 6', trB:10, trH:6 },
+  'dien-tich-hinh-thang': { model:'trap', ten:'Diện tích hình thang: (đáy lớn + đáy nhỏ) × chiều cao ÷ 2',
+    khoi_dong:'Cô có một hình thang (đáy trên ngắn, đáy dưới dài). Nếu cô quay một hình thang GIỐNG HỆT rồi áp vào cạnh nghiêng, hai hình ghép thành một hình bình hành. Hình bình hành đó có đáy bằng bao nhiêu, và hình thang chiếm mấy phần của nó?',
+    chot:'Diện tích hình thang = (đáy lớn + đáy nhỏ) × chiều cao ÷ 2. Sở dĩ CỘNG hai đáy rồi chia 2 vì hai hình thang giống hệt ghép thành hình bình hành đáy (a + b). Phải CỘNG hai đáy TRƯỚC khi nhân chiều cao, rồi mới chia 2.',
+    obj:'hình thang đáy lớn 12, đáy nhỏ 6, cao 5', tpA:12, tpB:6, tpH:5 },
 };
 
 const state = {
@@ -434,6 +438,7 @@ const state = {
   svS: 120, svV: 40, svT: 3, svAsk: 0,
   coR: 5,
   trB: 10, trH: 6,
+  tpA: 12, tpB: 6, tpH: 5,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -2991,6 +2996,75 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // beyond-bank 8: DIỆN TÍCH HÌNH THANG — chứng minh "xoay 1 hình thang giống hệt → hình bình hành đáy (a+b)".
+  // Hai tay: trái = ĐÁY NHỎ b, phải = ĐÁY LỚN a; chiều cao h qua +/−. Chặn lỗi "quên cộng hai đáy / quên chia 2".
+  trap: {
+    twoHands: true,
+    defaults(st, L) { st.tpA = (L.tpA != null ? L.tpA : 12); st.tpB = (L.tpB != null ? L.tpB : 6); st.tpH = (L.tpH != null ? L.tpH : 5); },
+    fmt(n) { const s = Math.round(n * 100) / 100; if (Number.isInteger(s)) return String(s); let t = s.toFixed(2); if (t.endsWith('0')) t = t.slice(0, -1); return t.replace('.', ','); },
+    a(st) { return clamp(st.tpA, 1, 20); },
+    b(st) { return clamp(st.tpB, 1, 20); },
+    h(st) { return clamp(st.tpH, 1, 14); },
+    sum(st) { return this.a(st) + this.b(st); },
+    S(st) { return this.sum(st) * this.h(st) / 2; },
+    geomSig(st) { return 'trap' + this.a(st) + ':' + this.b(st) + ':' + this.h(st); },
+    params() { return [
+      { key: 'tpA', label: 'Đáy lớn a (đơn vị)', min: 1, max: 20 },
+      { key: 'tpB', label: 'Đáy nhỏ b (đơn vị)', min: 1, max: 20 },
+      { key: 'tpH', label: 'Chiều cao h (đơn vị)', min: 1, max: 14 }]; },
+    ctlHint() { return 'Tay TRÁI đặt ĐÁY NHỎ, tay PHẢI đặt ĐÁY LỚN; chiều cao chỉnh bằng +/− (tới 20 | 14). Hai hình thang giống hệt ghép thành hình bình hành đáy (a + b) → hình thang bằng một nửa.'; },
+    draw2d(host, st) {
+      const a = this.a(st), b = this.b(st), hh = this.h(st), sm = this.sum(st);
+      const s = Math.min(470 / (sm + Math.abs(a - b) / 2), 150 / hh, 15);
+      const YB = 186, off = (a - b) * s / 2, X0 = 34 - Math.min(0, off), top = YB - hh * s, footX = X0 + off;
+      const A1 = X0 + ',' + YB, B1 = (X0 + a * s).toFixed(1) + ',' + YB;
+      const C1 = (X0 + off + b * s).toFixed(1) + ',' + top.toFixed(1), D1 = (X0 + off).toFixed(1) + ',' + top.toFixed(1);
+      const P1 = (X0 + sm * s).toFixed(1) + ',' + YB, P3 = (X0 + off + sm * s).toFixed(1) + ',' + top.toFixed(1);
+      const solid = `<polygon points="${A1} ${B1} ${C1} ${D1}" fill="rgba(127,201,191,.5)" stroke="var(--chalk)" stroke-width="2.5"></polygon>`;
+      const ghost = `<polygon points="${P1} ${B1} ${C1} ${P3}" fill="rgba(255,209,102,.16)" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="5 4"></polygon>`;
+      const axis = `<line x1="${B1.split(',')[0]}" y1="${YB}" x2="${C1.split(',')[0]}" y2="${top.toFixed(1)}" stroke="var(--accent)" stroke-width="2"></line>`;
+      const hline = `<line x1="${footX.toFixed(1)}" y1="${top.toFixed(1)}" x2="${footX.toFixed(1)}" y2="${YB}" stroke="rgba(242,240,230,.5)" stroke-width="1.3" stroke-dasharray="3 3"></line>`;
+      const hRa = `<path d="M ${footX.toFixed(1)} ${YB - 10} L ${(footX + 10).toFixed(1)} ${YB - 10} L ${(footX + 10).toFixed(1)} ${YB}" fill="none" stroke="rgba(242,240,230,.55)" stroke-width="1.2"></path>`;
+      const labB = `<text x="${(X0 + a * s / 2).toFixed(1)}" y="${YB - 7}" fill="var(--accent)" font-size="12.5" font-weight="700" text-anchor="middle">a = ${this.fmt(a)}</text>`;
+      const labT = `<text x="${(X0 + off + b * s / 2).toFixed(1)}" y="${(top - 5).toFixed(1)}" fill="var(--warn)" font-size="12.5" font-weight="700" text-anchor="middle">b = ${this.fmt(b)}</text>`;
+      const labH = `<text x="${(footX + 5).toFixed(1)}" y="${((top + YB) / 2).toFixed(1)}" fill="rgba(242,240,230,.8)" font-size="12" font-weight="700">h = ${this.fmt(hh)}</text>`;
+      const by = YB + 15;
+      const bracket = `<line x1="${X0}" y1="${by}" x2="${(X0 + sm * s).toFixed(1)}" y2="${by}" stroke="var(--chalk)" stroke-width="1.3"></line>`
+        + `<line x1="${X0}" y1="${by - 4}" x2="${X0}" y2="${by + 4}" stroke="var(--chalk)" stroke-width="1.3"></line>`
+        + `<line x1="${(X0 + sm * s).toFixed(1)}" y1="${by - 4}" x2="${(X0 + sm * s).toFixed(1)}" y2="${by + 4}" stroke="var(--chalk)" stroke-width="1.3"></line>`
+        + `<text x="${(X0 + sm * s / 2).toFixed(1)}" y="${by + 15}" fill="var(--chalk)" font-size="12" font-weight="700" text-anchor="middle">đáy hình bình hành = a + b = ${this.fmt(sm)}</text>`;
+      const formula = `<text x="28" y="243" fill="var(--accent)" font-size="13.5" font-weight="700">S = (a + b) × h ÷ 2 = (${this.fmt(a)} + ${this.fmt(b)}) × ${this.fmt(hh)} ÷ 2 = ${this.fmt(this.S(st))}</text>`;
+      host.innerHTML = `<svg id="trap" width="548" height="258" viewBox="0 0 548 258">`
+        + `<text x="16" y="18" fill="rgba(242,240,230,.72)" font-size="13">Hình thang = một nửa hình bình hành đáy (đáy lớn + đáy nhỏ)</text>`
+        + ghost + hline + hRa + solid + axis + labB + labT + labH + bracket + formula + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, a = this.a(st), b = this.b(st), hh = this.h(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: mặt tường hình thang — ĐÁY LỚN ${a} (dưới), ĐÁY NHỎ ${b} (trên), CHIỀU CAO ${hh}.`, hint: 'Tay trái đặt đáy nhỏ, tay phải đặt đáy lớn, +/− cho chiều cao.' };
+      if (s === 2) return { cap: `Sơ đồ: quay một hình thang GIỐNG HẸT (phần mờ) áp vào cạnh nghiêng thì được đúng HÌNH BÌNH HÀNH có đáy = a + b = ${this.sum(st)}, cao = ${hh}. Hình thang chỉ bằng MỘT NỬA hình bình hành ấy.`, hint: 'Đó là lý do: CỘNG hai đáy rồi × cao rồi ÷ 2.' };
+      if (s === 3) return { cap: `S = (đáy lớn + đáy nhỏ) × cao ÷ 2 = (${a} + ${b}) × ${hh} ÷ 2 = ${this.fmt(this.S(st))}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: hình thang đáy lớn ${a}, đáy nhỏ ${b}, cao ${hh} có diện tích bao nhiêu? Cô đếm tay giơ, hoặc +/−.`, hint: '' };
+    },
+    value(st) { return `S = (${this.fmt(this.a(st))} + ${this.fmt(this.b(st))}) × ${this.fmt(this.h(st))} ÷ 2 = ${this.fmt(this.S(st))}`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.tpB = clamp(l, 1, 20);
+      if (r !== null) st.tpA = clamp(r, 1, 20);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), a = this.a(st), b = this.b(st), hh = this.h(st);
+      const sc = Math.min(3.2 / (a + b), 1.6 / hh, 0.28), off = (a - b) * sc / 2;
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0); shape.lineTo(a * sc, 0); shape.lineTo(off + b * sc, hh * sc); shape.lineTo(off, hh * sc); shape.lineTo(0, 0);
+      const mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.5, bevelEnabled: false }),
+        new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.5 }));
+      mesh.position.set(-a * sc / 2, 0, -0.25); g.add(mesh); return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3082,6 +3156,11 @@ EX['hinh-tron'] = [
 EX['dien-tich-tam-giac'] = [
   { prompt: 'Một hình tam giác có đáy 8 cm và chiều cao 5 cm. Diện tích của nó là bao nhiêu?', choices: ['20 cm²', '40 cm²', '13 cm²'], answer: '20 cm²', explanation: 'S = đáy × cao ÷ 2 = 8 × 5 ÷ 2 = 20 cm². Tính 8 × 5 = 40 rồi QUÊN chia 2 là chưa cắt đôi hình chữ nhật.', errorTag: 'quen-chia-doi-khi-tinh-dien-tich-tam-giac' },
   { prompt: 'Vì sao diện tích hình tam giác bằng đáy × chiều cao RỒI CHIA 2?', choices: ['Vì ghép 2 tam giác giống hệt thành 1 hình chữ nhật', 'Vì tam giác luôn nhỏ hơn hình vuông', 'Vì chiều cao luôn ngắn hơn đáy'], answer: 'Vì ghép 2 tam giác giống hệt thành 1 hình chữ nhật', explanation: 'Hai tam giác giống hệt ghép theo đường chéo tạo thành hình chữ nhật đáy × cao, nên một tam giác chỉ bằng MỘT NỬA → công thức có "÷ 2".', errorTag: 'khong-hieu-vi-sao-chia-2' },
+];
+// Diện tích hình thang không có trong examples.mjs của bank → 2 câu SGK-style tự tác.
+EX['dien-tich-hinh-thang'] = [
+  { prompt: 'Một hình thang có đáy lớn 12 cm, đáy nhỏ 8 cm, chiều cao 6 cm. Diện tích của nó là bao nhiêu?', choices: ['60 cm²', '120 cm²', '26 cm²'], answer: '60 cm²', explanation: 'S = (đáy lớn + đáy nhỏ) × cao ÷ 2 = (12 + 8) × 6 ÷ 2 = 20 × 6 ÷ 2 = 60 cm². Phải CỘNG hai đáy trước, rồi nhân cao, rồi chia 2.', errorTag: 'cong-thieu-day-hoac-quen-chia-2-hinh-thang' },
+  { prompt: 'Vì sao diện tích hình thang bằng (đáy lớn + đáy nhỏ) × chiều cao RỒI CHIA 2?', choices: ['Vì hai hình thang giống hệt ghép thành hình bình hành đáy (a + b)', 'Vì hình thang có bốn cạnh', 'Vì chiều cao luôn ngắn hơn đáy'], answer: 'Vì hai hình thang giống hệt ghép thành hình bình hành đáy (a + b)', explanation: 'Quay một hình thang giống hệt áp vào cạnh nghiêng → được hình bình hành có đáy bằng TỔNG hai đáy (a + b), cao h. Hình thang = một nửa, nên S = (a + b) × h ÷ 2.', errorTag: 'khong-hieu-vi-sao-cong-hai-day-roi-chia-2' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
