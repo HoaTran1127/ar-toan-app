@@ -487,6 +487,10 @@ const LESSONS = {
     khoi_dong:'Lớp có 18 bạn, trong đó 12 bạn thích vẽ. Vì sao nói "12/18 = 2/3" được — cả tử và mẫu cùng chia cho 6 thì giá trị phần chỉ số bạn thích vẽ có đổi không?',
     chot:'RÚT GỌN phân số: chia cả TỬ SỐ và MẪU SỐ cho cùng một số (khác 0) thì phân số KHÔNG đổi giá trị. Rút đến khi tử và mẫu không còn chia chung được nữa (ƯCLN = 1) gọi là phân số TỐI GIẢN — muốn nhanh thì chia một lần cho ƯCLN. CHÚ Ý: phải chia CẢ HAI; chỉ chia tử hoặc chỉ chia mẫu là SAI.',
     obj:'rút gọn 12/18', psN:12, psD:18 },
+  'so-sanh-hai-phan-so': { model:'fraccmp', ten:'So sánh hai phân số khác mẫu số',
+    khoi_dong:'Hai thanh bánh dài bằng nhau. Em thứ nhất ăn 3/4 thanh, em thứ hai ăn 5/6 thanh. Mẫu số khác nhau (4 và 6) thì so thế nào — có được lấy 3 so với 5 không?',
+    chot:'SO SÁNH hai phân số KHÁC MẪU: KHÔNG được so tử số với tử số. Cách 1 — quy đồng về CÙNG mẫu rồi so tử. Cách nhanh 2 — NHÂN CHÉO: a/b so với c/d thì so a×d với c×b; tích nào lớn hơn thì phân số đó lớn hơn. CHÚ Ý: nhân chéo đúng là đưa cả hai về cùng mẫu tích (b×d) rồi tử trở thành a×d và c×b.',
+    obj:'so sánh 3/4 và 5/6', fcA:3, fcB:4, fcC:5, fcD:6 },
 };
 
 const state = {
@@ -554,6 +558,7 @@ const state = {
   sdSum: 96, sdDiff: 12,
   sqA: 3, sqD: 4, sqN: 12,
   psN: 12, psD: 18,
+  fcA: 3, fcB: 4, fcC: 5, fcD: 6,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4652,6 +4657,62 @@ const MODELS = {
     },
     paint3d() {},
   },
+  fraccmp: {
+    res(st) {
+      const a = clamp(Math.round(st.fcA), 1, 9), b = clamp(Math.round(st.fcB), 2, 12);
+      const c = clamp(Math.round(st.fcC), 1, 9), d = clamp(Math.round(st.fcD), 2, 12);
+      const left = a * d, right = c * b;
+      const sign = left > right ? '>' : left < right ? '<' : '=';
+      return { a, b, c, d, left, right, sign };
+    },
+    defaults(st, L) { st.fcA = (L.fcA != null ? L.fcA : 3); st.fcB = (L.fcB != null ? L.fcB : 4); st.fcC = (L.fcC != null ? L.fcC : 5); st.fcD = (L.fcD != null ? L.fcD : 6); },
+    geomSig(st) { const r = this.res(st); return 'fc' + r.a + '/' + r.b + '~' + r.c + '/' + r.d; },
+    params() { return [{ key: 'fcA', label: 'Tử số 1', min: 1, max: 9 }, { key: 'fcB', label: 'Mẫu số 1', min: 2, max: 12 }, { key: 'fcC', label: 'Tử số 2', min: 1, max: 9 }, { key: 'fcD', label: 'Mẫu số 2', min: 2, max: 12 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bốn thanh trượt cho hai phân số a/b và c/d (tử 1–9, mẫu 2–12). Giơ 1–9 ngón đặt TỬ số thứ nhất. Muốn so sánh: nhân chéo a×d với c×b rồi đối chiếu hai tích.'; },
+    hand(st, f) { st.fcA = clamp(Math.round(f), 1, 9); },
+    handLabel(f) { return '→ tử số thứ nhất = ' + clamp(Math.round(f), 1, 9); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const W = 200, ox = 92, bh = 18;
+      const ds = r.sign === '<' ? '&lt;' : r.sign === '>' ? '&gt;' : '=';
+      const bar = (y, count, filled, tone) => {
+        const cw = W / count; let s = '';
+        for (let k = 0; k < count; k++) {
+          const x = ox + k * cw; const on = k < filled;
+          s += `<rect x="${x.toFixed(2)}" y="${y}" width="${(cw - 1.5).toFixed(2)}" height="${bh}" rx="2" fill="${on ? tone : 'rgba(242,240,230,.12)'}" stroke="rgba(242,240,230,.4)" stroke-width="1"></rect>`;
+        }
+        return s;
+      };
+      let g = `<text x="14" y="18" font-size="13" font-weight="700" fill="var(--chalk)">So sánh hai phân số khác mẫu số</text>`;
+      g += `<text x="14" y="48" font-size="14" font-weight="700" fill="var(--chalk)">${r.a}/${r.b}</text>` + bar(36, r.b, r.a, 'rgba(127,201,191,.65)');
+      g += `<text x="14" y="78" font-size="14" font-weight="700" fill="var(--chalk)">${r.c}/${r.d}</text>` + bar(66, r.d, r.c, 'rgba(240,196,92,.65)');
+      g += `<text x="14" y="108" font-size="11.5" fill="rgba(242,240,230,.85)">Nhân chéo (cùng mẫu ${r.b * r.d}):  ${r.a} × ${r.d} = ${r.left}   ;   ${r.c} × ${r.b} = ${r.right}</text>`;
+      g += `<text x="14" y="132" font-size="16" font-weight="700" fill="var(--accent)">${r.a}/${r.b}  ${ds}  ${r.c}/${r.d}   (vì ${r.left} ${ds} ${r.right})</text>`;
+      const err = `<text x="14" y="158" font-size="10.5" fill="var(--warn)">❌ Mẫu khác nhau (${r.b} vs ${r.d}) thì KHÔNG được so tử ${r.a} với ${r.c}. Phải quy đồng hoặc nhân chéo rồi so ${r.left} với ${r.right}.</text>`;
+      host.innerHTML = `<svg id="fraccmp" width="520" height="170" viewBox="0 0 520 170">` + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hai thanh dài BẰNG nhau (cùng 1 đơn vị). Thanh trên chia ${r.b} phần, tô ${r.a}; thanh dưới chia ${r.d} phần, tô ${r.c}. Nhìn phần tô của thanh nào phủ dài hơn.`, hint: 'hai thanh cùng độ dài nên mới so được.' };
+      if (s === 2) return { cap: `Sơ đồ: mẫu khác nhau (${r.b} và ${r.d}) nên quy về cùng mẫu ${r.b * r.d}: ${r.a}/${r.b} = ${r.left}/${r.b * r.d}; ${r.c}/${r.d} = ${r.right}/${r.b * r.d}. Cùng mẫu rồi thì chỉ việc so tử.`, hint: 'nhân chéo chính là quy đồng mẫu số chung.' };
+      if (s === 3) return { cap: `Phép tính: ${r.a} × ${r.d} = ${r.left}; ${r.c} × ${r.b} = ${r.right}; vì ${r.left} ${r.sign} ${r.right} nên ${r.a}/${r.b} ${r.sign} ${r.c}/${r.d}.`, hint: '' };
+      return { cap: `Cả lớp: ${r.a}/${r.b} ${r.sign} ${r.c}/${r.d}. Mẹo nhớ: mẫu KHÁC nhau thì ${r.sign === '=' ? 'bằng nhau (hai tích chéo bằng nhau)' : 'nhân chéo a×d với c×b, tích nào lớn hơn thì phân số đó lớn hơn'} — đừng so tử bừa.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.a}/${r.b} ${r.sign} ${r.c}/${r.d}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mF = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mD = new THREE.MeshStandardMaterial({ color: 0x3a3f3a, roughness: 0.8 });
+      const mG = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      for (let k = 0; k < r.b; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.5), k < r.a ? mF : mD); m.position.set(k * 0.95, 0, 0); g.add(m); }
+      for (let k = 0; k < r.d; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.5), k < r.c ? mG : mD); m.position.set(k * 0.95, 0, 1.2); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4860,6 +4921,11 @@ EX['rut-gon-phan-so'] = [
   { prompt: 'Rút gọn 12/18 ta được phân số tối giản:', choices: ['2/3', '3/2', '6/9'], answer: '2/3', explanation: 'ƯCLN(12, 18) = 6 → 12 ÷ 6 = 2, 18 ÷ 6 = 3 → 2/3. 6/9 mới chia 2 nên CHƯA tối giản.', errorTag: 'rut_chua_toi_gian' },
   { prompt: 'Rút gọn 15/25 ta được:', choices: ['3/5', '5/3', '1/5'], answer: '3/5', explanation: 'Cùng chia cho 5: 15 ÷ 5 = 3, 25 ÷ 5 = 5 → 3/5.', errorTag: 'chi_chia_tu_quen_mau' },
   { prompt: 'Rút gọn 8/12 ta được phân số tối giản:', choices: ['2/3', '4/6', '3/4'], answer: '2/3', explanation: 'ƯCLN(8, 12) = 4 → 8 ÷ 4 = 2, 12 ÷ 4 = 3 → 2/3 (4/6 chưa tối giản).', errorTag: 'rut_chua_toi_gian' },
+];
+EX['so-sanh-hai-phan-so'] = [
+  { prompt: 'So sánh 3/4 … 5/6 (điền dấu):', choices: ['<', '>', '='], answer: '<', explanation: 'Nhân chéo: 3 × 6 = 18, 5 × 4 = 20. Vì 18 < 20 nên 3/4 < 5/6. Sai phổ biến: thấy 3 < 5 nên chắc 3/4 < 5/6 — tử số chưa nói lên gì khi mẫu khác nhau.', errorTag: 'so_tu_khi_mau_khac_nhau' },
+  { prompt: 'So sánh 5/6 … 3/4 (điền dấu):', choices: ['<', '>', '='], answer: '>', explanation: 'Nhân chéo: 5 × 4 = 20, 3 × 6 = 18. Vì 20 > 18 nên 5/6 > 3/4.', errorTag: 'so_tu_khi_mau_khac_nhau' },
+  { prompt: 'So sánh 2/4 … 3/6 (điền dấu):', choices: ['<', '>', '='], answer: '=', explanation: 'Nhân chéo: 2 × 6 = 12, 3 × 4 = 12. Hai tích bằng nhau nên 2/4 = 3/6 (cùng rút về 1/2).', errorTag: 'so_tu_khi_mau_khac_nhau' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
