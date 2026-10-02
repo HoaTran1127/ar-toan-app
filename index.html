@@ -491,6 +491,10 @@ const LESSONS = {
     khoi_dong:'Hai thanh bánh dài bằng nhau. Em thứ nhất ăn 3/4 thanh, em thứ hai ăn 5/6 thanh. Mẫu số khác nhau (4 và 6) thì so thế nào — có được lấy 3 so với 5 không?',
     chot:'SO SÁNH hai phân số KHÁC MẪU: KHÔNG được so tử số với tử số. Cách 1 — quy đồng về CÙNG mẫu rồi so tử. Cách nhanh 2 — NHÂN CHÉO: a/b so với c/d thì so a×d với c×b; tích nào lớn hơn thì phân số đó lớn hơn. CHÚ Ý: nhân chéo đúng là đưa cả hai về cùng mẫu tích (b×d) rồi tử trở thành a×d và c×b.',
     obj:'so sánh 3/4 và 5/6', fcA:3, fcB:4, fcC:5, fcD:6 },
+  'bieu-thuc-chua-chu': { model:'expr', ten:'Biểu thức chứa chữ — thay chữ bằng số rồi tính',
+    khoi_dong:'Cô viết "a + 5". Khi a = 8 thì kết quả là bao nhiêu? Vì sao "a + 5" chưa tính được ngay mà phải đợi người ta nói a bằng mấy?',
+    chot:'BIỂU THỨC CHỨA CHỮ (a, b, …) là một cách viết GỌI TÊN cho số chưa biết; nó chỉ có GIÁ TRỊ khi ta THAY chữ bằng một số cụ thể. Cùng một chữ xuất hiện nhiều lần phải lấy CÙNG một giá trị. Muốn tính giá trị biểu thức: thay số vào chỗ chữ, rồi làm theo thứ tự phép tính (× ÷ trước, + − sau, có ngoặc thì ngoặc trước).',
+    obj:'tính a + b, a × b với a = 7, b = 5', exA: 7, exB: 5 },
 };
 
 const state = {
@@ -559,6 +563,7 @@ const state = {
   sqA: 3, sqD: 4, sqN: 12,
   psN: 12, psD: 18,
   fcA: 3, fcB: 4, fcC: 5, fcD: 6,
+  exA: 7, exB: 5,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4713,6 +4718,55 @@ const MODELS = {
     },
     paint3d() {},
   },
+  expr: {
+    res(st) {
+      const a = clamp(Math.round(st.exA), 1, 20), b = clamp(Math.round(st.exB), 1, 20);
+      return { a, b, sum: a + b, prod: a * b, twosum: 2 * a + b };
+    },
+    defaults(st, L) { st.exA = (L.exA != null ? L.exA : 7); st.exB = (L.exB != null ? L.exB : 5); },
+    geomSig(st) { const r = this.res(st); return 'ex' + r.a + ',' + r.b; },
+    params() { return [{ key: 'exA', label: 'Chữ a', min: 1, max: 20 }, { key: 'exB', label: 'Chữ b', min: 1, max: 20 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Hai thanh trượt đặt GIÁ TRỊ của chữ a (1–20) và b (1–20). Giơ 1–9 ngón đặt a. Thay a, b bằng số rồi đọc giá trị từng biểu thức.'; },
+    hand(st, f) { st.exA = clamp(Math.round(f), 1, 20); },
+    handLabel(f) { return '→ a = ' + clamp(Math.round(f), 1, 20); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const teal = 'rgba(127,201,191,.65)', gold = 'rgba(240,196,92,.65)';
+      let g = `<text x="14" y="18" font-size="13" font-weight="700" fill="var(--chalk)">Biểu thức chứa chữ — thay số rồi tính</text>`;
+      g += `<rect x="14" y="26" width="150" height="22" rx="4" fill="${teal}"></rect><text x="22" y="42" font-size="13" font-weight="700" fill="#0b0d0b">a = ${r.a}</text>`;
+      g += `<rect x="176" y="26" width="150" height="22" rx="4" fill="${gold}"></rect><text x="184" y="42" font-size="13" font-weight="700" fill="#0b0d0b">b = ${r.b}</text>`;
+      const row = (y, lit, sub, val) => `<text x="14" y="${y}" font-size="13.5" fill="var(--chalk)" font-weight="700">${lit}</text>`
+        + `<text x="150" y="${y}" font-size="12.5" fill="rgba(242,240,230,.75)">= ${sub}</text>`
+        + `<text x="360" y="${y}" font-size="14" fill="var(--accent)" font-weight="700">= ${val}</text>`;
+      g += row(70, 'a + b', `${r.a} + ${r.b}`, r.sum);
+      g += row(98, 'a × b', `${r.a} × ${r.b}`, r.prod);
+      g += row(126, '2 × a + b', `2 × ${r.a} + ${r.b} = ${2 * r.a} + ${r.b}`, r.twosum);
+      const err = `<text x="14" y="152" font-size="10.5" fill="var(--warn)">❌ Chữ a gặp chỗ này thay 7, chỗ kia thay 8? SAI — cùng một chữ phải lấy CÙNG một giá trị ở mọi chỗ.</text>`;
+      host.innerHTML = `<svg id="expr" width="520" height="162" viewBox="0 0 520 162">` + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hộp A có ${r.a} đồ, hộp B có ${r.b} đồ. Chữ "a" chỉ số đồ trong hộp A, "b" chỉ hộp B — chưa biết thì để chữ, biết rồi thì thay số.`, hint: 'a và b là TÊN của hai số.' };
+      if (s === 2) return { cap: `Sơ đồ: thay a = ${r.a}, b = ${r.b}. Biểu thức "a + b" hiện số ${r.a} + ${r.b}; "a × b" hiện ${r.a} × ${r.b}; mỗi lần gặp a lại thay đúng ${r.a}, gặp b thay đúng ${r.b}.`, hint: 'cùng chữ = cùng số.' };
+      if (s === 3) return { cap: `Phép tính: a + b = ${r.sum}; a × b = ${r.prod}; 2 × a + b = ${2 * r.a} + ${r.b} = ${r.twosum} (nhân trước, cộng sau).`, hint: '' };
+      return { cap: `Cả lớp: với a = ${r.a}, b = ${r.b} thì a + b = ${r.sum}, a × b = ${r.prod}, 2 × a + b = ${r.twosum}. Nhớ: thay CÙNG giá trị cho cùng một chữ rồi tính đúng thứ tự.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `a=${r.a} b=${r.b} → a+b=${r.sum}, a×b=${r.prod}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mA = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mB = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.5 });
+      const mP = new THREE.MeshStandardMaterial({ color: 0x8fb4ff, roughness: 0.55 });
+      const barA = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mA); barA.scale.set(r.a, 0.6, 0.6); barA.position.set(r.a / 2, 1.4, 0); g.add(barA);
+      const barB = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mB); barB.scale.set(r.b, 0.6, 0.6); barB.position.set(r.b / 2, 0.6, 0); g.add(barB);
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(1, 0.3, 1), mP); plate.scale.set(r.a, 1, r.b); plate.position.set(r.a / 2, 0, -2.2); g.add(plate);
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4926,6 +4980,11 @@ EX['so-sanh-hai-phan-so'] = [
   { prompt: 'So sánh 3/4 … 5/6 (điền dấu):', choices: ['<', '>', '='], answer: '<', explanation: 'Nhân chéo: 3 × 6 = 18, 5 × 4 = 20. Vì 18 < 20 nên 3/4 < 5/6. Sai phổ biến: thấy 3 < 5 nên chắc 3/4 < 5/6 — tử số chưa nói lên gì khi mẫu khác nhau.', errorTag: 'so_tu_khi_mau_khac_nhau' },
   { prompt: 'So sánh 5/6 … 3/4 (điền dấu):', choices: ['<', '>', '='], answer: '>', explanation: 'Nhân chéo: 5 × 4 = 20, 3 × 6 = 18. Vì 20 > 18 nên 5/6 > 3/4.', errorTag: 'so_tu_khi_mau_khac_nhau' },
   { prompt: 'So sánh 2/4 … 3/6 (điền dấu):', choices: ['<', '>', '='], answer: '=', explanation: 'Nhân chéo: 2 × 6 = 12, 3 × 4 = 12. Hai tích bằng nhau nên 2/4 = 3/6 (cùng rút về 1/2).', errorTag: 'so_tu_khi_mau_khac_nhau' },
+];
+EX['bieu-thuc-chua-chu'] = [
+  { prompt: 'Với a = 8, giá trị của biểu thức a + 5 là:', choices: ['13', '12', '53'], answer: '13', explanation: 'Thay a = 8 → 8 + 5 = 13. 53 là lỗi ghép chữ số (8 và 5 viết cạnh) thay vì cộng.', errorTag: 'ghep_chu_so_thay_vi_tinh' },
+  { prompt: 'Với a = 6, b = 4, giá trị của a × b là:', choices: ['24', '10', '64'], answer: '24', explanation: 'Thay a = 6, b = 4 → 6 × 4 = 24. 10 là a + b (nhầm phép).', errorTag: 'nham_phep_trong_bieu_thuc' },
+  { prompt: 'Với a = 5, giá trị của biểu thức 3 × a + 2 là:', choices: ['17', '7', '15'], answer: '17', explanation: 'Thay a = 5: 3 × 5 + 2. Nhân trước: 3 × 5 = 15, rồi 15 + 2 = 17. Tính 3 + 2 = 5 rồi × 5 = 25 hoặc 5 + 2 = 7 đều sai thứ tự.', errorTag: 'nham_phep_trong_bieu_thuc' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
