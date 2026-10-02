@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Bốn mươi chín mô hình đang có:
+Năm mươi mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -99,9 +99,10 @@ Bốn mươi chín mô hình đang có:
 | `dotshift` | **Nhân · chia số thập phân với 10 · 100 · 1000** (beyond-bank): **dịch dấu phẩy**, không đổi chữ số | số hiện thành **dãy Ô CHỮ SỐ**, ô **dấu phẩy** tô sáng; hai hàng **TRƯỚC / SAU xếp thẳng cột**, giữa ghi phép tính. Khi đổi phép, dấu phẩy **trượt** sang phải (nhân) hay trái (chia) đúng số chữ số 0 → thấy dấu phẩy **trượt** mấy ô, khi nào **viết thêm số 0**; dòng phép tính `12,34 × 100 = 1234` | hàng khối = số chữ số của kết quả | **giơ 0–5 ngón = chọn phép** (×1 · ×10 · ×100 · ×1000 · :10 · :100); +/− đổi số gốc (4 preset) |
 | `fracdiff` | **Cộng · trừ hai phân số khác mẫu số** (beyond-bank): quy đồng rồi chỉ cộng/trừ **tử** | **hai băng giấy** ① chia d₁ ô tô n₁ (vàng), ② chia d₂ ô tô n₂ (xanh) → **cắt lại trên LƯỚI CHUNG** = BCNN(d₁,d₂): mỗi ô ① ×k₁, mỗi ô ② ×k₂ thành ô bé bằng nhau; hai hàng quy đồng chồng thẳng cột + hàng **KẾT QUẢ** (tô số ô = n₁k₁ ± n₂k₂ trên mẫu chung) kèm thẻ **❌ SAI** "cộng cả mẫu" | hàng khối = số ô của kết quả | **hai tay**: trái = **TỬ ①**, phải = **TỬ ②**; hai MẪU số và phép +/− bằng dải +/− |
 | `decarea` | **Nhân hai số thập phân** (beyond-bank) bằng **lưới diện tích** | ô vuông = 1 chia **100 ô** (mỗi ô = 0,01); tô `m` **HÀNG** (vàng = 0,m) giao `n` **CỘT** (xanh = 0,n) → **phần giao sáng** = `m×n` ô = tích; cột phải ghi `0,m × 0,n = P/100 = 0,…`; dòng chốt "1 + 1 = 2 chữ số thập phân" | lưới khối `m×n` ô xếp thành ô vuông | **hai tay**: trái = số **HÀNG**, phải = số **CỘT** (mỗi tay 1→9 phần mười); hoặc +/− từng thừa số |
-| `decadd` | **Cộng · trừ hai số thập phân** (beyond-bank): **thẳng dấu phẩy**, có nhớ/mượn | trái: **thanh độ dài trên thước dm** — dải `a` nối tiếp dải `b` (cộng) hay cắt bỏ `b` (trừ) → mũi tên dừng ở kết quả; phải: **cột đặt tính** với **đường đứt qua DẤU PHẨY** xuyên 3 hàng, ô **ĐV | PM**, annotation "nhớ 1 ↖" khi phần mười ≥ 10, "mượn 1 (= 10 PM)" khi trừ không đủ, kèm thẻ **❌** quên nhớ/mượn/quên dấu phẩy | hàng khối 0,1 = \|kết quả\| ô xếp vuông | **giơ 0–9 ngón** đặt chữ số của ô đang chọn (bấm ô để chọn); +/− từng ô và nút cộng/trừ |
+| `decadd` | **Cộng · trừ hai số thập phân** (beyond-bank): **thẳng dấu phẩy**, có nhớ/mượn | trái: **thanh độ dài trên thước dm** — dải `a` nối tiếp dải `b` (cộng) hay cắt bỏ `b` (trừ) → mũi tên dừng ở kết quả; phải: **cột đặt tính** với **đường đứt qua DẤU PHẨY** xuyên 3 hàng, ô **ĐV \| PM**, annotation "nhớ 1 ↖" khi phần mười ≥ 10, "mượn 1 (= 10 PM)" khi trừ không đủ, kèm thẻ **❌** quên nhớ/mượn/quên dấu phẩy | hàng khối 0,1 = \|kết quả\| ô xếp vuông | **giơ 0–9 ngón** đặt chữ số của ô đang chọn (bấm ô để chọn); +/− từng ô và nút cộng/trừ |
+| `natdivdec` | **Chia số tự nhiên cho số tự nhiên ra thương thập phân** (beyond-bank): còn dư thì **thêm 0 chia tiếp** | trái: `a` **ô đơn vị** xếp lưới — xanh = chia đều `b` phần, **cam = phần còn dư**; dưới là **thanh thương của MỘT phần** (mỗi đơn vị gạch ngăn, đoạn cam = phần mười) + **`dư × 10` ô con** minh họa "cắt mỗi ô dư thành 10 phần mười rồi chia đều"; phải: **khối đặt tính 3 bước** `a : b = q dư r` → "viết dấu phẩy, thêm 0 → r0" → `r·10 : b = t`, kèm thẻ **❌** "dừng ở q dư r" | `a` khối (xanh vào phần, cam còn dư) xếp ô vuông | **giơ 2–5 ngón = SỐ CHIA** (chia thành mấy phần); +/− đặt số bị chia (1–20) và số chia (2–5) |
 
-Bài hiện có (55 bài · 49 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 16 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri) + *Diện tích hình thang* (trap) + *Diện tích hình hộp* (sa) + *Thứ tự phép tính* (order) + *Chu vi vs diện tích HCN* (rect) + *Chia phân số cho số tự nhiên* (fracdiv) + *Nhân · chia 10 · 100 · 1000* (dotshift) + *Cộng · trừ khác mẫu số* (fracdiff) + *Nhân hai số thập phân* (decarea) + *Cộng · trừ số thập phân* (decadd), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (56 bài · 50 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 17 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri) + *Diện tích hình thang* (trap) + *Diện tích hình hộp* (sa) + *Thứ tự phép tính* (order) + *Chu vi vs diện tích HCN* (rect) + *Chia phân số cho số tự nhiên* (fracdiv) + *Nhân · chia 10 · 100 · 1000* (dotshift) + *Cộng · trừ khác mẫu số* (fracdiff) + *Nhân hai số thập phân* (decarea) + *Cộng · trừ số thập phân* (decadd) + *Chia STN ra thương thập phân* (natdivdec), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -117,7 +118,7 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` + `trap` + `sa` + `order` + `rect` + `fracdiv` + `dotshift` + `fracdiff` + `decarea` + `decadd` (Vòng 69–84):** SGK lớp 4 có mạch
+**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` + `trap` + `sa` + `order` + `rect` + `fracdiv` + `dotshift` + `fracdiff` + `decarea` + `decadd` + `natdivdec` (Vòng 69–85):** SGK lớp 4 có mạch
 "Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
 giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
 (`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** các model cũ.
@@ -216,6 +217,17 @@ chữ số đó (ô đang chọn viền vàng), hoặc +/− từng ô và nút 
 7,13), **quên MƯỢN 1** khi trừ, và **quên DẤU PHẨY ở kết quả** (34 + 25 = 59 rồi không biết đặt dấu phẩy). build3d xếp `|kết quả|`
 khối 0,1 thành ô vuông. Nối sang `decarea` (cùng họ số thập phân), `dotshift` (cùng vị trí dấu phẩy) và `dec` (so sánh STP, cũng
 xếp thẳng cột dấu phẩy).
+
+Vòng 85 thêm mạch thứ mười bảy: `natdivdec` — **chia số tự nhiên cho số tự nhiên ra thương thập phân** (7 : 2 = 3,5). Đây là chỗ
+học trò **dừng lại ở "3 dư 1"** rồi tưởng đã xong, trong khi đề bài cần một **số thập phân**. Màn chiếu bên trái xếp `a` **ô đơn
+vị** thành lưới: ô **xanh** đã chia đều vào `b` phần, ô **cam** là **phần còn dư**; ngay dưới là **thanh thương của MỘT phần** (mỗi
+đơn vị có vạch ngăn, đoạn cam ngắn = phần mười) và hàng **`dư × 10` ô con** — trực quan hóa đúng thao tác "**cắt mỗi ô dư thành 10
+phần mười rồi chia đều cho `b` bạn**" → mỗi bạn thêm `t` phần mười. Bên phải là **khối đặt tính ba bước**: `a : b = q dư r` →
+"viết dấu phẩy, **thêm 0** vào bên phải phần dư → `r0`" → `r·10 : b = t`, kèm thẻ **❌** "dừng ở «q dư r» khi đề cần thương thập
+phân → phải thêm 0 chia tiếp". Cô **giơ 2–5 ngón = SỐ CHIA** (chia thành mấy phần đều nhau), +/− đặt số bị chia (1–20). Số học
+trong model tính tới hai chữ số thập phân và chỉ gắn "…" khi thương thật sự vô hạn (chia cho 3); các thương hữu hạn như 5 : 4 =
+1,25 hiển thị gọn không dấu ba chấm. build3d xếp `a` khối (xanh vào phần, cam còn dư) thành ô vuông. Nối sang `groups` (cùng phép
+chia có dư), `fracdiv` (cùng họ chia ra kết quả bé hơn) và `decadd`/`decarea` (cùng họ số thập phân).
 
 **Vòng 70 còn sửa một LỖI CHỨC NĂNG thật của điều khiển hai tay:** nhánh `twoHands` trong
 `loopDetect` vốn so `state.balL + '/' + state.balR` để quyết định vẽ lại — hai biến CHỈ model
