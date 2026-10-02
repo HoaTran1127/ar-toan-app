@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Ba mươi tư mô hình đang có:
+Ba mươi lăm mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -85,8 +85,9 @@ Ba mươi tư mô hình đang có:
 | `borrow` | **trừ có mượn** (và nhớ) bằng bó que | 3 hàng que: **số bị trừ / số trừ / hiệu**; khi hàng đơn vị không đủ, vẽ MƯỢN 1 bó rồi **cởi thành đúng 10 que** (dải "+10" xanh), kèm dòng phân tích từng hàng | bó chục (trụ) + que lẻ (thanh) của hiệu | **hai tay**: trái = que lẻ số bị trừ, phải = số que phải bớt (+/− đổi bó chục) |
 | `chooser` | **bài ôn tập / tổng hợp**: chọn đúng **chiến lược · công thức · vật thật** TRƯỚC khi tính (1 model, 4 bài) | N **thẻ phương án** đánh số; thẻ đang chọn viền vàng (đúng) / đỏ (chưa khớp), bên dưới là lời giải thích + dòng verdict | N khối, khối đang chọn nhô cao, đúng = vàng / sai = đỏ | **số ngón = số phương án** (1 ngón → phương án 1) |
 | `money` | **Tiền Việt Nam** (beyond-bank): đếm ví theo mệnh giá + tính tiền thối khi mua hàng | 4 **xấp tờ bạc** màu theo mệnh giá (2 000 · 5 000 · 10 000 · 20 000), mỗi xấp ghi "{n} tờ = {n×mệnh giá}", đóng/xanh dòng verdict **VỪA ĐỦ / THỐI / THIẾU** | 4 chồng thẻ 3D theo mệnh giá | bấm xấp để chọn, **số ngón = số tờ** của xấp đang chọn; +/− từng loại và giá món hàng |
+| `divis` | **Dấu hiệu chia hết 2·5·3·9** (beyond-bank) | ô **hàng chục \| hàng đơn vị** + 4 **huy hiệu** `n ⋮ d` (✓ vàng / ✗ đỏ), ghi rõ 2·5 nhìn **tận cùng**, 3·9 nhìn **tổng** | trụ hàng chục + khối hàng đơn vị | **hai tay**: trái = chữ số chục, phải = chữ số đơn vị; đổi số → 4 dấu hiệu cập nhật ngay |
 
-Bài hiện có (40 bài · 34 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 1 bài beyond-bank** *Tiền Việt Nam* (money), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (41 bài · 35 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 2 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -102,17 +103,30 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Bài beyond-bank đầu tiên — `money` (Tiền Việt Nam, Vòng 69):** SGK lớp 4 có mạch
+**Bài beyond-bank — `money` + `divis` (Vòng 69–70):** SGK lớp 4 có mạch
 "Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
 giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
-(`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** 33 model cũ.
+(`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** các model cũ.
 Đếm theo **từng mệnh giá** rồi cộng (chặn lỗi "gộp nhầm tờ"), so với **giá món hàng** →
-kết luận **VỪA ĐỦ / phải THỐI lại (trả − giá) / còn THIẾU**. Đây là bằng chứng kiến trúc
+kết luận **VỪA ĐỦ / phải THỐI lại (trả − giá) / còn THIẾU**. Vòng 70 thêm mạch thứ hai
+ngoài bank: `divis` (dấu hiệu chia hết 2·5·3·9) — hai tay dựng chữ số hàng chục|đơn vị,
+4 huy hiệu cập nhật ngay, chặn đúng lỗi "lấy chữ số tận cùng để xét 3/9".
+
+**Vòng 70 còn sửa một LỖI CHỨC NĂNG thật của điều khiển hai tay:** nhánh `twoHands` trong
+`loopDetect` vốn so `state.balL + '/' + state.balR` để quyết định vẽ lại — hai biến CHỈ model
+`balance` ghi. Mọi model hai tay khác (`fracbar`, `fracops`, `recipe`, `units`, `dtable`,
+`borrow`, `numcmp`, và `divis` mới) đổi trường riêng nên bộ so sánh không bao giờ đổi ⟹
+**màn chiếu đứng yên, không cập nhật khi cô đưa tay**. Nay suy lại từ **chữ ký ngón tay trái/phải
+đọc được** (`state.twoApplied`): hễ số ngón thay đổi là vẽ lại + cập nhật dòng trạng thái,
+đúng cho MỌI model hai tay. Đây là bản vá "đo lỗ hổng thật rồi sửa" — tính năng lõi
+"dùng tay điều khiển" chạy được cho cả họ model hai tay.
+
+Đây là bằng chứng kiến trúc
 mở rộng ra **ngoài bank**: môn Toán lớp 4–5 còn nhiều mạch chưa có trong 39 giáo án (đo
 thời gian dạng lịch, tiền Việt nâng cao, đại lượng F–S–P…), mỗi mạch chỉ cần thêm một
 dòng `LESSONS` (tái dùng model) hoặc một `MODELS.<kiểu>` mới.
 
-**Điểm mở rộng cho các vòng sau:** **cả 39 giáo án trong bank giờ đều đã có mô hình trên app** (34 model · 40 bài — phủ kín 39 cụm bank + 1 bài beyond-bank *Tiền Việt Nam*, không còn cụm nào trắng), và **cả 40 bài đã có bài tập LUYỆN TẬP** (verbatim từ `examples.mjs` với 39 bài bank, tự tác với bài beyond-bank; Vòng 67–69). Vòng sau tiếp tục **mở rộng ngoài bank** (thêm mạch SGK lớp 4–5 chưa có: lịch/thời gian nâng cao, đại lượng F–S–P, tiền Việt nâng cao…) và **đi sâu từng bài**: thêm nhiều biến thể số để cô bấm "đề khác", nối `chooser` sang màn **chọn trạm** cho tiết ôn tập nhiều mạch; mỗi khi cần
+**Điểm mở rộng cho các vòng sau:** **cả 39 giáo án trong bank giờ đều đã có mô hình trên app** (35 model · 41 bài — phủ kín 39 cụm bank + 2 bài beyond-bank *Tiền Việt Nam* + *Dấu hiệu chia hết*, không còn cụm nào trắng), và **cả 41 bài đã có bài tập LUYỆN TẬP** (verbatim từ `examples.mjs` với 39 bài bank, tự tác với 2 bài beyond-bank; Vòng 67–70). Vòng sau tiếp tục **mở rộng ngoài bank** (thêm mạch SGK lớp 4–5 chưa có: lịch/thời gian nâng cao, đại lượng F–S–P, tiền Việt nâng cao…) và **đi sâu từng bài**: thêm nhiều biến thể số để cô bấm "đề khác", nối `chooser` sang màn **chọn trạm** cho tiết ôn tập nhiều mạch; mỗi khi cần
 một kiểu minh hoạ mới (biểu đồ tranh/đường, tỉ lệ bản đồ, đại lượng F–S–P,
 tiền Việt/mua hàng, chuyển động…) thì viết thêm một `MODELS.<kiểu>` — các
 bài dùng lại kiểu đã có chỉ cần thêm dòng dữ liệu.
