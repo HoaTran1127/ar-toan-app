@@ -290,6 +290,13 @@ const LESSONS = {
     khoi_dong:'1/2, 0,5 và 50% là một thứ hay là ba thứ khác nhau?',
     chot:'Phân số thập phân, số thập phân và phần trăm là ba cách viết của cùng một lượng; dóng ba băng trên một trục thì thấy chúng trùng khít.',
     obj:'cái bánh được nửa' },
+  'bai-toan-nhieu-buoc': { model:'steps', ten:'Bài toán nhiều bước và sơ đồ đoạn thẳng',
+    de:'Trường mua 3 hộp bút, mỗi hộp 12 chiếc, chia đều cho 4 tổ. Hỏi mỗi tổ mấy chiếc?',
+    steps:[ {muc:'Số bút cả trường mua', phep:'3 × 12', donvi:'chiếc', kq:36},
+            {muc:'Số bút mỗi tổ', phep:'36 : 4', donvi:'chiếc', kq:9} ],
+    khoi_dong:'Một bài toán đố dài bốn dòng chữ. Làm sao biết phải tính cái gì trước?',
+    chot:'Vẽ sơ đồ trước rồi mới tính; mỗi bước một phép tính kèm đơn vị, và đáp số nằm ở bước cuối cùng.',
+    obj:'bài toán đố' },
 };
 
 const state = {
@@ -322,6 +329,7 @@ const state = {
   aU: 0, a1: 5, a2: 0, a3: 0, bU: 0, b1: 4, b2: 8, b3: 0,
   pn: 15,
   tfDI: 0, tfN: 1,
+  pStep: 0,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -2073,6 +2081,57 @@ const MODELS = {
       const g = new THREE.Group(), f = this.frac(st), cols = [0x5fb0a5, 0xffd166, 0x7fc9bf];
       for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(4.2 * f + 0.05, 0.5, 0.9), new THREE.MeshStandardMaterial({ color: cols[i], roughness: .5 }));
         m.position.set(-2.1 + (4.2 * f) / 2, 0, (1 - i) * 1.2); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
+
+  // ======================= Model: steps (bài toán nhiều bước — mở dần sơ đồ) =======================
+  // Repo 'bai-toan-nhieu-buoc': vẽ sơ đồ trước rồi tính, MỖI BƯỚC một phép tính KÈM ĐƠN VỊ,
+  // đáp số nằm ở BƯỚC CUỐI. Đưa tay ngang mở dần từng bước (bước sau cần kết quả bước trước).
+  steps: {
+    usesPalm: true,
+    SS() { return (cur().steps) || []; },
+    defaults(st, L) { st.pStep = 0; },
+    palmToValue(st, x) { const K = this.SS().length; st.pStep = clamp(Math.round((1 - x) * K), 0, K); },
+    palmLabel(st) { return `đã mở ${st.pStep}/${this.SS().length} bước`; },
+    geomSig(st) { return 'steps' + st.pStep + ':' + this.SS().length; },
+    params() { const K = this.SS().length; return [{ key: 'pStep', label: 'Số bước đã mở', min: 0, max: K }]; },
+    ctlHint() { return 'Đưa bàn tay ngang để MỞ dần từng bước của lời giải (mỗi bước = một phép tính kèm đơn vị). Đáp số nằm ở bước cuối. Không có camera thì bấm +/−.'; },
+    draw2d(host, st) {
+      const L = cur(), steps = this.SS(), K = steps.length, shown = clamp(st.pStep, 0, K);
+      const W = 560, bx = 30, bw = 500, rh = 66; let s = '';
+      s += `<text x="16" y="22" fill="var(--chalk)" font-size="13">Đề: ${L.de || ''}</text>`;
+      for (let i = 0; i < K; i++) { const y = 40 + i * rh, open = i < shown;
+        if (open) { const b = steps[i];
+          s += `<rect x="${bx}" y="${y}" width="${bw}" height="52" rx="8" fill="rgba(255,255,255,.06)" stroke="var(--chalk)" stroke-width="2"></rect>`
+            + `<text x="${bx + 16}" y="${y + 21}" fill="rgba(242,240,230,.72)" font-size="12">Bước ${i + 1} · ${b.muc}</text>`
+            + `<text x="${bx + 16}" y="${y + 42}" fill="var(--accent)" font-size="18" font-weight="700">${b.phep} = ${b.kq} ${b.donvi}</text>`;
+          if (i === K - 1 && shown === K) s += `<text x="${bx + bw - 14}" y="${y + 34}" fill="var(--warn)" font-size="15" font-weight="700" text-anchor="end">→ ĐÁP SỐ</text>`;
+        } else {
+          s += `<rect x="${bx}" y="${y}" width="${bw}" height="52" rx="8" fill="none" stroke="rgba(242,240,230,.25)" stroke-dasharray="6 5"></rect>`
+            + `<text x="${bx + 16}" y="${y + 32}" fill="rgba(242,240,230,.4)" font-size="13">Bước ${i + 1}: ? (phải có kết quả bước trước mới tính được)</text>`;
+        }
+        if (i < K - 1) s += `<path d="M 280 ${y + 52} L 280 ${y + rh - 4} M 275 ${y + rh - 10} L 280 ${y + rh - 3} L 285 ${y + rh - 10}" stroke="rgba(242,240,230,.4)" stroke-width="2" fill="none"></path>`;
+      }
+      const H = 40 + K * rh + 12;
+      host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="cursor:ew-resize">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, steps = this.SS(), K = steps.length, shown = clamp(st.pStep, 0, K);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật (đề bài): ${L.de}. Đọc xong, đừng tính ngay — hãy vẽ SƠ ĐỒ xem có mấy bước.`, hint: 'Đưa tay ngang mở dần từng bước.' };
+      if (s === 2) return { cap: `Sơ đồ: bài này có ${K} bước, đã mở ${shown}. Mỗi bước là MỘT phép tính kèm ĐƠN VỊ; bước sau dùng kết quả bước trước.`, hint: `Mở hết ${K} bước để thấy đáp số ở bước cuối.` };
+      if (s === 3) return { cap: (shown === K ? `Đáp số (bước cuối ${K}): ${steps[K - 1].kq} ${steps[K - 1].donvi}. ` : `Mở đủ ${K} bước để thấy đáp số ở bước cuối. `) + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: bước đầu tiên phải tính gì (kèm đơn vị)? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const K = this.SS().length, shown = clamp(st.pStep, 0, K); return shown === K ? `đáp số = ${this.SS()[K - 1].kq} ${this.SS()[K - 1].donvi}` : `đã mở ${shown}/${K} bước`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const g = new THREE.Group(), K = this.SS().length, shown = clamp(st.pStep, 0, K);
+      for (let i = 0; i < K; i++) { const last = i === K - 1 && shown === K;
+        const mat = new THREE.MeshStandardMaterial({ color: i < shown ? (last ? 0xff8f6b : 0x5fb0a5) : 0x33414a, roughness: .6, transparent: i < shown ? false : true, opacity: i < shown ? 1 : 0.25 });
+        const m = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.6, 0.6), mat); m.position.set(0, 1.2 - i * 0.8, 0); g.add(m); }
       return g;
     },
     paint3d() {},
