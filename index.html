@@ -1247,6 +1247,80 @@ const MODELS = {
     },
     paint3d() {},
   },
+
+  // ======================= Model: lines (hai đường thẳng vuông góc / song song) =======================
+  // Repo vuong-goc-song-song (props): "kéo dài hết bảng mà không gặp nhau thì SONG SONG; gặp nhau
+  // và ê-ke khít góc thì VUÔNG GÓC". Lỗi hay gặp (error-notes): "kết luận song song khi chưa kéo
+  // dài hai đường". d cố định nằm ngang; đưa tay ngang xoay d′; bật "Kéo dài" mới thấy thật gặp hay không.
+  lines: {
+    usesPalm: true,
+    defaults(st, L) { st.lnAng = L.lnAng; st.lnExt = L.lnExt; },
+    rel(st) { if (st.lnAng === 0) return 'song-song'; if (st.lnAng === 90) return 'vuong-goc'; return 'cat-nhau'; },
+    relText(st) { const r = this.rel(st);
+      return r === 'song-song' ? 'SONG SONG' : r === 'vuong-goc' ? 'VUÔNG GÓC' : 'CẮT NHAU (không vuông góc)'; },
+    palmToValue(st, x) { st.lnAng = clamp(Math.round((1 - x) * 6) * 15, 0, 90); },
+    palmLabel(st) { return `d′ nghiêng ${st.lnAng}° → ${this.relText(st)}`; },
+    geomSig(st) { return 'lines' + st.lnAng; },
+    params() { return [{ key:'lnAng', label:'Độ nghiêng của d′ (°)', min:0, max:90, step:15 }]; },
+    toggles() { return [{ key:'lnExt', label:'Kéo dài hai đường hết bảng' }]; },
+    ctlHint() { return 'Đưa tay ngang xoay đường d′, hoặc +/− chỉnh độ nghiêng. Bật "Kéo dài" để chắc chắn hai đường có gặp nhau không.'; },
+    draw2d(host, st) {
+      const W = 548, Hh = 250, dy = 100, dx0 = 30, dx1 = 518;
+      const cx = 274, cy = 176, th = st.lnAng * Math.PI / 180;
+      const hl = st.lnExt ? 520 : 108;
+      const cos = Math.cos(th), sin = Math.sin(th);
+      const p1 = [cx - hl*cos, cy + hl*sin], p2 = [cx + hl*cos, cy - hl*sin];
+      const r = this.rel(st);
+      let dot = '';
+      if (st.lnAng !== 0 && st.lnExt && sin > 1e-6) { const t = (cy - dy)/sin; const ix = cx + t*cos;
+        if (ix >= dx0 && ix <= dx1) dot = `<circle cx="${ix.toFixed(1)}" cy="${dy}" r="6" fill="var(--warn)"></circle>`; }
+      let mark = '';
+      if (r === 'vuong-goc') mark = `<path d="M ${cx+16},${dy} L ${cx+16},${dy-16} L ${cx},${dy-16}" fill="none" stroke="var(--accent)" stroke-width="2.5"></path>`
+        + `<circle cx="${cx}" cy="${dy}" r="6" fill="var(--accent)"></circle>`;
+      const dlbl = `<text x="${dx1+4}" y="${dy+4}" fill="var(--chalk)" font-size="16" font-weight="700">d</text>`;
+      const up = p2[1] < p1[1] ? p2 : p1;
+      const dplbl = `<text x="${clamp(up[0], dx0, dx1-14)+6}" y="${clamp(up[1], 16, Hh-30)}" fill="var(--chalk)" font-size="16" font-weight="700">d′</text>`;
+      let extra = '';
+      if (!st.lnExt && r === 'cat-nhau') extra = `<text x="${W/2}" y="26" fill="var(--warn)" font-size="13" text-anchor="middle">Đoạn ngắn chưa chạm nhau — nhưng phải KÉO DÀI mới chắc chắn!</text>`;
+      else if (st.lnExt && r === 'song-song') extra = `<text x="${W/2}" y="26" fill="var(--accent)" font-size="13" text-anchor="middle">Kéo dài mãi hai đường vẫn cách đều → không bao giờ gặp nhau.</text>`;
+      const verdict = `<text x="${W/2}" y="${Hh-8}" fill="${r==='song-song'?'var(--chalk)':r==='vuong-goc'?'var(--accent)':'var(--warn)'}" font-size="20" font-weight="700" text-anchor="middle">${this.relText(st)}</text>`;
+      host.innerHTML = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}">`
+        + `<line x1="${dx0}" y1="${dy}" x2="${dx1}" y2="${dy}" stroke="rgba(95,176,165,.95)" stroke-width="2.5"></line>`
+        + `<line x1="${p1[0].toFixed(1)}" y1="${p1[1].toFixed(1)}" x2="${p2[0].toFixed(1)}" y2="${p2[1].toFixed(1)}" stroke="rgba(255,209,102,.95)" stroke-width="2.5"></line>`
+        + dlbl + dplbl + dot + mark + extra + verdict + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.rel(st), ang = st.lnAng;
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: trên bảng có hai đường thẳng vẽ phấn d (nằm ngang) và d′ (đang nghiêng ${ang}° so với d).`, hint: 'Đưa tay ngang xoay d′, hoặc +/− chỉnh độ nghiêng.' };
+      if (s === 2) { const base = r === 'song-song'
+          ? `Kéo dài mãi mà d và d′ vẫn cách đều, không gặp nhau → hai đường SONG SONG.`
+          : r === 'vuong-goc'
+          ? `d và d′ gặp nhau, ê-ke khít đúng góc vuông → hai đường VUÔNG GÓC.`
+          : (st.lnExt ? `Kéo dài thì d và d′ gặp nhau nhưng ê-ke không khít → CẮT NHAU (không vuông góc).`
+                      : `Nhìn đoạn ngắn thì chúng chưa chạm — nhưng ĐỪNG vội nói song song! Bật "Kéo dài" để kiểm chứng đã.`);
+        return { cap: `Sơ đồ: ${base}`, hint: 'Quy tắc vàng: phải KÉO DÀI hết bảng rồi mới được kết luận.' };
+      }
+      if (s === 3) return { cap: `Kết luận: d và d′ ${r==='song-song'?'song song với nhau' : r==='vuong-goc'?'vuông góc với nhau':'cắt nhau (không vuông góc)'}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: hai đường này song song, vuông góc, hay chỉ cắt nhau? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { return `${st.lnAng}° · ${this.relText(st)}`; },
+    showFromStep() { return 2; },
+    hand() {},
+    handLabel() { return ''; },
+    build3d(st) {
+      const g = new THREE.Group();
+      const teal = new THREE.MeshStandardMaterial({ color: 0x5fb0a5, roughness: .5 });
+      const gold = new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: .5 });
+      const d = new THREE.Mesh(new THREE.BoxGeometry(6, 0.12, 0.12), teal); d.position.set(0, 0.7, 0); g.add(d);
+      const pivot = new THREE.Group(); pivot.position.set(0, -0.4, 0); g.add(pivot);
+      const dprime = new THREE.Mesh(new THREE.BoxGeometry(6, 0.12, 0.12), gold); pivot.add(dprime);
+      pivot.rotation.z = st.lnAng * Math.PI / 180;
+      g.userData.pivot = pivot;
+      return g;
+    },
+    paint3d(g, st) { if (g.userData.pivot) g.userData.pivot.rotation.z = st.lnAng * Math.PI / 180; },
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
