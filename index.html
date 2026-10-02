@@ -387,6 +387,10 @@ const LESSONS = {
     khoi_dong:'Một đồng xu tròn: đo từ tâm ra mép là BÁN KÍNH, đi suốt ngang qua tâm là ĐƯỜNG KÍNH gấp đôi. Chỉ cần biết bán kính, em tính được vòng quanh nó dài bao nhiêu và mặt nó rộng bao nhiêu không?',
     chot:'Đường kính d = 2 × bán kính r. Chu vi C = 2 × π × r = π × d. Diện tích S = π × r × r. Nhớ π ≈ 3,14 — và đừng lẫn bán kính với đường kính khi tính.',
     obj:'hình tròn bán kính 5', coR:5 },
+  'dien-tich-tam-giac': { model:'tri', ten:'Diện tích hình tam giác: đáy × chiều cao rồi chia 2',
+    khoi_dong:'Cô có một hình chữ nhật và cắt nó dọc theo đường chéo → được hai tam giác y hệt nhau. Vậy một tam giác bằng bao nhiêu phần của hình chữ nhật? Muốn tính diện tích tam giác, ta làm thế nào?',
+    chot:'Diện tích tam giác = đáy × chiều cao ÷ 2. Sở dĩ có "÷ 2" vì hai tam giác giống hệt ghép lại mới thành hình chữ nhật đáy × cao. QUÊN CHIA 2 là lỗi hay gặp nhất.',
+    obj:'tam giác đáy 10 cao 6', trB:10, trH:6 },
 };
 
 const state = {
@@ -429,6 +433,7 @@ const state = {
   lg0: 20, lg1: 24, lg2: 31, lg3: 29, lg4: 22, lgR: 2,
   svS: 120, svV: 40, svT: 3, svAsk: 0,
   coR: 5,
+  trB: 10, trH: 6,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -2914,6 +2919,78 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // beyond-bank 7: DIỆN TÍCH HÌNH TAM GIÁC — chứng minh thị giác "tam giác = ½ hình chữ nhật đáy × cao",
+  // chặn LỖI KINH ĐIỂN "quên chia 2". Hai tay: trái = ĐÁY, phải = CHIỀU CAO.
+  tri: {
+    twoHands: true,
+    defaults(st, L) { st.trB = (L.trB != null ? L.trB : 10); st.trH = (L.trH != null ? L.trH : 6); },
+    fmt(n) { const s = Math.round(n * 100) / 100; if (Number.isInteger(s)) return String(s); let t = s.toFixed(2); if (t.endsWith('0')) t = t.slice(0, -1); return t.replace('.', ','); },
+    b(st) { return clamp(st.trB, 1, 20); },
+    h(st) { return clamp(st.trH, 1, 14); },
+    rect(st) { return this.b(st) * this.h(st); },
+    S(st) { return this.rect(st) / 2; },
+    geomSig(st) { return 'tri' + this.b(st) + ':' + this.h(st); },
+    params() { return [
+      { key: 'trB', label: 'Đáy b (đơn vị)', min: 1, max: 20 },
+      { key: 'trH', label: 'Chiều cao h (đơn vị)', min: 1, max: 14 }]; },
+    ctlHint() { return 'Tay TRÁI đặt ĐÁY, tay PHẢI đặt CHIỀU CAO (giơ ngón rồi +/− tới 20 | 14). Hai tam giác giống hệt ghép lại = một hình chữ nhật → tam giác chỉ bằng một nửa.'; },
+    draw2d(host, st) {
+      const b = this.b(st), h = this.h(st), s = Math.min(260 / b, 150 / h, 15);
+      const X0 = 84, YB = 214, w = b * s, hh = h * s, top = YB - hh, right = X0 + w, rx = 358;
+      const rect = `<rect x="${X0}" y="${top.toFixed(1)}" width="${w.toFixed(1)}" height="${hh.toFixed(1)}" fill="none" stroke="rgba(242,240,230,.4)" stroke-width="1.5" stroke-dasharray="5 4"></rect>`;
+      const solid = `<polygon points="${X0},${YB} ${right.toFixed(1)},${YB} ${right.toFixed(1)},${top.toFixed(1)}" fill="rgba(127,201,191,.5)" stroke="var(--chalk)" stroke-width="2.5"></polygon>`;
+      const ghost = `<polygon points="${X0},${YB} ${right.toFixed(1)},${top.toFixed(1)} ${X0},${top.toFixed(1)}" fill="rgba(255,209,102,.16)" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="5 4"></polygon>`;
+      const diag = `<line x1="${X0}" y1="${YB}" x2="${right.toFixed(1)}" y2="${top.toFixed(1)}" stroke="var(--accent)" stroke-width="1.5"></line>`;
+      const ra = `<path d="M ${right.toFixed(1)} ${(YB - 12).toFixed(1)} L ${(right - 12).toFixed(1)} ${(YB - 12).toFixed(1)} L ${(right - 12).toFixed(1)} ${YB}" fill="none" stroke="var(--chalk)" stroke-width="1.5"></path>`;
+      const labB = `<text x="${(X0 + w / 2).toFixed(1)}" y="${YB + 22}" fill="var(--accent)" font-size="13" font-weight="700" text-anchor="middle">đáy b = ${this.fmt(b)}</text>`;
+      const labH = `<text x="${(right + 8).toFixed(1)}" y="${(top + hh / 2).toFixed(1)}" fill="var(--warn)" font-size="13" font-weight="700">cao h = ${this.fmt(h)}</text>`;
+      const half = `<text x="${(X0 + w * 0.3).toFixed(1)}" y="${(YB - hh * 0.24).toFixed(1)}" fill="var(--chalk)" font-size="12.5" font-weight="700" text-anchor="middle">½</text>`;
+      const panel = `<text x="${rx}" y="46" fill="rgba(242,240,230,.72)" font-size="12">Hình chữ nhật = b × h</text>`
+        + `<text x="${rx}" y="64" fill="var(--warn)" font-size="13" font-weight="700">= ${this.fmt(this.rect(st))}</text>`
+        + `<text x="${rx}" y="92" fill="var(--chalk)" font-size="12">Ghép 2 tam giác giống hệt →</text>`
+        + `<text x="${rx}" y="108" fill="var(--chalk)" font-size="12">đúng hình chữ nhật ấy</text>`
+        + `<text x="${rx}" y="136" fill="var(--accent)" font-size="13.5" font-weight="700">S = đáy × cao ÷ 2</text>`
+        + `<text x="${rx}" y="156" fill="var(--accent)" font-size="13.5" font-weight="700">= ${this.fmt(b)} × ${this.fmt(h)} ÷ 2</text>`
+        + `<text x="${rx}" y="178" fill="var(--accent)" font-size="15" font-weight="700">= ${this.fmt(this.S(st))}</text>`
+        + `<text x="${rx}" y="200" fill="rgba(255,209,102,.8)" font-size="11">phần mờ = tam giác thứ hai</text>`;
+      host.innerHTML = `<svg id="tri" width="548" height="258" viewBox="0 0 548 258" style="cursor:pointer">`
+        + `<text x="16" y="20" fill="rgba(242,240,230,.72)" font-size="13">Hình tam giác = một nửa hình chữ nhật (đáy × chiều cao)</text>`
+        + rect + ghost + solid + diag + ra + labB + labH + half + panel + `</svg>`;
+      const svg = host.querySelector('#tri');
+      svg.addEventListener('pointerdown', (e) => {
+        const rc = svg.getBoundingClientRect();
+        const vbX = (e.clientX - rc.left) / rc.width * 548, vbY = (e.clientY - rc.top) / rc.height * 258;
+        state.trB = clamp(Math.round((vbX - X0) / s), 1, 20);
+        state.trH = clamp(Math.round((YB - vbY) / s), 1, 14);
+        drawVisual(); render();
+      });
+    },
+    caption(st) {
+      const L = cur(), s = st.step, b = this.b(st), h = this.h(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: một tam giác có đáy ${b} và chiều cao ${h}. Dựng bằng hai tay — tay trái kéo ĐÁY, tay phải dựng CAO.`, hint: 'Đưa hai tay đổi đáy/cao, hoặc bấm +/−.' };
+      if (s === 2) return { cap: `Sơ đồ: ghép thêm một tam giác GIỐNG HẰNG (phần mờ) vào theo đường chéo thì được đúng hình chữ nhật ${b} × ${h}. Tam giác chỉ bằng MỘT NỬA hình chữ nhật đó.`, hint: 'Đó là lý do công thức có "÷ 2" — đừng quên chia đôi!' };
+      if (s === 3) return { cap: `S = đáy × cao ÷ 2 = ${b} × ${h} ÷ 2 = ${this.fmt(this.S(st))}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: tam giác đáy ${b}, cao ${h} có diện tích bao nhiêu? Cô đếm tay giơ, hoặc bấm +/−.`, hint: '' };
+    },
+    value(st) { return `S = ${this.fmt(this.b(st))} × ${this.fmt(this.h(st))} ÷ 2 = ${this.fmt(this.S(st))}`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.trB = clamp(l, 1, 20);
+      if (r !== null) st.trH = clamp(r, 1, 14);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), b = this.b(st), h = this.h(st), sc = Math.min(4 / b, 2.2 / h, 0.6);
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0); shape.lineTo(b * sc, 0); shape.lineTo(b * sc, h * sc); shape.lineTo(0, 0);
+      const mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.6, bevelEnabled: false }),
+        new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.5 }));
+      mesh.position.set(-b * sc / 2, 0, -0.3); g.add(mesh); return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3000,6 +3077,11 @@ EX['dai-luong-s-v-t'] = [
 EX['hinh-tron'] = [
   { prompt: 'Một hình tròn có bán kính 4 cm. Hỏi đường kính của nó dài bao nhiêu xăng-ti-mét?', choices: ['8 cm', '4 cm', '12,56 cm'], answer: '8 cm', explanation: 'Đường kính gấp đôi bán kính: d = 2 × r = 2 × 4 = 8 cm.', errorTag: 'nham-ban-kinh-bang-duong-kinh' },
   { prompt: 'Một hình tròn có bán kính 2 cm. Chu vi của nó là bao nhiêu? (lấy π ≈ 3,14)', choices: ['12,56 cm', '6,28 cm', '4 cm'], answer: '12,56 cm', explanation: 'Chu vi C = 2 × π × r = 2 × 3,14 × 2 = 12,56 cm (đừng quên nhân 2).', errorTag: 'quen-nhan-2-trong-cong-thuc-chu-vi' },
+];
+// Diện tích tam giác không có trong examples.mjs của bank → 2 câu SGK-style tự tác.
+EX['dien-tich-tam-giac'] = [
+  { prompt: 'Một hình tam giác có đáy 8 cm và chiều cao 5 cm. Diện tích của nó là bao nhiêu?', choices: ['20 cm²', '40 cm²', '13 cm²'], answer: '20 cm²', explanation: 'S = đáy × cao ÷ 2 = 8 × 5 ÷ 2 = 20 cm². Tính 8 × 5 = 40 rồi QUÊN chia 2 là chưa cắt đôi hình chữ nhật.', errorTag: 'quen-chia-doi-khi-tinh-dien-tich-tam-giac' },
+  { prompt: 'Vì sao diện tích hình tam giác bằng đáy × chiều cao RỒI CHIA 2?', choices: ['Vì ghép 2 tam giác giống hệt thành 1 hình chữ nhật', 'Vì tam giác luôn nhỏ hơn hình vuông', 'Vì chiều cao luôn ngắn hơn đáy'], answer: 'Vì ghép 2 tam giác giống hệt thành 1 hình chữ nhật', explanation: 'Hai tam giác giống hệt ghép theo đường chéo tạo thành hình chữ nhật đáy × cao, nên một tam giác chỉ bằng MỘT NỬA → công thức có "÷ 2".', errorTag: 'khong-hieu-vi-sao-chia-2' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
