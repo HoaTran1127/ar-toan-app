@@ -479,6 +479,10 @@ const LESSONS = {
     khoi_dong:'Hai tấm vải dài tổng cộng 96 m, tấm thứ nhất dài hơn tấm thứ hai 12 m. Vì sao bớt 12 m ở tấm dài thì hai tấm bằng nhau và mỗi tấm còn (96 − 12) : 2 = 42 m? Hai tấm vải dài bao nhiêu mét?',
     chot:'Dạng toán TÌM HAI SỐ KHI BIẾT TỔNG và HIỆU: Số bé = (TỔNG − HIỆU) : 2, Số lớn = (TỔNG + HIỆU) : 2. Giải thích: nếu BỚT đi phần hơn (HIỆU) ở số lớn thì hai số bằng nhau và đều bằng số bé, lúc đó tổng mới = TỔNG − HIỆU = 2 × số bé. CHÚ Ý: (tổng + hiệu) : 2 ra số LỚN, (tổng − hiệu) : 2 ra số BÉ — đừng đổi ngược.',
     obj:'tổng 96, hiệu 12', sdSum:96, sdDiff:12 },
+  'day-so-cach-deu': { model:'seq', ten:'Dãy số cách đều — tìm số hạng thứ n',
+    khoi_dong:'Dãy số 3, 7, 11, 15, … mỗi số hơn số liền trước 4 đơn vị. Vì sao muốn tìm số hạng thứ 12 ta lấy 3 + (12 − 1) × 4 = 47, chứ KHÔNG phải 12 × 4 = 48?',
+    chot:'Dãy số CÁCH ĐỀU: Số hạng thứ n = SỐ ĐẦU + (n − 1) × CÔNG SỐ. Từ số đầu đến số thứ n có đúng (n − 1) BƯỚC nhảy, mỗi bước thêm đúng công số d. CHÚ Ý: phải nhân (n − 1), không phải n — số đầu chưa tính là một bước. Số số hạng từ a đến b: (b − a) : d + 1.',
+    obj:'dãy 3, 7, 11, … ; số hạng thứ 12', sqA:3, sqD:4, sqN:12 },
 };
 
 const state = {
@@ -544,6 +548,7 @@ const state = {
   agA: 27, agB: 43, agC: 15,
   drBig: 5, drSmall: 2, drDiff: 24,
   sdSum: 96, sdDiff: 12,
+  sqA: 3, sqD: 4, sqN: 12,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4523,6 +4528,67 @@ const MODELS = {
     },
     paint3d() {},
   },
+  seq: {
+    res(st) {
+      const a = clamp(Math.round(st.sqA), 1, 20), d = clamp(Math.round(st.sqD), 1, 10), n = clamp(Math.round(st.sqN), 2, 15);
+      const nth = a + (n - 1) * d, wrong = n * d;
+      return { a, d, n, nth, wrong };
+    },
+    defaults(st, L) { st.sqA = (L.sqA != null ? L.sqA : 3); st.sqD = (L.sqD != null ? L.sqD : 4); st.sqN = (L.sqN != null ? L.sqN : 12); },
+    geomSig(st) { const d = this.res(st); return 'sq' + d.a + ',' + d.d + ',' + d.n; },
+    params() { return [{ key: 'sqA', label: 'Số đầu', min: 1, max: 20 }, { key: 'sqD', label: 'Công số (bước nhảy)', min: 1, max: 10 }, { key: 'sqN', label: 'Vị trí số hạng cần tìm', min: 2, max: 15 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Ba thanh trượt: SỐ ĐẦU (1–20), CÔNG SỐ (1–10), VỊ TRÍ n (2–15). Giơ 1–9 ngón đặt CÔNG SỐ. Số hạng thứ n = số đầu + (n − 1) × công số.'; },
+    hand(st, f) { st.sqD = clamp(Math.round(f), 1, 10); },
+    handLabel(f) { return '→ công số = ' + clamp(Math.round(f), 1, 10); },
+    draw2d(host, st) {
+      const d = this.res(st);
+      const showK = Math.min(d.n, 6);
+      let chips = '', x = 18; const cw = 56, gp = 14;
+      for (let k = 0; k < showK; k++) {
+        const val = d.a + k * d.d, isNth = (d.n <= showK && k === d.n - 1);
+        const fill = isNth ? 'rgba(240,196,92,.32)' : 'rgba(127,201,191,.18)';
+        const stroke = isNth ? 'var(--accent)' : 'rgba(127,201,191,.8)';
+        chips += `<rect x="${x}" y="52" width="${cw}" height="34" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="1.5"></rect>`;
+        chips += `<text x="${x + cw / 2}" y="74" font-size="14" font-weight="700" text-anchor="middle" fill="var(--chalk)">${val}</text>`;
+        chips += `<text x="${x + cw / 2}" y="46" font-size="10" text-anchor="middle" fill="rgba(242,240,230,.6)">${k + 1}</text>`;
+        x += cw + gp;
+        if (k < showK - 1) chips += `<text x="${x - gp / 2}" y="74" font-size="12" text-anchor="middle" fill="var(--accent)">+${d.d}</text>`;
+      }
+      if (d.n > showK) {
+        chips += `<text x="${x}" y="74" font-size="16" fill="rgba(242,240,230,.7)">…</text>`;
+        x += 24;
+        chips += `<rect x="${x}" y="52" width="${cw}" height="34" rx="6" fill="rgba(240,196,92,.32)" stroke="var(--accent)" stroke-width="1.5"></rect>`;
+        chips += `<text x="${x + cw / 2}" y="74" font-size="14" font-weight="700" text-anchor="middle" fill="var(--chalk)">${d.nth}</text>`;
+        chips += `<text x="${x + cw / 2}" y="46" font-size="10" text-anchor="middle" fill="rgba(242,240,230,.6)">${d.n}</text>`;
+      }
+      const head = `<text x="14" y="24" font-size="13" font-weight="700" fill="var(--chalk)">Dãy số cách đều — mỗi số hơn số trước ${d.d} đơn vị</text>`;
+      const steps = `<text x="14" y="112" font-size="11" fill="rgba(242,240,230,.85)">Từ số hạng thứ nhất đến số hạng thứ ${d.n} có đúng (${d.n} − 1) = ${d.n - 1} bước nhảy, mỗi bước +${d.d}.</text>`;
+      const l1 = `<text x="14" y="140" font-size="13" font-weight="700" fill="var(--accent)">Số hạng thứ ${d.n} = ${d.a} + (${d.n} − 1) × ${d.d} = ${d.a} + ${(d.n - 1) * d.d} = ${d.nth}</text>`;
+      const err = (d.wrong !== d.nth)
+        ? `<text x="14" y="168" font-size="10.5" fill="var(--warn)">❌ Lấy ${d.n} × ${d.d} = ${d.wrong}? Sai — số đầu chưa phải một bước nhảy; phải ${d.a} + (${d.n} − 1) × ${d.d} = ${d.nth}.</text>`
+        : `<text x="14" y="168" font-size="10.5" fill="var(--warn)">❌ Đừng đếm số BƯỚC = n: từ số 1 đến số n chỉ có (n − 1) bước nhảy.</text>`;
+      host.innerHTML = `<svg id="seq" width="520" height="184" viewBox="0 0 520 184">` + head + chips + steps + l1 + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: xếp que thành từng nhóm — mỗi lần thêm đúng ${d.d} que. Số hạng đầu là ${d.a}, rồi ${d.a + d.d}, ${d.a + 2 * d.d}, …; cứ mỗi vị trí kế tiếp thêm một bước ${d.d}.`, hint: 'Từ số thứ 1 đến số thứ n có (n − 1) bước nhảy.' };
+      if (s === 2) return { cap: `Sơ đồ: ${d.n} số hạng nghĩa là ${d.n - 1} bước nhảy, mỗi bước +${d.d}. Số hạng thứ ${d.n} = ${d.a} + ${d.n - 1} × ${d.d} = ${d.nth}.`, hint: 'nhân (n − 1), không phải n.' };
+      if (s === 3) return { cap: `Phép tính: ${d.a} + (${d.n} − 1) × ${d.d} = ${d.nth}. Thử lại: ${d.nth} − ${d.d} = ${d.nth - d.d} (số ngay trước). ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: dãy ${d.a}, ${d.a + d.d}, … công số ${d.d}. Số hạng thứ ${d.n} = ${d.nth}. Muốn lùi: (số − số đầu) : công số + 1 = vị trí.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); return `Số hạng thứ ${d.n} = ${d.nth} (dãy bắt đầu ${d.a}, công số ${d.d})`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), g = new THREE.Group();
+      const matTeal = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const matGold = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      for (let k = 0; k < d.n; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), k === d.n - 1 ? matGold : matTeal); m.position.set(k * 1.0, 0, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4721,6 +4787,11 @@ EX['tong-va-hieu'] = [
   { prompt: 'Tổng hai số 40, hiệu 10. Số lớn là:', choices: ['25', '15', '30'], answer: '25', explanation: 'Số lớn = (tổng + hiệu) : 2 = (40 + 10) : 2 = 25. Số bé = (40 − 10) : 2 = 15.', errorTag: 'doi_nghe_cong_tru' },
   { prompt: 'Hai số có tổng 90 và hiệu 20. Số bé là:', choices: ['35', '55', '70'], answer: '35', explanation: 'Số bé = (tổng − hiệu) : 2 = (90 − 20) : 2 = 35; số lớn = (90 + 20) : 2 = 55.', errorTag: 'doi_nghe_cong_tru' },
   { prompt: 'Anh hơn em 4 tuổi, tổng số tuổi hai anh em 30. Tuổi em là:', choices: ['13', '17', '26'], answer: '13', explanation: 'Tuổi em (bé) = (30 − 4) : 2 = 13; tuổi anh (lớn) = (30 + 4) : 2 = 17.', errorTag: 'nham_ai_be_ai_lon' },
+];
+EX['day-so-cach-deu'] = [
+  { prompt: 'Dãy số 2, 5, 8, 11, … Số hạng thứ 10 là:', choices: ['29', '30', '32'], answer: '29', explanation: 'Công số 3. Số hạng thứ 10 = 2 + (10 − 1) × 3 = 2 + 27 = 29. Sai 30 là vì lấy 10 × 3 mà quên số đầu và (n − 1).', errorTag: 'nhan_n_thay_vi_n_tru_1' },
+  { prompt: 'Dãy số 1, 4, 7, … Số hạng thứ 12 là:', choices: ['34', '36', '37'], answer: '34', explanation: 'Công số 3. Số hạng thứ 12 = 1 + (12 − 1) × 3 = 1 + 33 = 34. (Lấy 12 × 3 = 36 là sai.)', errorTag: 'nhan_n_thay_vi_n_tru_1' },
+  { prompt: 'Dãy 3, 7, 11, …, 27 có bao nhiêu số hạng?', choices: ['7', '6', '8'], answer: '7', explanation: 'Số số hạng = (27 − 3) : 4 + 1 = 24 : 4 + 1 = 7. Đừng quên + 1 (đếm cả số đầu).', errorTag: 'quen_tru_1_khi_dem' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
