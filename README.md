@@ -121,6 +121,12 @@ màn chiếu, lấy **verbatim** từ ngân hàng `tools/data/examples.mjs` củ
   hiện tại → trả mảng câu, nên **cả 39/39 bài đều có bài tập**, không đụng 33 model.
 - Có `choices` → cô/ lớp **bấm đáp án**: đúng tô xanh, sai tô đỏ, rồi mở phần
   giải thích; không có `choices` (tự luận) → nút "Xem đáp án" + giải thích.
+- **Giơ tay để trả lời (Vòng 68):** ở bước LUYỆN TẬP, khi câu hỏi có phương án,
+  bật camera thì **giơ k ngón = chọn phương án số k** (các đáp án đã đánh số 1, 2, 3…).
+  Đây là đúng ý "dùng tay điều khiển" áp vào **từng bài tập**: cả lớp giơ tay bầu
+  đáp án, app đọc ngón tay của tay đầu tiên, tô đáp án và mở lời giải. Không có
+  camera/vẫn có chuột — cô bấm hoặc ghi nhận +1/+5. Tắt `handDrive` thì ngón tay
+  không chọn hộ được.
 - `‹ Câu trước / Câu sau ›` đi qua từng câu; đổi bài (`applyLesson`) reset về câu 1.
 - `errorTag` hiển thị thành dòng "Lỗi hay mắc" để cô chữa đúng lỗi SGK hay gặp.
 - Widget **ẩn** khi chưa tới bước LUYỆN TẬP hoặc đã "lau bảng" (`boardWiped`).
