@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Ba mươi lăm mô hình đang có:
+Ba mươi sáu mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -86,8 +86,9 @@ Ba mươi lăm mô hình đang có:
 | `chooser` | **bài ôn tập / tổng hợp**: chọn đúng **chiến lược · công thức · vật thật** TRƯỚC khi tính (1 model, 4 bài) | N **thẻ phương án** đánh số; thẻ đang chọn viền vàng (đúng) / đỏ (chưa khớp), bên dưới là lời giải thích + dòng verdict | N khối, khối đang chọn nhô cao, đúng = vàng / sai = đỏ | **số ngón = số phương án** (1 ngón → phương án 1) |
 | `money` | **Tiền Việt Nam** (beyond-bank): đếm ví theo mệnh giá + tính tiền thối khi mua hàng | 4 **xấp tờ bạc** màu theo mệnh giá (2 000 · 5 000 · 10 000 · 20 000), mỗi xấp ghi "{n} tờ = {n×mệnh giá}", đóng/xanh dòng verdict **VỪA ĐỦ / THỐI / THIẾU** | 4 chồng thẻ 3D theo mệnh giá | bấm xấp để chọn, **số ngón = số tờ** của xấp đang chọn; +/− từng loại và giá món hàng |
 | `divis` | **Dấu hiệu chia hết 2·5·3·9** (beyond-bank) | ô **hàng chục \| hàng đơn vị** + 4 **huy hiệu** `n ⋮ d` (✓ vàng / ✗ đỏ), ghi rõ 2·5 nhìn **tận cùng**, 3·9 nhìn **tổng** | trụ hàng chục + khối hàng đơn vị | **hai tay**: trái = chữ số chục, phải = chữ số đơn vị; đổi số → 4 dấu hiệu cập nhật ngay |
+| `piechart` | **Biểu đồ hình quạt** (beyond-bank): mỗi nhóm = một quạt, đọc **% của tổng** | vòng tròn chia quạt theo tỉ lệ + **chú giải** từng nhóm "{n} em · {p}%"; quạt đang chọn **lồi ra** & viền vàng, trong quạt ghi % (bỏ ghi nếu quạt quá nhỏ) | 4 lát **trụ tròn** (CylinderGeometry theo góc) xếp thành chiếc bánh | bấm quạt/chú giải để chọn, **số ngón = số em** của nhóm đang chọn; +/− từng nhóm → quạt chia lại đúng tỉ lệ |
 
-Bài hiện có (41 bài · 35 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 2 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (42 bài · 36 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 3 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -103,14 +104,18 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Bài beyond-bank — `money` + `divis` (Vòng 69–70):** SGK lớp 4 có mạch
+**Bài beyond-bank — `money` + `divis` + `piechart` (Vòng 69–71):** SGK lớp 4 có mạch
 "Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
 giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
 (`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** các model cũ.
 Đếm theo **từng mệnh giá** rồi cộng (chặn lỗi "gộp nhầm tờ"), so với **giá món hàng** →
 kết luận **VỪA ĐỦ / phải THỐI lại (trả − giá) / còn THIẾU**. Vòng 70 thêm mạch thứ hai
 ngoài bank: `divis` (dấu hiệu chia hết 2·5·3·9) — hai tay dựng chữ số hàng chục|đơn vị,
-4 huy hiệu cập nhật ngay, chặn đúng lỗi "lấy chữ số tận cùng để xét 3/9".
+4 huy hiệu cập nhật ngay, chặn đúng lỗi "lấy chữ số tận cùng để xét 3/9". Vòng 71 thêm mạch
+thứ ba: `piechart` (**biểu đồ hình quạt** — loại biểu đồ trung tâm của lớp 5 mà cả bank lẫn
+app trước đây đều chưa có). Vẽ các quạt theo tỉ lệ bằng cung tròn SVG, chú giải "{n} em · {p}%",
+quạt đang chọn lồi ra; **cả hình tròn = 100% của TỔNG**, mỗi quạt = số nhóm ÷ tổng × 100 (chặn
+lỗi nhìn quạt đoán số tuyệt đối). 3D dùng `CylinderGeometry` cắt theo góc → chiếc bánh quạt thật.
 
 **Vòng 70 còn sửa một LỖI CHỨC NĂNG thật của điều khiển hai tay:** nhánh `twoHands` trong
 `loopDetect` vốn so `state.balL + '/' + state.balR` để quyết định vẽ lại — hai biến CHỈ model
