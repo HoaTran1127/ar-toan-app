@@ -246,6 +246,10 @@ const LESSONS = {
     khoi_dong:'Ngay trong lớp mình, tìm hai vật song song với nhau và hai vật vuông góc với nhau?',
     chot:'Kéo dài mãi mà không gặp nhau là song song; gặp nhau và khít đúng góc của ê-ke là vuông góc.',
     obj:'hai đường thẳng' },
+  'chia': { model:'groups', ten:'Chia đều và số dư', dvSo:17, dvNhom:5,
+    khoi_dong:'17 cái kẹo chia đều cho 5 bạn. Còn thừa mấy cái và vì sao không chia tiếp được nữa?',
+    chot:'Chia là phát lần lượt mỗi nhóm một đơn vị cho tới khi hết; phần còn lại không đủ cho mỗi nhóm một đơn vị nữa là số dư, và số dư luôn nhỏ hơn số chia.',
+    obj:'băng chuyền' },
 };
 
 const state = {
@@ -267,6 +271,7 @@ const state = {
   fbN1: 1, fbD1: 2, fbN2: 2, fbD2: 4,
   pR: 4, pB: 0, pY: 0, pAsk: 1,
   lnAng: 15, lnExt: false,
+  dvSo: 17, dvNhom: 5,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -1320,6 +1325,73 @@ const MODELS = {
       return g;
     },
     paint3d(g, st) { if (g.userData.pivot) g.userData.pivot.rotation.z = st.lnAng * Math.PI / 180; },
+  },
+
+  // ======================= Model: groups (chia đều và số dư — băng chuyền + khay) =======================
+  // Repo chia (props): "băng chuyền chở đồ vật và dãy khay nhóm bằng nhau; đếm số khay chia đều làm
+  // thương; số vật không đủ chia còn nằm lại trên băng chuyền làm số dư"; "số dư luôn nhỏ hơn số chia".
+  // Đưa tay ngang đặt số kẹo trên băng; +/− chỉnh số khay. Kẹo được phát mỗi khay một cái cho tới khi
+  // không đủ chia nữa → mỗi khay q cái (thương), r cái còn trên băng (số dư).
+  groups: {
+    usesPalm: true,
+    defaults(st, L) { st.dvSo = L.dvSo; st.dvNhom = L.dvNhom; },
+    q(st) { return Math.floor(st.dvSo / Math.max(1, st.dvNhom)); },
+    r(st) { return st.dvSo - this.q(st) * Math.max(1, st.dvNhom); },
+    palmToValue(st, x) { st.dvSo = clamp(Math.round((1 - x) * 20), 0, 20); },
+    palmLabel(st) { return `${st.dvSo} cái kẹo → ${st.dvSo} : ${st.dvNhom} = ${this.q(st)} (dư ${this.r(st)})`; },
+    geomSig(st) { return 'groups' + st.dvSo + ':' + st.dvNhom; },
+    params() { return [
+      { key:'dvSo', label:'Số kẹo (số bị chia)', min:0, max:20 },
+      { key:'dvNhom', label:'Số khay (số chia)', min:2, max:6 }]; },
+    ctlHint() { return 'Đưa tay ngang đặt số kẹo trên băng chuyền, hoặc +/− cho số kẹo và số khay. Kẹo chia dần vào từng khay, phần chưa đủ chia nằm lại ở ô nét đứt.'; },
+    draw2d(host, st) {
+      const S = st.dvSo, N = Math.max(1, st.dvNhom), q = this.q(st), r = this.r(st);
+      const W = 548, Hh = 250, beltY = 26, beltH = 44;
+      let s = `<rect x="16" y="${beltY}" width="${W-32}" height="${beltH}" rx="8" fill="rgba(95,176,165,.16)" stroke="var(--chalk)" stroke-width="1.5"></rect>`;
+      s += `<text x="24" y="${beltY+17}" fill="rgba(242,240,230,.6)" font-size="12">Băng chuyền · ${S} cái kẹo</text>`;
+      const lx0 = W - 44 - Math.max(r, 1) * 26;
+      for (let k = 0; k < r; k++) s += `<circle cx="${lx0+k*26+12}" cy="${beltY+beltH/2}" r="10" fill="rgba(224,121,31,.9)" stroke="var(--chalk)" stroke-width="1"></circle>`;
+      if (r > 0) s += `<rect x="${lx0-6}" y="${beltY+5}" width="${r*26+6}" height="${beltH-10}" fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="6 4"></rect>`
+        + `<text x="${lx0-6}" y="${beltY-2}" fill="var(--warn)" font-size="11">số dư ${r} &lt; ${N}</text>`;
+      const tY = 140, tH = 94, step = Math.min(96, (W-40)/N), tw = step-14;
+      for (let i = 0; i < N; i++) { const tx = 20 + i*step;
+        s += `<rect x="${tx.toFixed(1)}" y="${tY}" width="${tw.toFixed(1)}" height="${tH}" rx="6" fill="rgba(242,240,230,.06)" stroke="var(--chalk)" stroke-width="1.5"></rect>`;
+        for (let k = 0; k < q; k++) { const ccx = tx+tw/2+(k%2?11:-11), ccy = tY+15+Math.floor(k/2)*17;
+          s += `<circle cx="${ccx.toFixed(1)}" cy="${ccy.toFixed(1)}" r="9" fill="rgba(255,209,102,.85)" stroke="var(--chalk)" stroke-width="1"></circle>`; }
+        s += `<text x="${(tx+tw/2).toFixed(1)}" y="${tY+tH+13}" fill="var(--chalk)" font-size="12" text-anchor="middle">khay ${i+1}: ${q}</text>`;
+      }
+      s += `<text x="${W/2}" y="122" fill="var(--accent)" font-size="17" font-weight="700" text-anchor="middle">${S} : ${N} = ${q} (dư ${r})</text>`;
+      host.innerHTML = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, S = st.dvSo, N = st.dvNhom, q = this.q(st), r = this.r(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: trên băng chuyền có ${S} cái kẹo, cần chia đều vào ${N} khay.`, hint: 'Đưa tay ngang đặt số kẹo, +/− chỉnh số khay.' };
+      if (s === 2) return { cap: `Sơ đồ: phát lần lượt mỗi khay 1 cái cho tới khi không đủ chia nữa. Mỗi khay được ${q} cái → thương = ${q}. Còn ${r} cái nằm lại trên băng → số dư = ${r} (luôn nhỏ hơn số chia ${N}).`, hint: r>0 ? 'Thử giảm số kẹo tới mức chia hết để số dư bằng 0.' : 'Đúng chia hết — không còn kẹo thừa.' };
+      if (s === 3) return { cap: `Phép tính: ${S} : ${N} = ${q} (dư ${r}). Kiểm tra: ${N} × ${q} = ${N*q}, rồi ${S} − ${N*q} = ${r}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: ${S} chia ${N} được mấy, còn dư mấy? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { return `${st.dvSo} : ${st.dvNhom} = ${this.q(st)} (dư ${this.r(st)})`; },
+    showFromStep() { return 2; },
+    hand() {},
+    handLabel() { return ''; },
+    build3d(st) {
+      const g = new THREE.Group(), S = st.dvSo, N = Math.max(1, st.dvNhom), q = this.q(st), r = this.r(st);
+      const candyM = () => new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: .5 });
+      const trayM = new THREE.MeshStandardMaterial({ color: 0x3a4a52, roughness: .6 });
+      const stepX = 1.15, rows = Math.max(1, Math.ceil(q/2)), depth = rows*0.42 + 0.25;
+      for (let i = 0; i < N; i++) { const x = (i-(N-1)/2)*stepX;
+        const plate = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.12, depth), trayM); plate.position.set(x, -0.06, 0); g.add(plate);
+        for (let k = 0; k < q; k++) { const c = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), candyM());
+          c.position.set(x + (k%2 ? 0.24 : -0.24), 0.21, -depth/2 + 0.32 + Math.floor(k/2)*0.42); g.add(c); }
+      }
+      const rx = (N-1)/2*stepX + 0.95;
+      const plate2 = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.12, 0.9), new THREE.MeshStandardMaterial({ color: 0x5fb0a5, roughness: .6 })); plate2.position.set(rx, -0.06, 0); g.add(plate2);
+      for (let k = 0; k < r; k++) { const c = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.32, 0.32), new THREE.MeshStandardMaterial({ color: 0xe0791f, roughness: .5 }));
+        c.position.set(rx - 0.22 + (k%2 ? 0.44 : 0), 0.22, -0.2 + Math.floor(k/2)*0.45); g.add(c); }
+      return g;
+    },
+    paint3d() {},
   },
 };
 
