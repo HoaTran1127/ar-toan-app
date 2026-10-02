@@ -101,7 +101,7 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Điểm mở rộng cho các vòng sau:** **cả 39 giáo án trong bank giờ đều đã có mô hình trên app** (33 model · 39 bài — không còn cụm nào trắng). Vòng sau không còn "thêm bài mới" mà chuyển sang **đi sâu từng bài**: mỗi `LESSONS` có thể thêm nhiều `de`/bài tập con để **luyện đúng từng bài tập trong SGK**, thêm biến thể số để cô bấm "đề khác", và nối `chooser` sang màn **chọn trạm** cho tiết ôn tập nhiều mạch; mỗi khi cần
+**Điểm mở rộng cho các vòng sau:** **cả 39 giáo án trong bank giờ đều đã có mô hình trên app** (33 model · 39 bài — không còn cụm nào trắng), và **cả 39 bài đã có bài tập LUYỆN TẬP verbatim từ `examples.mjs`** (Vòng 67). Vòng sau tiếp tục **đi sâu từng bài**: thêm nhiều biến thể số để cô bấm "đề khác", nối `chooser` sang màn **chọn trạm** cho tiết ôn tập nhiều mạch; mỗi khi cần
 một kiểu minh hoạ mới (biểu đồ tranh/đường, tỉ lệ bản đồ, đại lượng F–S–P,
 tiền Việt/mua hàng, chuyển động…) thì viết thêm một `MODELS.<kiểu>` — các
 bài dùng lại kiểu đã có chỉ cần thêm dòng dữ liệu.
@@ -109,6 +109,24 @@ bài dùng lại kiểu đã có chỉ cần thêm dòng dữ liệu.
 ## Năm bước dạy
 
 `KHỞI ĐỘNG → VẬT THẬT → SƠ ĐỒ → PHÉP TÍNH → LUYỆN TẬP`, bấm "Bước tiếp".
+
+## Bài tập LUYỆN TẬP thật — theo từng bài (Vòng 67)
+
+Bước **LUYỆN TẬP** (bước 5) của mọi bài giờ hiện một **widget bài tập** ngay dưới
+màn chiếu, lấy **verbatim** từ ngân hàng `tools/data/examples.mjs` của bank giáo án
+(mỗi cụm 2 câu, đúng khuôn `{ prompt, choices, answer, explanation, errorTag }`).
+
+- `EX` = bản đồ `key ngân hàng → mảng câu`; `EXKEY` map 6 id bài trong app sang
+  đúng `key` của bank (vd. `doc-bang-so-lieu → bang-so-lieu`). `exOf()` tra bài
+  hiện tại → trả mảng câu, nên **cả 39/39 bài đều có bài tập**, không đụng 33 model.
+- Có `choices` → cô/ lớp **bấm đáp án**: đúng tô xanh, sai tô đỏ, rồi mở phần
+  giải thích; không có `choices` (tự luận) → nút "Xem đáp án" + giải thích.
+- `‹ Câu trước / Câu sau ›` đi qua từng câu; đổi bài (`applyLesson`) reset về câu 1.
+- `errorTag` hiển thị thành dòng "Lỗi hay mắc" để cô chữa đúng lỗi SGK hay gặp.
+- Widget **ẩn** khi chưa tới bước LUYỆN TẬP hoặc đã "lau bảng" (`boardWiped`).
+
+Đây là bước đầu của **đi sâu từng bài**: từ phủ 39 giáo án (33 model) sang **luyện
+đúng từng bài tập** — mỗi bài giờ có câu hỏi SGK thật kèm lời giải và lỗi thường mắc.
 
 ## Tuân thủ các quy định đã xây ở repo prompt
 
