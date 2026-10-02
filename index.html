@@ -511,6 +511,10 @@ const LESSONS = {
     khoi_dong:'Tính 23 × 14. Thay vì đặt tính ngay, ta vẽ HÌNH CHỮ NHẬT 23 × 14 rồi CHIA nó thành 4 ô theo chục và đơn vị: 20×10, 20×4, 3×10, 3×4. Vì sao cộng 4 ô lại thì bằng đúng 23 × 14?',
     chot:'MÔ HÌNH DIỆN TÍCH (tích riêng phần): tách mỗi thừa số thành chục + đơn vị, 23 × 14 = (20 + 3) × (10 + 4). Vẽ hình chữ nhật chia 4 ô, diện tích từng ô là 20×10 = 200, 20×4 = 80, 3×10 = 30, 3×4 = 12. TỔNG BỐN Ô = diện tích cả hình = tích phải tìm: 200 + 80 + 30 + 12 = 322. Đây chính là bản chất của phép đặt tính nhân hai chữ số (nhân từng phần rồi cộng, nhớ hàng).',
     obj:'tính 23 × 14 bằng 4 ô diện tích', mA10: 2, mA1: 3, mB10: 1, mB1: 4 },
+  'quy-dong-mau-so': { model:'qds', ten:'Quy đồng mẫu số hai phân số',
+    khoi_dong:'Cô có hai băng giấy bằng nhau. Băng thứ nhất chia 3 ô tô 2 ô (2/3). Băng thứ hai chia 4 ô tô 1 ô (1/4). Muốn đặt hai băng CẠNH NHAU để so hay cộng, ô của hai băng phải BẰNG NHAU. Làm sao đổi 2/3 và 1/4 thành hai phân số cùng một mẫu số mà giá trị KHÔNG đổi?',
+    chot:'QUY ĐỒNG MẪU SỐ: đưa hai phân số về CÙNG một mẫu số mà giá trị mỗi phân số giữ nguyên, nhờ tính chất "nhân (hoặc chia) CẢ tử và mẫu với cùng một số khác 0 thì phân số không đổi". Muốn đổi a/b thành mẫu chung thì nhân tử và mẫu với THỪA SỐ còn lại. Cách chắc đúng cho lớp 4: lấy MẪU CHUNG = tích hai mẫu số (b × d), khi đó a/b = (a×d)/(b×d) và c/d = (c×b)/(d×b). Lỗi phổ biến: CHỈ đổi mẫu mà QUÊN nhân tử → phân số bị biến thành giá trị khác.',
+    obj:'quy đồng 2/3 và 1/4 về cùng mẫu số', qdA: 2, qdB: 3, qdC: 1, qdD: 4 },
 };
 
 const state = {
@@ -5026,6 +5030,64 @@ const MODELS = {
     },
     paint3d() {},
   },
+  qds: {
+    res(st) {
+      const a = clamp(Math.round(st.qdA), 1, 9), b = clamp(Math.round(st.qdB), 2, 12);
+      const c = clamp(Math.round(st.qdC), 1, 9), d = clamp(Math.round(st.qdD), 2, 12);
+      const cd = b * d, na = a * d, nc = c * b;
+      const gcd = (x, y) => (y ? gcd(y, x % y) : x);
+      const g = gcd(b, d), l = cd / g, f1 = l / b, f2 = l / d;
+      const na2 = a * f1, nc2 = c * f2;
+      return { a, b, c, d, cd, na, nc, g, l, f1, f2, na2, nc2 };
+    },
+    defaults(st, L) { st.qdA = (L.qdA != null ? L.qdA : 2); st.qdB = (L.qdB != null ? L.qdB : 3); st.qdC = (L.qdC != null ? L.qdC : 1); st.qdD = (L.qdD != null ? L.qdD : 4); },
+    geomSig(st) { const r = this.res(st); return 'qds' + r.a + '/' + r.b + '~' + r.c + '/' + r.d; },
+    params() { return [{ key: 'qdA', label: 'Tử số 1', min: 1, max: 9 }, { key: 'qdB', label: 'Mẫu số 1', min: 2, max: 12 }, { key: 'qdC', label: 'Tử số 2', min: 1, max: 9 }, { key: 'qdD', label: 'Mẫu số 2', min: 2, max: 12 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bốn thanh trượt cho hai phân số a/b và c/d (tử 1–9, mẫu 2–12). App quy đồng về mẫu chung = b × d bằng cách nhân CẢ tử và mẫu mỗi phân số với mẫu số còn lại. Giơ 1–9 ngón đặt TỬ số thứ nhất.'; },
+    hand(st, f) { st.qdA = clamp(Math.round(f), 1, 9); },
+    handLabel(f) { return '→ tử số thứ nhất = ' + clamp(Math.round(f), 1, 9); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const W = 200, ox = 92, bh = 18;
+      const bar = (y, count, filled, tone) => {
+        const cw = W / count; let s = '';
+        for (let k = 0; k < count; k++) {
+          const x = ox + k * cw; const on = k < filled;
+          s += `<rect x="${x.toFixed(2)}" y="${y}" width="${(cw - 1).toFixed(2)}" height="${bh}" rx="2" fill="${on ? tone : 'rgba(242,240,230,.12)'}" stroke="rgba(242,240,230,.4)" stroke-width="1"></rect>`;
+        }
+        return s;
+      };
+      let g = `<text x="14" y="18" font-size="13" font-weight="700" fill="var(--chalk)">Quy đồng mẫu số về mẫu chung ${r.cd} = ${r.b} × ${r.d}</text>`;
+      g += `<text x="14" y="48" font-size="13" font-weight="700" fill="var(--chalk)">${r.a}/${r.b} = ${r.na}/${r.cd}</text>` + bar(36, r.cd, r.na, 'rgba(127,201,191,.65)');
+      g += `<text x="14" y="72" font-size="10.5" fill="rgba(242,240,230,.8)">× ${r.d} cả tử và mẫu:  ${r.a}×${r.d} = ${r.na},  ${r.b}×${r.d} = ${r.cd}</text>`;
+      g += `<text x="14" y="100" font-size="13" font-weight="700" fill="var(--chalk)">${r.c}/${r.d} = ${r.nc}/${r.cd}</text>` + bar(88, r.cd, r.nc, 'rgba(240,196,92,.65)');
+      g += `<text x="14" y="124" font-size="10.5" fill="rgba(242,240,230,.8)">× ${r.b} cả tử và mẫu:  ${r.c}×${r.b} = ${r.nc},  ${r.d}×${r.b} = ${r.cd}</text>`;
+      g += `<text x="14" y="150" font-size="12" font-weight="700" fill="var(--accent)">Cùng mẫu ${r.cd}: ${r.na}/${r.cd} và ${r.nc}/${r.cd} — giờ cộng, trừ, so sánh được ngay.</text>`;
+      const err = `<text x="14" y="172" font-size="10.5" fill="var(--warn)">❌ Muốn đổi mẫu ${r.b} thành ${r.cd} phải nhân CẢ tử ${r.a} và mẫu ${r.b} với ${r.d}. Chỉ đổi mẫu (để ${r.a}/${r.cd}) là SAI — phân số đổi giá trị.</text>`;
+      host.innerHTML = `<svg id="qds" width="520" height="184" viewBox="0 0 520 184">` + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hai băng giấy bằng nhau. Muốn đặt cạnh nhau thì Ô phải cùng cỡ, nên ta CHIA LẠI mỗi băng thành ${r.cd} ô nhỏ bằng nhau (${r.cd} = ${r.b} × ${r.d}).`, hint: 'cùng độ dài băng nên chỉ số ô thay đổi.' };
+      if (s === 2) return { cap: `Sơ đồ: ${r.a}/${r.b} nhân cả tử lẫn mẫu với ${r.d} → ${r.na}/${r.cd}; ${r.c}/${r.d} nhân với ${r.b} → ${r.nc}/${r.cd}. Hai phân số giờ cùng mẫu ${r.cd}.`, hint: 'nhân cả tử và mẫu cùng một số thì giá trị không đổi.' };
+      if (s === 3) return { cap: `Phép tính: ${r.a}/${r.b} = (${r.a}×${r.d})/(${r.b}×${r.d}) = ${r.na}/${r.cd}; ${r.c}/${r.d} = (${r.c}×${r.b})/(${r.d}×${r.b}) = ${r.nc}/${r.cd}.`, hint: '' };
+      return { cap: `Cả lớp: quy đồng ${r.a}/${r.b} và ${r.c}/${r.d} được ${r.na}/${r.cd} và ${r.nc}/${r.cd}. ${r.l < r.cd ? 'Mẹo: mẫu chung NHỎ NHẤT (BCNN) là ' + r.l + ', khi đó gọn hơn thành ' + r.na2 + '/' + r.l + ' và ' + r.nc2 + '/' + r.l + '.' : 'Hai mẫu đã đôi một nguyên tố nên BCNN đúng bằng tích ' + r.cd + '.'}`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.na}/${r.cd} và ${r.nc}/${r.cd}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mF = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mG = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const mD = new THREE.MeshStandardMaterial({ color: 0x3a3f3a, roughness: 0.8 });
+      for (let k = 0; k < r.cd; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.5), k < r.na ? mF : mD); m.position.set(k * 0.55, 0, 0); g.add(m); }
+      for (let k = 0; k < r.cd; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.5), k < r.nc ? mG : mD); m.position.set(k * 0.55, 0, 1.1); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5264,6 +5326,11 @@ EX['nhan-hai-chu-so-dien-tich'] = [
   { prompt: 'Dùng 4 tích riêng phần: 23 × 12 = ?', choices: ['276', '206', '270'], answer: '276', explanation: '(20+3)×(10+2) = 20×10 + 20×2 + 3×10 + 3×2 = 200 + 40 + 30 + 6 = 276. 206 là chỉ lấy hai ô góc (200 + 6), bỏ quên hai ô chéo (40 và 30); 270 là quên ô 3×2 = 6.', errorTag: 'bo_quen_o_cheo' },
   { prompt: 'Dùng 4 tích riêng phần: 34 × 11 = ?', choices: ['374', '340', '344'], answer: '374', explanation: '30×10 + 30×1 + 4×10 + 4×1 = 300 + 30 + 40 + 4 = 374. 340 là chỉ tính 34×10 rồi quên nhân tiếp phần 1; 344 là bỏ sót ô 30×1 = 30.', errorTag: 'bo_quen_o_cheo' },
   { prompt: 'Dùng 4 tích riêng phần: 45 × 12 = ?', choices: ['540', '530', '450'], answer: '540', explanation: '40×10 + 40×2 + 5×10 + 5×2 = 400 + 80 + 50 + 10 = 540. 530 là quên ô 5×2 = 10; 450 là chỉ lấy 45×10, bỏ hết ô hàng đơn vị của 12.', errorTag: 'bo_quen_o_don_vi' },
+];
+EX['quy-dong-mau-so'] = [
+  { prompt: 'Quy đồng 1/2 và 1/3 về mẫu chung 6, được:', choices: ['3/6 và 2/6', '1/6 và 1/6', '2/6 và 3/6'], answer: '3/6 và 2/6', explanation: '1/2 = (1×3)/(2×3) = 3/6; 1/3 = (1×2)/(3×2) = 2/6. Nhân CẢ tử và mẫu, nên tử cũng đổi. 1/6 và 1/6 là lỗi chỉ đổi mẫu mà quên nhân tử; 2/6 và 3/6 là ghép nhầm thừa số.', errorTag: 'quen_nhan_tu' },
+  { prompt: 'Quy đồng 2/3 và 1/4 về mẫu chung 12, được:', choices: ['8/12 và 3/12', '2/12 và 1/12', '8/12 và 3/4'], answer: '8/12 và 3/12', explanation: '2/3 = (2×4)/(3×4) = 8/12; 1/4 = (1×3)/(4×3) = 3/12. 2/12 và 1/12 quên nhân tử; 8/12 và 3/4 là mới quy đồng phân số thứ nhất, bỏ phân số thứ hai.', errorTag: 'quen_nhan_tu' },
+  { prompt: 'Quy đồng 3/4 và 5/6 về mẫu chung nhỏ nhất 12, được:', choices: ['9/12 và 10/12', '3/12 và 5/12', '9/12 và 10/24'], answer: '9/12 và 10/12', explanation: 'BCNN(4,6)=12. 3/4 = (3×3)/(4×3) = 9/12; 5/6 = (5×2)/(6×2) = 10/12. 3/12 và 5/12 quên nhân tử; 10/24 nhân mẫu gấp đôi mức cần (24 ≠ 12).', errorTag: 'chon_mau_chung_sai' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
