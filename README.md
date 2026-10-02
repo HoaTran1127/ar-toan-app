@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Bốn mươi ba mô hình đang có:
+Bốn mươi bốn mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -94,8 +94,9 @@ Bốn mươi ba mô hình đang có:
 | `trap` | **Diện tích hình thang** (beyond-bank): (đáy lớn + đáy nhỏ) × chiều cao ÷ 2 | **hình thang đặc** (đáy lớn a dưới, đáy nhỏ b trên) + **hình thang mờ giống hệt** quay 180° áp vào **cạnh nghiêng** (cam) → thành **hình bình hành** có đáy **a + b**; dấu ngoặc dưới ghi "đáy hình bình hành = a + b", đường cao nét đứt + ô vuông; dưới cùng dòng **S = (a + b) × h ÷ 2** | lăng trụ thang (Shape + ExtrudeGeometry) theo hai đáy & cao | **hai tay**: tay TRÁI đặt ĐÁY NHỎ, tay PHẢI đặt ĐÁY LỚN; chiều cao bằng +/− (tới 20 \| 14) |
 | `sa` | **D. tích xung quanh & toàn phần hình hộp chữ nhật** (beyond-bank) | **lưới khai triển 6 mặt** của hộp a×b×c: dải 4 **mặt bên** (xanh) kề nhau = a·c·b·c·a·c·b·c + **2 mặt đáy** (vàng) gắn trên/dưới; nhãn a, b, c; ba dòng: **XUNG QUANH = (a+b)×2×c**, **HAI ĐÁY = a×b×2**, **TOÀN PHẦN = xung quanh + hai đáy** | hộp chữ nhật (BoxGeometry) to/nhỏ theo ba chiều | **hai tay**: trái = CHIỀU DÀI, phải = CHIỀU RỘNG; CHIỀU CAO bằng +/− (tới 20) |
 | `order` | **Thứ tự thực hiện phép tính** (beyond-bank): ngoặc → × ÷ → + − | một biểu thức 3 số theo **3 DẠNG** (a+b×c · (a+b)×c · a×b+c); hai **thẻ bước** có thứ tự ①→② (phép ưu tiên chạy trước tô vàng), dòng **kết quả ĐÚNG**; dưới là thẻ **❌ cách SAI** gạch đỏ cùng lý do (cùng các số, khác thứ tự → khác đáp số) | chồng khối lập phương đếm = kết quả cuối (BoxGeometry) | **hai tay**: trái = a, phải = b; số c và **DẠNG** (0/1/2) chỉnh bằng +/− |
+| `rect` | **Chu vi vs diện tích hình chữ nhật** (beyond-bank): hai đại lượng trên CÙNG một hình | **lưới ô** a×b tô teal (= số ô cm² = diện tích) + **viền vàng dày** chạy quanh (= chu vi, cm); nhãn dài a / rộng b; hai dòng đối chiếu: **CHU VI = (a+b)×2 cm** (đi vòng) vs **DIỆN TÍCH = a×b cm²** (lấp mặt), kèm câu chốt "cm khác cm²" | tấm phẳng chữ nhật (BoxGeometry) to/nhỏ theo hai cạnh | **hai tay**: trái = CHIỀU DÀI, phải = CHIỀU RỘNG (tới 12) |
 
-Bài hiện có (49 bài · 43 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 10 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri) + *Diện tích hình thang* (trap) + *Diện tích hình hộp* (sa) + *Thứ tự phép tính* (order), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (50 bài · 44 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 11 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri) + *Diện tích hình thang* (trap) + *Diện tích hình hộp* (sa) + *Thứ tự phép tính* (order) + *Chu vi vs diện tích HCN* (rect), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -111,7 +112,7 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` + `trap` + `sa` + `order` (Vòng 69–78):** SGK lớp 4 có mạch
+**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` + `trap` + `sa` + `order` + `rect` (Vòng 69–79):** SGK lớp 4 có mạch
 "Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
 giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
 (`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** các model cũ.
@@ -162,6 +163,14 @@ bằng +/− để so ba tình huống: `a + b × c` (× trước), `(a + b) × 
 số c đổi bằng +/−. Chặn đúng hai lỗi kinh điển **"cứ tính tuần tự từ trái sang"** và **"thấy số cộng đẹp thì nhảy vào cộng trước"**.
 build3d xếp chồng khối = kết quả cuối để đếm. Đây là **kỹ năng nền của mọi biểu thức lớp 4** mà app chưa có mô hình riêng; `geomSig`
 `'ord234:0'`, `showFromStep`=2, cùng hợp đồng hai tay chuẩn như `sa`/`trap`.
+Vòng 79 thêm mạch thứ mười một: `rect` — **chu vi vs diện tích hình chữ nhật** đặt trên CÙNG một hình. Viền vàng dày chạy
+QUANH = **CHU VI = (dài + rộng) × 2** (đo bằng **cm** — độ dài đường bao, ví dụ quàng hàng rào); lưới ô vuông tô kín MẶT =
+**DIỆN TÍCH = dài × rộng** (đo bằng **cm²** — số ô 1 cm², ví dụ lát gạch). Hai học sinh cầm **hai cạnh** rồi đọc cả hai đại
+lượng cạnh nhau nên **thấy ngay** vì sao "quanh sân" khác "lát sân": cùng miếng đất 6×4 mà chu vi 20 cm ≠ diện tích 24 cm².
+Chặn đúng lỗi kinh điển **"nhầm chu vi với diện tích"** (đã là errorTag `nham_chu_vi_thanh_dien_tich` trong bank), và có cả ca
+**vuông 4×4** để mở rộng suy nghĩ: P = 16 cm và S = 16 cm² **cùng con số 16 nhưng khác đơn vị** — đúng là hai đại lượng khác,
+không phải "chu vi luôn to/nhỏ hơn diện tích". build3d dùng `BoxGeometry` tấm phẳng. Cùng bộ hình chữ nhật/ô vuông với `array`
+(đếm ô) và nay có thêm **đối chiếu chu vi↔diện tích**.
 
 **Vòng 70 còn sửa một LỖI CHỨC NĂNG thật của điều khiển hai tay:** nhánh `twoHands` trong
 `loopDetect` vốn so `state.balL + '/' + state.balR` để quyết định vẽ lại — hai biến CHỈ model
