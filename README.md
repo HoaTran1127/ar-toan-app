@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Năm mươi mô hình đang có:
+Năm mươi mốt mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -101,8 +101,9 @@ Năm mươi mô hình đang có:
 | `decarea` | **Nhân hai số thập phân** (beyond-bank) bằng **lưới diện tích** | ô vuông = 1 chia **100 ô** (mỗi ô = 0,01); tô `m` **HÀNG** (vàng = 0,m) giao `n` **CỘT** (xanh = 0,n) → **phần giao sáng** = `m×n` ô = tích; cột phải ghi `0,m × 0,n = P/100 = 0,…`; dòng chốt "1 + 1 = 2 chữ số thập phân" | lưới khối `m×n` ô xếp thành ô vuông | **hai tay**: trái = số **HÀNG**, phải = số **CỘT** (mỗi tay 1→9 phần mười); hoặc +/− từng thừa số |
 | `decadd` | **Cộng · trừ hai số thập phân** (beyond-bank): **thẳng dấu phẩy**, có nhớ/mượn | trái: **thanh độ dài trên thước dm** — dải `a` nối tiếp dải `b` (cộng) hay cắt bỏ `b` (trừ) → mũi tên dừng ở kết quả; phải: **cột đặt tính** với **đường đứt qua DẤU PHẨY** xuyên 3 hàng, ô **ĐV \| PM**, annotation "nhớ 1 ↖" khi phần mười ≥ 10, "mượn 1 (= 10 PM)" khi trừ không đủ, kèm thẻ **❌** quên nhớ/mượn/quên dấu phẩy | hàng khối 0,1 = \|kết quả\| ô xếp vuông | **giơ 0–9 ngón** đặt chữ số của ô đang chọn (bấm ô để chọn); +/− từng ô và nút cộng/trừ |
 | `natdivdec` | **Chia số tự nhiên cho số tự nhiên ra thương thập phân** (beyond-bank): còn dư thì **thêm 0 chia tiếp** | trái: `a` **ô đơn vị** xếp lưới — xanh = chia đều `b` phần, **cam = phần còn dư**; dưới là **thanh thương của MỘT phần** (mỗi đơn vị gạch ngăn, đoạn cam = phần mười) + **`dư × 10` ô con** minh họa "cắt mỗi ô dư thành 10 phần mười rồi chia đều"; phải: **khối đặt tính 3 bước** `a : b = q dư r` → "viết dấu phẩy, thêm 0 → r0" → `r·10 : b = t`, kèm thẻ **❌** "dừng ở q dư r" | `a` khối (xanh vào phần, cam còn dư) xếp ô vuông | **giơ 2–5 ngón = SỐ CHIA** (chia thành mấy phần); +/− đặt số bị chia (1–20) và số chia (2–5) |
+| `lenunits` | **Bảng đơn vị đo độ dài** (beyond-bank): km · hm · dam · m · dm · cm · mm, hơn kém **10 lần mỗi bậc** | **cột thang 7 bậc** — CÙNG MỘT độ dài nhưng mỗi đơn vị ghi một **số đo khác nhau**; đơn vị đang chọn viền vàng, bên cạnh ghi `= … m` và `= … mm`; giữa hai bậc kề có nhãn **×10**; xuống bậc (đơn vị nhỏ hơn) → số ×10, lên bậc → :10; dòng **❌** "3 m ≠ 30 mm (m→mm xuống 3 bậc = ×1000 = 3000 mm)" | cầu thang 7 bậc, bậc đang chọn sáng, khối đặt trên đúng số đo | **bấm một BẬC** chọn đơn vị đang đo; **giơ 1–9 ngón** đặt con số; +/− từng bậc |
 
-Bài hiện có (56 bài · 50 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 17 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri) + *Diện tích hình thang* (trap) + *Diện tích hình hộp* (sa) + *Thứ tự phép tính* (order) + *Chu vi vs diện tích HCN* (rect) + *Chia phân số cho số tự nhiên* (fracdiv) + *Nhân · chia 10 · 100 · 1000* (dotshift) + *Cộng · trừ khác mẫu số* (fracdiff) + *Nhân hai số thập phân* (decarea) + *Cộng · trừ số thập phân* (decadd) + *Chia STN ra thương thập phân* (natdivdec), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (57 bài · 51 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 18 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt) + *Hình tròn* (circle) + *Diện tích tam giác* (tri) + *Diện tích hình thang* (trap) + *Diện tích hình hộp* (sa) + *Thứ tự phép tính* (order) + *Chu vi vs diện tích HCN* (rect) + *Chia phân số cho số tự nhiên* (fracdiv) + *Nhân · chia 10 · 100 · 1000* (dotshift) + *Cộng · trừ khác mẫu số* (fracdiff) + *Nhân hai số thập phân* (decarea) + *Cộng · trừ số thập phân* (decadd) + *Chia STN ra thương thập phân* (natdivdec) + *Bảng đơn vị đo độ dài* (lenunits), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -118,7 +119,7 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` + `trap` + `sa` + `order` + `rect` + `fracdiv` + `dotshift` + `fracdiff` + `decarea` + `decadd` + `natdivdec` (Vòng 69–85):** SGK lớp 4 có mạch
+**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` + `circle` + `tri` + `trap` + `sa` + `order` + `rect` + `fracdiv` + `dotshift` + `fracdiff` + `decarea` + `decadd` + `natdivdec` + `lenunits` (Vòng 69–86):** SGK lớp 4 có mạch
 "Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
 giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
 (`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** các model cũ.
@@ -228,6 +229,15 @@ phân → phải thêm 0 chia tiếp". Cô **giơ 2–5 ngón = SỐ CHIA** (chi
 trong model tính tới hai chữ số thập phân và chỉ gắn "…" khi thương thật sự vô hạn (chia cho 3); các thương hữu hạn như 5 : 4 =
 1,25 hiển thị gọn không dấu ba chấm. build3d xếp `a` khối (xanh vào phần, cam còn dư) thành ô vuông. Nối sang `groups` (cùng phép
 chia có dư), `fracdiv` (cùng họ chia ra kết quả bé hơn) và `decadd`/`decarea` (cùng họ số thập phân).
+
+Vòng 86 thêm mạch thứ mười tám: `lenunits` — **bảng đơn vị đo độ dài** (km · hm · dam · m · dm · cm · mm). đây là chỗ học sinh thuộc
+lòng "1 m = 10 dm" nhưng vẫn nhầm khi đổi nhảy nhiều bậc (3 m ra mm). Màn chiếu là một **cột thang 7 bậc**: mỗi bậc một đơn vị, và **cùng
+MỘT độ dài** được ghi lại bằng **cả bảy số đo khác nhau** — chọn đơn vị nào thì bậc đó viền vàng và hiển thị đúng con số cô đưa. Cạnh
+bậc đang chọn, cột phải ghi luôn giá trị quy về **mét** và về **milimét** để so, giữa mỗi hai bậc kề có nhãn **×10** nhắc "hơn kém 10 lần
+mỗi bậc". Cô **bấm một bậc** để đổi đơn vị đang đo, **giơ 1–9 ngón** đặt con số, +/− chỉnh từng bậc; đi xuống (đơn vị nhỏ hơn) thì số
+**×10 mỗi bậc**, đi lên thì **:10**. Dòng **❌** chỉ thẳng lỗi kinh điển: "3 m = 30 mm? Sai — m → mm là xuống 3 bậc = ×1000 = 3000 mm."
+build3d dựng cầu thang 7 bậc, bậc đang chọn sáng màu và xếp đúng `số đo` khối lên đó. Nối sang `units` (cùng ý đổi đơn vị nhưng là khối
+lượng, mỗi bậc ×10), `dotshift` (cùng máy ×/:10 khi nhảy bậc) và `numline` (dùng dấu phẩy cho số đo thập phân như 0,5 m).
 
 **Vòng 70 còn sửa một LỖI CHỨC NĂNG thật của điều khiển hai tay:** nhánh `twoHands` trong
 `loopDetect` vốn so `state.balL + '/' + state.balR` để quyết định vẽ lại — hai biến CHỈ model
