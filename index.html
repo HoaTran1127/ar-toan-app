@@ -250,6 +250,10 @@ const LESSONS = {
     khoi_dong:'17 cái kẹo chia đều cho 5 bạn. Còn thừa mấy cái và vì sao không chia tiếp được nữa?',
     chot:'Chia là phát lần lượt mỗi nhóm một đơn vị cho tới khi hết; phần còn lại không đủ cho mỗi nhóm một đơn vị nữa là số dư, và số dư luôn nhỏ hơn số chia.',
     obj:'băng chuyền' },
+  'cong-tru-phan-so': { model:'fracops', ten:'Cộng trừ phân số cùng mẫu trên trục', foD:4, foN1:1, foN2:2, foOp:true,
+    khoi_dong:'Ăn 1/4 cái bánh rồi ăn thêm 2/4 cái nữa. Làm sao nhìn một cái là thấy ngay 3/4?',
+    chot:'Cùng mẫu số thì cộng hoặc trừ tử số và giữ nguyên mẫu; vượt quá một cái đầy thì viết thành hỗn số có phần nguyên.',
+    obj:'trục phân số' },
 };
 
 const state = {
@@ -272,6 +276,7 @@ const state = {
   pR: 4, pB: 0, pY: 0, pAsk: 1,
   lnAng: 15, lnExt: false,
   dvSo: 17, dvNhom: 5,
+  foD: 4, foN1: 1, foN2: 2, foOp: true,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -1389,6 +1394,82 @@ const MODELS = {
       const plate2 = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.12, 0.9), new THREE.MeshStandardMaterial({ color: 0x5fb0a5, roughness: .6 })); plate2.position.set(rx, -0.06, 0); g.add(plate2);
       for (let k = 0; k < r; k++) { const c = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.32, 0.32), new THREE.MeshStandardMaterial({ color: 0xe0791f, roughness: .5 }));
         c.position.set(rx - 0.22 + (k%2 ? 0.44 : 0), 0.22, -0.2 + Math.floor(k/2)*0.45); g.add(c); }
+      return g;
+    },
+    paint3d() {},
+  },
+
+  // ======================= Model: fracops (cộng trừ phân số cùng mẫu — trên TRỤC, HAI TAY) =======================
+  // Repo cong-tru-phan-so (props): "các thanh phân số cùng mẫu trượt trên một trục; cộng là nối tiếp hai
+  // đoạn, trừ là chồng ngược; đếm tổng phần tô làm tử số, GIỮ NGUYÊN mẫu số; vượt một thanh đầy → hỗn số".
+  // Trục dài đúng 2 "cái" để phần vượt 1 cái hiện ra ngay. Lỗi hay gặp: cộng luôn mẫu số.
+  fracops: {
+    twoHands: true,
+    defaults(st, L) { st.foD = L.foD; st.foN1 = L.foN1; st.foN2 = L.foN2; st.foOp = L.foOp; },
+    eff(st) { const D = Math.max(2, st.foD); return { D, n1: Math.min(st.foN1, D), n2: Math.min(st.foN2, D), add: !!st.foOp }; },
+    raw(st) { const e = this.eff(st); return e.add ? e.n1 + e.n2 : Math.max(0, e.n1 - e.n2); },
+    gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = b; b = a % b; a = t; } return a || 1; },
+    resultText(st) { const e = this.eff(st), num = this.raw(st), den = e.D;
+      if (num === 0) return '0'; const g = this.gcd(num, den); const sn = num / g, sd = den / g;
+      const w = Math.floor(sn / sd), r = sn % sd;
+      if (w > 0 && r > 0) return `${w} ${r}/${sd}`; if (w > 0 && r === 0) return `${w}`; return `${sn}/${sd}`; },
+    geomSig(st) { const e = this.eff(st); return 'fo' + e.D + ':' + e.n1 + ',' + e.n2 + (e.add ? '+' : '-'); },
+    params() { return [
+      { key:'foN1', label:'Tử số PS 1', min:0, max:8 }, { key:'foN2', label:'Tử số PS 2', min:0, max:8 },
+      { key:'foD', label:'Mẫu số chung', min:2, max:8 }]; },
+    toggles() { return [{ key:'foOp', label:'Phép tính: + (cộng) / − (trừ)' }]; },
+    ctlHint() { return 'Giơ HAI tay: trái = tử số phần 1, phải = tử số phần 2. Mẫu số chung bấm +/−; gạt công tắc để đổi +/−. Hai băng nối tiếp nhau trên CÙNG trục.'; },
+    draw2d(host, st) {
+      const e = this.eff(st), D = e.D, n1 = e.n1, n2 = e.n2, add = e.add;
+      const W = 560, Hh = 250, pad = 48, L = 430, cw = L / D, axisY = 156, bh = 44, y = 92;
+      const X = (j) => (pad + j * cw);
+      let s = '';
+      for (let u = 0; u < 2 * D; u++) s += `<rect x="${X(u).toFixed(1)}" y="${y}" width="${cw.toFixed(1)}" height="${bh}" fill="none" stroke="rgba(242,240,230,.16)" stroke-width="1"></rect>`;
+      const put = (j, fill) => { s += `<rect x="${X(j).toFixed(1)}" y="${y}" width="${cw.toFixed(1)}" height="${bh}" fill="${fill}"></rect>`; };
+      if (add) { for (let j = 0; j < n1; j++) put(j, 'rgba(95,176,165,.72)'); for (let j = n1; j < n1 + n2; j++) put(j, 'rgba(255,209,102,.82)'); }
+      else { const kept = Math.max(0, n1 - n2); for (let j = 0; j < kept; j++) put(j, 'rgba(95,176,165,.72)');
+        for (let j = kept; j < n1; j++) { put(j, 'rgba(224,121,31,.5)');
+          s += `<line x1="${X(j).toFixed(1)}" y1="${y}" x2="${(X(j)+cw).toFixed(1)}" y2="${y+bh}" stroke="var(--chalk)" stroke-width="1.2"></line>`
+            + `<line x1="${(X(j)+cw).toFixed(1)}" y1="${y}" x2="${X(j).toFixed(1)}" y2="${y+bh}" stroke="var(--chalk)" stroke-width="1.2"></line>`; } }
+      s += `<line x1="${X(D).toFixed(1)}" y1="${y-16}" x2="${X(D).toFixed(1)}" y2="${y+bh+8}" stroke="var(--accent)" stroke-width="2"></line>`
+        + `<text x="${((X(0)+X(D))/2).toFixed(1)}" y="${y-20}" fill="rgba(242,240,230,.72)" font-size="12" text-anchor="middle">1 cái = ${D} phần</text>`;
+      s += `<line x1="${pad}" y1="${axisY}" x2="${X(2*D).toFixed(1)}" y2="${axisY}" stroke="var(--chalk)" stroke-width="1.5"></line>`;
+      for (let u = 0; u <= 2; u++) s += `<line x1="${X(u*D).toFixed(1)}" y1="${axisY-6}" x2="${X(u*D).toFixed(1)}" y2="${axisY+6}" stroke="var(--chalk)" stroke-width="1.5"></line>`
+        + `<text x="${X(u*D).toFixed(1)}" y="${axisY+20}" fill="rgba(242,240,230,.6)" font-size="11" text-anchor="middle">${u}</text>`;
+      const mid = add ? Math.floor(n2/2) : Math.max(0,n1-n2) + Math.floor(n2/2);
+      s += `<text x="${X(mid).toFixed(1)}" y="${y+bh+16}" fill="var(--chalk)" font-size="12" text-anchor="middle">${n2}/${D}</text>`
+        + `<text x="${X(n1/2).toFixed(1)}" y="${y-4}" fill="var(--chalk)" font-size="12" text-anchor="middle">${n1}/${D}</text>`;
+      const sign = add ? '+' : '−';
+      s += `<text x="${W/2}" y="${Hh-12}" fill="var(--accent)" font-size="18" font-weight="700" text-anchor="middle">${n1}/${D} ${sign} ${n2}/${D} = ${this.resultText(st)}</text>`;
+      host.innerHTML = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, e = this.eff(st), D = e.D, n1 = e.n1, n2 = e.n2, add = e.add;
+      const sign = add ? 'thêm' : 'bớt';
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: một cái bánh chia ${D} phần bằng nhau. Lần thứ nhất ăn ${n1} phần (${n1}/${D}), lần thứ hai ${sign} ${n2} phần (${n2}/${D}).`, hint: 'Giơ HAI tay để đặt số phần mỗi lần, mẫu số bấm +/−, gạt +/− để đổi phép tính.' };
+      if (s === 2) return { cap: `Sơ đồ: đặt hai thanh trên CÙNG một trục ${D} phần. Mẫu số không đổi vì các phần vẫn cắt từ cùng một cái. ${add ? `Nối tiếp ${n1} rồi ${n2} phần = ${this.raw(st)} phần${this.raw(st) > D ? ' → VƯỢT 1 cái, hiện phần nguyên (hỗn số).' : ''}.` : `Chồng ngược bớt ${n2} phần của ${n1} phần → còn ${this.raw(st)} phần.`}`, hint: 'CHỈ cộng/trừ tử số — TUYỆT đối không cộng mẫu số.' };
+      if (s === 3) return { cap: `Phép tính: ${n1}/${D} ${add ? '+' : '−'} ${n2}/${D} = ${this.resultText(st)}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: ${n1}/${D} ${add ? '+' : '−'} ${n2}/${D} bằng bao nhiêu? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const e = this.eff(st); return `${e.n1}/${e.D} ${e.add ? '+' : '−'} ${e.n2}/${e.D} = ${this.resultText(st)}`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      const D = Math.max(2, st.foD);
+      if (l !== null) st.foN1 = clamp(l, 0, D);
+      if (r !== null) st.foN2 = clamp(r, 0, D);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), e = this.eff(st), D = e.D, cw = 2 * 0.5; const total = 2 * D;
+      const cellW = 3.6 / total;
+      for (let j = 0; j < total; j++) { let col = 0x3a4a52;
+        if (e.add) { if (j < e.n1) col = 0x5fb0a5; else if (j < e.n1 + e.n2) col = 0xffd166; }
+        else { const kept = Math.max(0, e.n1 - e.n2); if (j < kept) col = 0x5fb0a5; else if (j < e.n1) col = 0xe0791f; }
+        const m = new THREE.Mesh(new THREE.BoxGeometry(cellW * 0.9, 0.5, 0.7), new THREE.MeshStandardMaterial({ color: col, roughness: .55 }));
+        m.position.set(-1.8 + cellW * (j + 0.5), 0, 0); g.add(m); }
+      const div = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.62, 0.82), new THREE.MeshStandardMaterial({ color: 0xffffff })); div.position.set(0, 0, 0); g.add(div);
       return g;
     },
     paint3d() {},
