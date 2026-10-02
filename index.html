@@ -379,6 +379,10 @@ const LESSONS = {
     khoi_dong:'Cô đo nhiệt độ lớp mình lúc 6 giờ, 9 giờ, 12 giờ, 15 giờ, 18 giờ rồi nối năm điểm thành một đường. Nhìn đường đi LÊN hay XUỐNG, em biết lúc nào nóng nhất không?',
     chot:'Trục NGANG là thời gian, trục DỌC là nhiệt độ; đọc giá trị bằng cách dóng từ điểm ra trục, đừng nhầm hai trục. Đoạn đi lên = nhiệt độ tăng, đi xuống = giảm; điểm CAO NHẤT = nóng nhất.',
     obj:'biểu đồ nhiệt độ một ngày', lg0:20, lg1:24, lg2:31, lg3:29, lg4:22, lgR:2 },
+  'dai-luong-s-v-t': { model:'svt', ten:'Đại lượng: tam giác Quãng đường – Vận tốc – Thời gian',
+    khoi_dong:'Cô vẽ một tam giác: S ở trên chóp, v và t ở hai đáy. Che một ô đi là em đọc ra ngay phép tính. Xe chạy 40 km/giờ trong 3 giờ thì đi được bao xa?',
+    chot:'S = v × t; muốn tìm v lấy S ÷ t, tìm t lấy S ÷ v. Che ô cần tìm trên tam giác để nhớ phép tính — hai ô còn lại cùng hàng thì NHÂN, khác hàng thì CHIA.',
+    obj:'xe đi 40 km/giờ trong 3 giờ', svS:120, svV:40, svT:3, svAsk:0 },
 };
 
 const state = {
@@ -419,6 +423,7 @@ const state = {
   dvT: 8, dvU: 4,
   pc0: 10, pc1: 5, pc2: 3, pc3: 2, pcSel: 0,
   lg0: 20, lg1: 24, lg2: 31, lg3: 29, lg4: 22, lgR: 2,
+  svS: 120, svV: 40, svT: 3, svAsk: 0,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -2772,6 +2777,72 @@ const MODELS = {
     hand() {},
     handLabel() { return ''; },
   },
+
+  // ======================= Model: svt (tam giác đại lượng S–v–t) =======================
+  // beyond-bank THỨ 5: mạch "Đại lượng: Quãng đường – Vận tốc – Thời gian" (lớp 5) dùng TAM GIÁC
+  // MAGIQUE: S ở đỉnh, v·t ở đáy. Che ô CẦN TÌM → hiện ngay phép tính (S = v×t; v = S÷t; t = S÷v).
+  // bank 39 cụm chưa có. Lỗi kinh điển: nhân/chia NHẦM (tính v mà lấy S×t). Giơ 1/2/3 ngón = chọn
+  // che ô S / v / t; hai số còn lại cô đặt bằng +/− → ô bị che TỰ TÍNH, kèm dòng công thức.
+  svt: {
+    names() { return ['Quãng đường', 'Vận tốc', 'Thời gian']; },
+    units() { return ['km', 'km/giờ', 'giờ']; },
+    letters() { return ['S', 'v', 't']; },
+    keys() { return ['svS', 'svV', 'svT']; },
+    defaults(st, L) { st.svS = L.svS; st.svV = L.svV; st.svT = L.svT; st.svAsk = (L.svAsk != null ? L.svAsk : 0); },
+    fmt(n) { const s = Math.round(n * 10) / 10; return (s % 1 === 0) ? String(s) : s.toFixed(1); },
+    calc(st) { const a = st.svAsk;
+      if (a === 0) return st.svV * st.svT;
+      if (a === 1) return st.svT > 0 ? st.svS / st.svT : 0;
+      return st.svV > 0 ? st.svS / st.svV : 0; },
+    formula(st) { const a = st.svAsk, val = this.calc(st), u = this.units()[a], f = this.fmt.bind(this);
+      if (a === 0) return `S = v × t = ${f(st.svV)} × ${f(st.svT)} = ${f(val)} ${u}`;
+      if (a === 1) return `v = S ÷ t = ${f(st.svS)} ÷ ${f(st.svT)} = ${f(val)} ${u}`;
+      return `t = S ÷ v = ${f(st.svS)} ÷ ${f(st.svV)} = ${f(val)} ${u}`; },
+    geomSig(st) { return 'svt' + st.svS + ':' + st.svV + ':' + st.svT + ':' + st.svAsk; },
+    params() { const K = this.keys(), a = clamp(state.svAsk, 0, 2);
+      const defs = { svS: { label: 'S · quãng đường (km)', min: 0, max: 400, step: 10 },
+        svV: { label: 'v · vận tốc (km/giờ)', min: 1, max: 120, step: 1 },
+        svT: { label: 't · thời gian (giờ)', min: 1, max: 12, step: 1 } };
+      const out = []; for (let k = 0; k < 3; k++) { if (k === a) continue; out.push(Object.assign({ key: K[k] }, defs[K[k]])); } return out; },
+    ctlHint() { return 'Giơ 1 ngón = tìm QUÃNG ĐƯỜNG, 2 = VẬN TỐC, 3 = THỜI GIAN (che ô đó). Bấm +/− hai số còn lại để đổi đề.'; },
+    draw2d(host, st) {
+      const a = clamp(st.svAsk, 0, 2), val = this.calc(st), f = this.fmt.bind(this);
+      const reg = (letter, idx, cx, cy) => { const isAsk = idx === a;
+        const txt = isAsk ? `? = ${f(val)}` : `${letter} = ${f(st[this.keys()[idx]])}`;
+        return `<g><rect x="${cx - 62}" y="${cy - 20}" width="124" height="40" rx="7" fill="${isAsk ? 'rgba(255,209,102,.2)' : 'rgba(127,201,191,.14)'}" stroke="${isAsk ? 'var(--accent)' : 'var(--chalk)'}" stroke-width="${isAsk ? 2.5 : 1.5}"></rect>`
+          + `<text x="${cx}" y="${cy - 2}" fill="${isAsk ? 'var(--accent)' : 'var(--chalk)'}" font-size="13" font-weight="700" text-anchor="middle">${letter}</text>`
+          + `<text x="${cx}" y="${cy + 13}" fill="var(--chalk)" font-size="12" text-anchor="middle">${txt}</text></g>`; };
+      host.innerHTML = `<svg id="svt" width="548" height="258" viewBox="0 0 548 258">`
+        + `<text x="16" y="20" fill="rgba(242,240,230,.72)" font-size="13">Tam giác đại lượng — che ô cần tìm để hiện phép tính</text>`
+        + `<path d="M 274 34 L 110 200 L 438 200 Z" fill="rgba(255,255,255,.04)" stroke="var(--chalk)" stroke-width="2"></path>`
+        + `<line x1="181.9" y1="127" x2="366.1" y2="127" stroke="var(--chalk)" stroke-width="1.5"></line>`
+        + `<line x1="274" y1="127" x2="274" y2="200" stroke="var(--chalk)" stroke-width="1.5"></line>`
+        + reg('S', 0, 274, 82) + reg('v', 1, 210, 165) + reg('t', 2, 338, 165)
+        + `<text x="274" y="236" fill="var(--accent)" font-size="15" font-weight="700" text-anchor="middle">${this.formula(st)}</text>`
+        + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, a = clamp(st.svAsk, 0, 2), nm = this.names(), val = this.calc(st), f = this.fmt.bind(this);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: một chuyển động đều — biết v = ${f(st.svV)} km/giờ, t = ${f(st.svT)} giờ, S = ${f(st.svS)} km.`, hint: 'Giơ 1/2/3 ngón để chọn ô cần tìm (che nó lại).' };
+      if (s === 2) return { cap: `Sơ đồ: tam giác có S ở đỉnh, v và t ở đáy. Muốn tìm ${nm[a]} thì che ô ${this.letters()[a]} — ${a === 0 ? 'hai ô còn lại đứng cạnh nhau nên NHÂN' : 'một ô bị che nên còn phép CHIA'}.`, hint: 'Che ô cần tìm: S = v × t, v = S ÷ t, t = S ÷ v.' };
+      if (s === 3) return { cap: `Vậy ${nm[a]} = ${f(val)} ${this.units()[a]}  (${this.formula(st)}). ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: ô đang che (tìm ${nm[a]}) ra bao nhiêu? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const a = clamp(st.svAsk, 0, 2); return `→ ${this.names()[a]} = ${this.fmt(this.calc(st))} ${this.units()[a]}`; },
+    showFromStep() { return 2; },
+    hand(st, f) { st.svAsk = clamp(f - 1, 0, 2); },
+    handLabel(f, st) { return `→ tìm ${this.names()[clamp(f - 1, 0, 2)]}`; },
+    build3d(st) {
+      const g = new THREE.Group(), a = clamp(st.svAsk, 0, 2);
+      const pos = [[0, 1.1, 0], [-1, 0, 0], [1, 0, 0]];
+      for (let i = 0; i < 3; i++) { const hex = i === a ? 0xffd166 : 0x7fc9bf;
+        const m = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.6, 0.6), new THREE.MeshStandardMaterial({ color: hex, roughness: .5 }));
+        m.position.set(pos[i][0], pos[i][1], pos[i][2]); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -2848,6 +2919,11 @@ EX['bieu-do-hinh-quat'] = [
 EX['bieu-do-doan-thang'] = [
   { prompt: 'Nhiệt độ lúc 6 giờ là 20°C, lúc 12 giờ là 31°C. Từ 6 giờ đến 12 giờ nhiệt độ TĂNG bao nhiêu độ?', choices: ['11°C', '9°C', '51°C'], answer: '11°C', explanation: 'Đoạn đi lên, độ tăng = hiệu hai giá trị: 31 − 20 = 11°C (lấy hiệu, không cộng hai số).', errorTag: 'cong-thay-vi-tru-khoang-tang' },
   { prompt: 'Muốn biết lúc nào nhiệt độ CAO NHẤT trên biểu đồ đoạn thẳng, em nhìn vào đâu?', choices: ['Điểm cao nhất của đường', 'Điểm ngoài cùng bên phải', 'Đoạn nằm ngang dài nhất'], answer: 'Điểm cao nhất của đường', explanation: 'Trục DỌC là nhiệt độ, nên điểm cao nhất = nhiệt độ lớn nhất; trục ngang chỉ là giờ.', errorTag: 'nham-truc-doc-voi-truc-ngang' },
+];
+// Đại lượng S–v–t không có trong examples.mjs của bank → 2 câu SGK-style tự tác.
+EX['dai-luong-s-v-t'] = [
+  { prompt: 'Một ô tô đi đều với vận tốc 45 km/giờ trong 3 giờ. Hỏi ô tô đi được bao nhiêu ki-lô-mét?', choices: ['135 km', '48 km', '15 km'], answer: '135 km', explanation: 'Quãng đường = vận tốc × thời gian: S = v × t = 45 × 3 = 135 km.', errorTag: 'cong-thay-vi-nhan-when-tinh-quat-duong' },
+  { prompt: 'Một người đi xe máy được 120 km trong 3 giờ. Vận tốc của người đó là bao nhiêu?', choices: ['40 km/giờ', '360 km/giờ', '117 km/giờ'], answer: '40 km/giờ', explanation: 'Vận tốc = quãng đường ÷ thời gian: v = S ÷ t = 120 ÷ 3 = 40 km/giờ (CHIA, không nhân).', errorTag: 'nhan-thay-vi-chia-tinh-van-toc' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
