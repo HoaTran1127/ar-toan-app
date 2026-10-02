@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Ba mươi ba mô hình đang có:
+Ba mươi tư mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -84,8 +84,9 @@ Ba mươi ba mô hình đang có:
 | `dtable` | **đọc bảng số liệu** không nhầm hàng / cột | bảng điểm 4 bạn × 3 môn + cột TB; **dải vàng** theo hàng, **dải xám** theo cột, **ô cam** = nơi hai dải cắt nhau | lưới ô khối 4×4, ô cắt nhau nhô cao màu vàng | **hai tay**: trái = chọn HÀNG, phải = chọn CỘT (+/− dịch từng ô) |
 | `borrow` | **trừ có mượn** (và nhớ) bằng bó que | 3 hàng que: **số bị trừ / số trừ / hiệu**; khi hàng đơn vị không đủ, vẽ MƯỢN 1 bó rồi **cởi thành đúng 10 que** (dải "+10" xanh), kèm dòng phân tích từng hàng | bó chục (trụ) + que lẻ (thanh) của hiệu | **hai tay**: trái = que lẻ số bị trừ, phải = số que phải bớt (+/− đổi bó chục) |
 | `chooser` | **bài ôn tập / tổng hợp**: chọn đúng **chiến lược · công thức · vật thật** TRƯỚC khi tính (1 model, 4 bài) | N **thẻ phương án** đánh số; thẻ đang chọn viền vàng (đúng) / đỏ (chưa khớp), bên dưới là lời giải thích + dòng verdict | N khối, khối đang chọn nhô cao, đúng = vàng / sai = đỏ | **số ngón = số phương án** (1 ngón → phương án 1) |
+| `money` | **Tiền Việt Nam** (beyond-bank): đếm ví theo mệnh giá + tính tiền thối khi mua hàng | 4 **xấp tờ bạc** màu theo mệnh giá (2 000 · 5 000 · 10 000 · 20 000), mỗi xấp ghi "{n} tờ = {n×mệnh giá}", đóng/xanh dòng verdict **VỪA ĐỦ / THỐI / THIẾU** | 4 chồng thẻ 3D theo mệnh giá | bấm xấp để chọn, **số ngón = số tờ** của xấp đang chọn; +/− từng loại và giá món hàng |
 
-Bài hiện có (39 bài · 33 model — phủ kín toàn bộ 39 giáo án trong bank): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (40 bài · 34 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 1 bài beyond-bank** *Tiền Việt Nam* (money), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -101,7 +102,17 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Điểm mở rộng cho các vòng sau:** **cả 39 giáo án trong bank giờ đều đã có mô hình trên app** (33 model · 39 bài — không còn cụm nào trắng), và **cả 39 bài đã có bài tập LUYỆN TẬP verbatim từ `examples.mjs`** (Vòng 67). Vòng sau tiếp tục **đi sâu từng bài**: thêm nhiều biến thể số để cô bấm "đề khác", nối `chooser` sang màn **chọn trạm** cho tiết ôn tập nhiều mạch; mỗi khi cần
+**Bài beyond-bank đầu tiên — `money` (Tiền Việt Nam, Vòng 69):** SGK lớp 4 có mạch
+"Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
+giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
+(`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** 33 model cũ.
+Đếm theo **từng mệnh giá** rồi cộng (chặn lỗi "gộp nhầm tờ"), so với **giá món hàng** →
+kết luận **VỪA ĐỦ / phải THỐI lại (trả − giá) / còn THIẾU**. Đây là bằng chứng kiến trúc
+mở rộng ra **ngoài bank**: môn Toán lớp 4–5 còn nhiều mạch chưa có trong 39 giáo án (đo
+thời gian dạng lịch, tiền Việt nâng cao, đại lượng F–S–P…), mỗi mạch chỉ cần thêm một
+dòng `LESSONS` (tái dùng model) hoặc một `MODELS.<kiểu>` mới.
+
+**Điểm mở rộng cho các vòng sau:** **cả 39 giáo án trong bank giờ đều đã có mô hình trên app** (34 model · 40 bài — phủ kín 39 cụm bank + 1 bài beyond-bank *Tiền Việt Nam*, không còn cụm nào trắng), và **cả 40 bài đã có bài tập LUYỆN TẬP** (verbatim từ `examples.mjs` với 39 bài bank, tự tác với bài beyond-bank; Vòng 67–69). Vòng sau tiếp tục **mở rộng ngoài bank** (thêm mạch SGK lớp 4–5 chưa có: lịch/thời gian nâng cao, đại lượng F–S–P, tiền Việt nâng cao…) và **đi sâu từng bài**: thêm nhiều biến thể số để cô bấm "đề khác", nối `chooser` sang màn **chọn trạm** cho tiết ôn tập nhiều mạch; mỗi khi cần
 một kiểu minh hoạ mới (biểu đồ tranh/đường, tỉ lệ bản đồ, đại lượng F–S–P,
 tiền Việt/mua hàng, chuyển động…) thì viết thêm một `MODELS.<kiểu>` — các
 bài dùng lại kiểu đã có chỉ cần thêm dòng dữ liệu.
