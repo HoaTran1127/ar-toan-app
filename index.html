@@ -286,6 +286,10 @@ const LESSONS = {
     khoi_dong:'Xếp 15 bạn của lớp mình thành từng đôi để múa. Có bạn nào phải đứng một mình không?',
     chot:'Chỉ chữ số tận cùng quyết định chẵn hay lẻ; ghép hết thành đôi là chẵn, còn một mình là lẻ.',
     obj:'xếp đôi múa' },
+  'ba-dang-viet': { model:'threeforms', ten:'Ba dạng viết của cùng một giá trị', tfDI:0, tfN:1,
+    khoi_dong:'1/2, 0,5 và 50% là một thứ hay là ba thứ khác nhau?',
+    chot:'Phân số thập phân, số thập phân và phần trăm là ba cách viết của cùng một lượng; dóng ba băng trên một trục thì thấy chúng trùng khít.',
+    obj:'cái bánh được nửa' },
 };
 
 const state = {
@@ -317,6 +321,7 @@ const state = {
   unL: 3, unLu: 3, unR: 3, unRu: 0,
   aU: 0, a1: 5, a2: 0, a3: 0, bU: 0, b1: 4, b2: 8, b3: 0,
   pn: 15,
+  tfDI: 0, tfN: 1,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -2005,6 +2010,69 @@ const MODELS = {
       const sph = (x, y, solo) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.32, 18, 14), new THREE.MeshStandardMaterial({ color: solo ? 0xff8f6b : 0x5fb0a5, roughness: .5 })); m.position.set(x, y, 0); g.add(m); };
       for (let p = 0; p < pairs; p++) { const bx = slotX(p), by = slotY(p); sph(bx - 0.28, by, false); sph(bx + 0.28, by, false); }
       if (rem) sph(slotX(pairs), slotY(pairs), true);
+      return g;
+    },
+    paint3d() {},
+  },
+
+  // ======================= Model: threeforms (1/2 = 0,5 = 50% — ba dạng viết) =======================
+  // Repo 'chuyen-dong-f-d-p' = "Ba dạng viết của cùng một giá trị": dóng ba băng trên MỘT trục → trùng khít.
+  threeforms: {
+    usesPalm: true,
+    DENS() { return [2, 4, 5, 10, 20, 25, 50, 100]; },
+    D(st) { return this.DENS()[clamp(st.tfDI, 0, 7)]; },
+    N(st) { return clamp(st.tfN, 0, this.D(st)); },
+    frac(st) { return this.N(st) / this.D(st); },
+    fmtDec(st) { let s = (Math.round(this.frac(st) * 100) / 100).toFixed(2).replace(/0+$/, '').replace(/\.$/, ''); return s.replace('.', ',') || '0'; },
+    pct(st) { return Math.round(this.frac(st) * 100); },
+    defaults(st, L) { st.tfDI = L.tfDI; st.tfN = L.tfN; },
+    palmToValue(st, x) { st.tfN = clamp(Math.round((1 - x) * this.D(st)), 0, this.D(st)); },
+    palmLabel(st) { return `${this.N(st)}/${this.D(st)} = ${this.fmtDec(st)} = ${this.pct(st)}%`; },
+    geomSig(st) { return 'threeforms' + this.D(st) + ':' + this.N(st); },
+    params() { return [
+      { key: 'tfDI', label: 'Mẫu số (2·4·5·10·20·25·50·100)', min: 0, max: 7 },
+      { key: 'tfN', label: 'Tử số / số phần lấy', min: 0, max: 100 }]; },
+    ctlHint() { return 'Đưa bàn tay ngang để tô lượng chung; chọn MẪU SỐ bằng +/−. Ba băng phân số · thập phân · phần trăm luôn dóng về CÙNG một vạch.'; },
+    draw2d(host, st) {
+      const D = this.D(st), N = this.N(st), f = this.frac(st);
+      const W = 560, x0 = 60, x1 = 520, len = x1 - x0, dv = x0 + f * len;
+      const band = (y, fill, label, lab) => {
+        let cells = '';
+        if (label === 'frac' && D <= 20) { for (let i = 1; i < D; i++) { const xx = x0 + (i / D) * len; cells += `<line x1="${xx.toFixed(1)}" y1="${y}" x2="${xx.toFixed(1)}" y2="${y + 30}" stroke="rgba(255,255,255,.25)"></line>`; } }
+        if (label !== 'frac') { for (let i = 1; i < 10; i++) { const xx = x0 + (i / 10) * len; cells += `<line x1="${xx.toFixed(1)}" y1="${y}" x2="${xx.toFixed(1)}" y2="${y + 30}" stroke="rgba(255,255,255,.22)"></line>`; } }
+        return `<rect x="${x0}" y="${y}" width="${len}" height="30" fill="rgba(255,255,255,.05)" stroke="rgba(242,240,230,.28)"></rect>`
+          + `<rect x="${x0}" y="${y}" width="${(f * len).toFixed(1)}" height="30" fill="${fill}"></rect>` + cells
+          + `<text x="14" y="${y + 20}" fill="var(--chalk)" font-size="12">${lab.t}</text>`
+          + `<text x="${x1 + 4}" y="${y + 20}" fill="${lab.c}" font-size="14" font-weight="700">${lab.v}</text>`;
+      };
+      let s = `<text x="${W / 2}" y="24" fill="rgba(242,240,230,.55)" font-size="12" text-anchor="middle">cùng một lượng — dóng ba băng trên một trục 0 → 1</text>`;
+      s += band(44, 'rgba(95,176,165,.7)', 'frac', { t: 'PS', c: '#5fb0a5', v: `${N}/${D}` });
+      s += band(104, 'rgba(255,209,102,.7)', 'dec', { t: 'STP', c: '#ffd166', v: this.fmtDec(st) });
+      s += band(164, 'rgba(127,201,191,.7)', 'pct', { t: '%', c: '#7fc9bf', v: `${this.pct(st)}%` });
+      // đường dóng chung tại f
+      s += `<line x1="${dv.toFixed(1)}" y1="40" x2="${dv.toFixed(1)}" y2="200" stroke="var(--warn)" stroke-width="2.5" stroke-dasharray="5 4"></line>`
+        + `<circle cx="${dv.toFixed(1)}" cy="210" r="6" fill="var(--warn)"></circle>`
+        + `<text x="${dv.toFixed(1)}" y="228" fill="var(--warn)" font-size="12" font-weight="700" text-anchor="middle">trùng khít</text>`
+        + `<line x1="${x0}" y1="200" x2="${x1}" y2="200" stroke="var(--chalk)" stroke-width="1.5"></line>`
+        + `<text x="${x0}" y="214" fill="rgba(242,240,230,.6)" font-size="11" text-anchor="middle">0</text>`
+        + `<text x="${x1}" y="214" fill="rgba(242,240,230,.6)" font-size="11" text-anchor="middle">1</text>`
+        + `<text x="${W / 2}" y="256" fill="var(--accent)" font-size="22" font-weight="700" text-anchor="middle">${N}/${D} = ${this.fmtDec(st)} = ${this.pct(st)}%</text>`;
+      host.innerHTML = `<svg width="${W}" height="270" viewBox="0 0 ${W} 270" style="cursor:ew-resize">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, N = this.N(st), D = this.D(st), dc = this.fmtDec(st), p = this.pct(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${N}/${D}, ${dc} và ${p}% là BA cách viết của CÙNG một lượng (một cái bánh được tô ${p} phần trăm).`, hint: 'Đưa tay ngang để tô, chọn mẫu số bằng +/−.' };
+      if (s === 2) return { cap: `Sơ đồ: dóng ba băng (phân số · số thập phân · phần trăm) trên MỘT trục 0→1. Đầu phần tô của cả ba trùng khít tại cùng một vạch → đúng là MỘT thứ, không phải ba thứ.`, hint: 'Đổi mẫu số (2,4,5,10,20,25,50,100) thì cả ba vẫn dóng về một chỗ.' };
+      if (s === 3) return { cap: `Phép tính: ${N}/${D} = ${N} : ${D} = ${dc}; ${dc} = ${p}/100 = ${p}%. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: 3/4 viết ra số thập phân và phần trăm là bao nhiêu? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { return `${this.N(st)}/${this.D(st)} = ${this.fmtDec(st)} = ${this.pct(st)}%`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const g = new THREE.Group(), f = this.frac(st), cols = [0x5fb0a5, 0xffd166, 0x7fc9bf];
+      for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(4.2 * f + 0.05, 0.5, 0.9), new THREE.MeshStandardMaterial({ color: cols[i], roughness: .5 }));
+        m.position.set(-2.1 + (4.2 * f) / 2, 0, (1 - i) * 1.2); g.add(m); }
       return g;
     },
     paint3d() {},
