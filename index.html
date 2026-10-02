@@ -305,6 +305,10 @@ const LESSONS = {
     khoi_dong:'Trong bảng điểm của cả lớp, làm sao tìm đúng điểm của một bạn mà không đọc sang bạn ngồi bên cạnh?',
     chot:'Phải dóng đúng cả tên hàng và tên cột mới đọc được giá trị của một ô; số trung bình cộng bằng tổng chia cho số phần tử.',
     obj:'bảng điểm lớp', dtRow:0, dtCol:0 },
+  'cong-tru': { model:'borrow', ten:'Cộng trừ có nhớ và có mượn, nhìn bằng bó que',
+    khoi_dong:'Có 3 bó chục và 2 que lẻ. Muốn bớt đi 5 que thì làm thế nào khi số que lẻ không đủ để bớt?',
+    chot:'Thiếu ở một hàng thì mượn một bó của hàng bên trái và bó đó tách thành đúng 10 que; nhớ và mượn phải ghi lại chứ không tính nhẩm rồi quên.',
+    obj:'bó que tính', boT:3, boO:2, bsT:1, bsO:5 },
 };
 
 const state = {
@@ -340,6 +344,7 @@ const state = {
   pStep: 0,
   aLen: 1, aHi: 9, bLen: 2, bHi: 1,
   dtRow: 0, dtCol: 0,
+  boT: 3, boO: 2, bsT: 1, bsO: 5,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -2267,6 +2272,74 @@ const MODELS = {
         const m = new THREE.Mesh(new THREE.BoxGeometry(0.6, h, 0.6),
           new THREE.MeshStandardMaterial({ color: sel ? 0xffd166 : band ? 0x7fc9bf : 0x4a5a66, roughness: .55 }));
         m.position.set((j - 1.5) * 0.75, h / 2, (i - 1.5) * 0.75); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
+  borrow: {
+    twoHands: true,
+    defaults(st, L) { st.boT = L.boT; st.boO = L.boO; st.bsT = L.bsT; st.bsO = L.bsO; },
+    calc(st) {
+      const minuend = st.boT * 10 + st.boO, sub = st.bsT * 10 + st.bsO, result = minuend - sub;
+      return { minuend, sub, result, borrowed: st.boO < st.bsO, neg: result < 0,
+        oD: result >= 0 ? result % 10 : null, tD: result >= 0 ? Math.floor(result / 10) : null }; },
+    geomSig(st) { return 'borrow' + st.boT + ':' + st.boO + ':' + st.bsT + ':' + st.bsO; },
+    params() { return [
+      { key: 'boT', label: 'Bị trừ · bó chục', min: 1, max: 6 }, { key: 'boO', label: 'Bị trừ · que lẻ', min: 0, max: 9 },
+      { key: 'bsT', label: 'Trừ · bó chục', min: 0, max: 6 }, { key: 'bsO', label: 'Trừ · que lẻ', min: 0, max: 9 }]; },
+    ctlHint() { return 'Hàng đơn vị: nếu SỐ QUE LẺ ít hơn số que phải bớt thì KHÔNG trừ được → app vẽ MƯỢN 1 bó chục rồi cởi bó đó thành đúng 10 que. Đưa hai tay — trái = que lẻ số bị trừ, phải = số que phải bớt (+/− chỉnh số bó chục).'; },
+    draw2d(host, st) {
+      const c = this.calc(st), W = 560, H = 250;
+      const bundle = (x, y) => `<rect x="${x}" y="${y}" width="15" height="26" rx="4" fill="rgba(127,201,191,.28)" stroke="#7fc9bf" stroke-width="1.4"></rect><line x1="${x + 2}" y1="${y + 8}" x2="${x + 13}" y2="${y + 8}" stroke="#7fc9bf"></line><line x1="${x + 2}" y1="${y + 18}" x2="${x + 13}" y2="${y + 18}" stroke="#7fc9bf"></line>`;
+      const stick = (x, y, col, cross) => `<line x1="${x}" y1="${y}" x2="${x}" y2="${y + 24}" stroke="${col || 'var(--chalk)'}" stroke-width="2"></line>` + (cross ? `<line x1="${x - 4}" y1="${y - 2}" x2="${x + 4}" y2="${y + 26}" stroke="var(--warn)" stroke-width="2"></line>` : '');
+      const rowPiles = (tens, ones, y, xB, borrowed) => {
+        let s = ''; const xT = xB;
+        for (let i = 0; i < tens; i++) s += bundle(xT + i * 20, y - 6);
+        if (borrowed) s += `<text x="${xT + tens * 20 + 4}" y="${y + 10}" fill="#7fc9bf" font-size="11">+10</text>`;
+        const xS = xB + (tens + (borrowed ? 2 : 0)) * 20 + 24;
+        for (let i = 0; i < ones; i++) s += stick(xS + i * 9, y - 4, null, false);
+        return { g: s, xS };
+      };
+      let s = '';
+      s += `<text x="16" y="30" fill="var(--accent)" font-size="13" font-weight="700">Số bị trừ = ${c.minuend}</text>`;
+      s += rowPiles(c.borrowed ? st.boT - 1 : st.boT, c.borrowed ? st.boO + 10 : st.boO, 44, 150, c.borrowed).g;
+      s += `<text x="16" y="96" fill="var(--warn)" font-size="13" font-weight="700">Số trừ = ${c.sub}</text>`;
+      const rS = rowPiles(st.bsT, st.bsO, 110, 150, false).g; s += rS;
+      s += `<text x="120" y="108" fill="var(--warn)" font-size="22" font-weight="700">−</text><line x1="150" y1="140" x2="500" y2="140" stroke="var(--chalk)" stroke-width="1.4"></line>`;
+      if (!c.neg) {
+        s += `<text x="16" y="176" fill="var(--chalk)" font-size="13" font-weight="700">Hiệu = ${c.result}</text>`;
+        s += rowPiles(c.tD, c.oD, 190, 150, false).g;
+      } else s += `<text x="16" y="176" fill="var(--warn)" font-size="13" font-weight="700">Số bị trừ bé hơn số trừ — lớp 4 chưa trừ được, phải đổi chỗ (lớn trừ nhỏ).</text>`;
+      let note;
+      if (c.neg) note = 'Đặt tính: số to ở trên, số nhỏ ở dưới.';
+      else if (c.borrowed) note = `Đơn vị: ${st.boO} − ${st.bsO} không đủ → mượn 1 bó (còn ${st.boT - 1} bó) thành ${st.boO + 10} − ${st.bsO} = ${c.oD}. Chục: ${st.boT - 1} − ${st.bsT} = ${c.tD}.`;
+      else note = `Đơn vị: ${st.boO} − ${st.bsO} = ${c.oD}. Chục: ${st.boT} − ${st.bsT} = ${c.tD}. Không phải mượn.`;
+      s += `<text x="${W / 2}" y="236" fill="var(--chalk)" font-size="12.5" text-anchor="middle">${note}</text>`;
+      host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, c = this.calc(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${st.boT} bó chục và ${st.boO} que lẻ (= ${c.minuend}). Phải bớt ${st.bsT} bó và ${st.bsO} que (= ${c.sub}). Hàng đơn vị chỉ có ${st.boO} que mà phải bớt ${st.bsO} que — ${c.borrowed ? 'KHÔNG ĐỦ!' : 'đủ, trừ thẳng.'}`, hint: 'Đưa hai tay đổi số que lẻ và số que phải bớt.' };
+      if (s === 2) return { cap: c.borrowed ? `Sơ đồ: mượn 1 bó của hàng chục (còn ${st.boT - 1} bó), CỜI bó đó thành đúng 10 que rời → hàng đơn vị thành ${st.boO} + 10 = ${st.boO + 10} que.` : `Sơ đồ: hàng đơn vị đủ nên KHÔNG cần mượn; trừ từng hàng từ phải sang trái.`, hint: 'Mượn ở hàng trên = trừ bớt 1 bó của hàng bên trái.' };
+      if (s === 3) return { cap: (c.neg ? `Số bị trừ bé hơn số trừ nên chưa trừ được. ` : `Hiệu = ${c.result}. `) + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: 4 bó 3 que (43) trừ 2 bó 8 que (28) — hàng đơn vị có phải MƯỢN không? Giơ tay, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const c = this.calc(st); return c.neg ? `${c.minuend} − ${c.sub}: không trừ được` : `${c.minuend} − ${c.sub} = ${c.result}${c.borrowed ? ' (có mượn)' : ''}`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x;
+        if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.boO = clamp(l, 0, 9);
+      if (r !== null) st.bsO = clamp(r, 0, 9);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), c = this.calc(st); if (c.neg) return g;
+      for (let i = 0; i < c.tD; i++) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 1.2, 14),
+        new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: .5 })); m.position.set((i - (c.tD - 1) / 2) * 0.5, 0.6, -0.6); g.add(m); }
+      for (let i = 0; i < c.oD; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.85, 0.12),
+        new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: .5 })); m.position.set((i - (c.oD - 1) / 2) * 0.32, 0.45, 0.7); g.add(m); }
       return g;
     },
     paint3d() {},
