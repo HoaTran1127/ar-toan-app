@@ -435,6 +435,10 @@ const LESSONS = {
     khoi_dong:'Cái bảng lớp dài 3 mét. Bạn nói "3 mét", bạn khác nói "300 xăng-ti-mét", bạn nữa lại nói "3000 mi-li-mét". Cùng một cái bảng mà sao số khác nhau to đùng thế? Đổi từ mét sang xăng-ti-mét thì ta NHÂN hay CHIA, và nhân bao nhiêu lần?',
     chot:'Bảng đơn vị đo độ dài từ lớn đến bé: km, hm, dam, m, dm, cm, mm. Hai đơn vị LIỀN NHAU luôn hơn kém nhau đúng 10 lần. Đổi từ đơn vị LỚN sang đơn vị BÉ (đi XUỐNG) thì NHÂN thêm 10 cho mỗi bậc; đổi từ BÉ sang LỚN (đi LÊN) thì CHIA 10 cho mỗi bậc. Đặc biệt 1 km = 1000 m, 1 m = 10 dm = 100 cm = 1000 mm.',
     obj:'3 m', luNum:3, luUnit:3 },
+  'don-vi-do-dien-tich': { model:'areaunits', ten:'Bảng đơn vị đo diện tích (km² · hm² · dam² · m² · dm² · cm² · mm²)',
+    khoi_dong:'Cô giáo nói nền lớp rộng 40 mét VUÔNG. Bạn Lan lát viên gạch 1 đề-xi-mét vuông. Lan đoán cần 400 viên vì "1 m = 10 dm". Nhưng nền lớp lát kín thì đếm ra 4000 viên! Vì sao đơn vị DIỆN TÍCH lại nhảy nhiều hơn đơn vị ĐỘ DÀI như vậy?',
+    chot:'Bảng đơn vị đo diện tích từ lớn đến bé: km², hm², dam², m², dm², cm², mm². Hai đơn vị DIỆN TÍCH LIỀN NHAU hơn kém nhau 100 lần (vì 1 m = 10 dm nên 1 m² = 10 × 10 = 100 dm²). Muốn đổi từ đơn vị LỚN sang BÉ thì NHÂN 100 cho mỗi bậc, từ BÉ sang LỚN thì CHIA 100 cho mỗi bậc. Chú ý: diện tích nhảy ×100, KHÔNG phải ×10 như độ dài.',
+    obj:'1 m²', auNum:1, auUnit:3 },
 };
 
 const state = {
@@ -489,6 +493,7 @@ const state = {
   dcAW: 3, dcAT: 4, dcBW: 2, dcBT: 5, dcOp: 1, dcSel: 0,
   ndA: 7, ndB: 2,
   luNum: 3, luUnit: 3,
+  auNum: 1, auUnit: 3,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3752,6 +3757,79 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // ======================= Model: areaunits (bảng đơn vị đo DIỆN TÍCH — beyond-bank) =======================
+  // Đối trọng của lenunits: đơn vị diện tích liền nhau hơn kém 100 LẦN (không phải 10), vì cả HAI chiều dài đều ×10.
+  // Ô vuông 10×10: cạnh 1 m = 10 dm → trong 1 m² xếp được 10 × 10 = 100 ô dm². Đây là lý do "diện tích nhảy bậc ×100".
+  areaunits: {
+    U: ['km²', 'hm²', 'dam²', 'm²', 'dm²', 'cm²', 'mm²'],
+    mp() { return [1e6, 1e4, 1e2, 1, 0.01, 1e-4, 1e-6]; },
+    lvf(x) { if (x > 0 && Math.round(x * 1e6) === 0) return '≈0'; const r = Math.round(x * 1e6) / 1e6; if (Number.isInteger(r)) return String(r); let t = r.toFixed(6).replace(/0+$/, ''); if (t.endsWith('.')) t = t.slice(0, -1); return t.replace('.', ','); },
+    noun(u) { return ['mảnh đất cả xã', 'khu rừng', 'sân trường', 'mặt nền nhà', 'mặt bàn học', 'mặt viên gạch nhỏ', 'mặt đồng xu'][clamp(u, 0, 6)]; },
+    res(st) { const u = clamp(Math.round(st.auUnit), 0, 6), num = clamp(Math.round(st.auNum), 1, 20); const cnt = []; for (let i = 0; i < 7; i++) cnt.push(num * Math.pow(100, i - u)); return { u, num, sqm: num * this.mp()[u], cnt }; },
+    defaults(st, L) { st.auNum = (L.auNum != null ? L.auNum : 1); st.auUnit = (L.auUnit != null ? L.auUnit : 3); },
+    geomSig(st) { const d = this.res(st); return 'au' + d.num + ',' + d.u; },
+    params() { return [{ key: 'auNum', label: 'Số đo ở đơn vị đang chọn', min: 1, max: 20 }, { key: 'auUnit', label: 'Đơn vị đang chọn (bậc)', min: 0, max: 6 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bấm một BẬC để chọn đơn vị đang đo; giơ 1–9 ngón đặt con số; +/− chỉnh. DIỆN TÍCH mỗi bậc ×100 (khác độ dài ×10).'; },
+    hand(st, f) { st.auNum = clamp(Math.round(f), 1, 20); },
+    handLabel(f) { return '→ số đo = ' + clamp(Math.round(f), 1, 20); },
+    draw2d(host, st) {
+      const d = this.res(st);
+      const yb = (i) => 40 + i * 26;
+      let rows = '', x100 = '';
+      for (let i = 0; i < 7; i++) {
+        const on = i === d.u, isM = i === 3, y = yb(i);
+        rows += `<g data-au="${i}" style="cursor:pointer"><rect x="12" y="${y - 16}" width="150" height="23" rx="3" fill="${on ? 'rgba(240,196,92,.20)' : (isM ? 'rgba(127,201,191,.10)' : 'rgba(255,255,255,.03)')}" stroke="${on ? 'var(--accent)' : 'rgba(242,240,230,.14)'}" stroke-width="${on ? 2 : 1}"></rect>`
+          + `<text x="20" y="${y - 1}" font-size="12" font-weight="${on ? 700 : 500}" fill="${on ? 'var(--accent)' : 'var(--chalk)'}">${this.U[i]}</text>`
+          + `<text x="156" y="${y - 1}" text-anchor="end" font-size="13" font-weight="${on ? 800 : 500}" fill="${on ? 'var(--accent)' : 'rgba(242,240,230,.92)'}">${this.lvf(d.cnt[i])}</text></g>`;
+        if (i < 6) x100 += `<text x="166" y="${y + 11}" font-size="8" fill="rgba(242,240,230,.5)">×100</text>`;
+      }
+      // ô vuông 10×10 giải thích ×100: chọn cặp (bậc đang chọn, bậc kế nhỏ hơn)
+      const bigU = Math.min(d.u, 5), smallU = bigU + 1;
+      const sx = 250, sy = 40, side = 118, cell = side / 10;
+      let grid = '';
+      for (let k = 1; k < 10; k++) {
+        grid += `<line x1="${(sx + k * cell).toFixed(1)}" y1="${sy}" x2="${(sx + k * cell).toFixed(1)}" y2="${sy + side}" stroke="rgba(242,240,230,.22)" stroke-width="0.6"></line>`;
+        grid += `<line x1="${sx}" y1="${(sy + k * cell).toFixed(1)}" x2="${sx + side}" y2="${(sy + k * cell).toFixed(1)}" stroke="rgba(242,240,230,.22)" stroke-width="0.6"></line>`;
+      }
+      const sq = `<text x="188" y="20" fill="var(--chalk)" font-size="13" font-weight="700">Vì sao ×100? Cạnh ×10, nhưng cả 2 chiều:</text>`
+        + `<rect x="${sx}" y="${sy}" width="${side}" height="${side}" fill="rgba(240,196,92,.10)" stroke="var(--accent)" stroke-width="2"></rect>`
+        + grid
+        + `<text x="${sx + side / 2}" y="${sy - 4}" text-anchor="middle" font-size="10.5" fill="rgba(242,240,230,.8)">cạnh 1 ${this.U[bigU].replace('²', '')} = 10 ${this.U[smallU].replace('²', '')}</text>`
+        + `<text x="${sx + side / 2}" y="${sy + side / 2 + 4}" text-anchor="middle" font-size="15" font-weight="800" fill="var(--accent)">= 100 ô</text>`
+        + `<text x="${sx + side / 2}" y="${sy + side + 16}" text-anchor="middle" font-size="12" fill="var(--chalk)">1 ${this.U[bigU]} = 100 ${this.U[smallU]}</text>`;
+      const conv = `<text x="400" y="52" fill="rgba(242,240,230,.7)" font-size="11.5">Cùng MỘT diện tích:</text>`
+        + `<text x="400" y="78" fill="var(--accent)" font-size="18" font-weight="800">${this.lvf(d.num)} ${this.U[d.u]}</text>`
+        + `<text x="400" y="102" fill="var(--chalk)" font-size="14">= ${this.lvf(d.sqm)} m²</text>`
+        + `<text x="400" y="126" fill="var(--chalk)" font-size="14">= ${this.lvf(d.cnt[6])} mm²</text>`
+        + `<text x="400" y="158" fill="rgba(242,240,230,.85)" font-size="11.5">Hai đơn vị diện tích</text>`
+        + `<text x="400" y="174" fill="rgba(242,240,230,.85)" font-size="11.5">liền nhau hơn kém 100 lần.</text>`
+        + `<text x="400" y="200" fill="rgba(242,240,230,.85)" font-size="11.5">(khác độ dài: chỉ ×10)</text>`;
+      const err = `<text x="12" y="250" fill="var(--warn)" font-size="11">❌ Nhầm: 2 m² = 20 dm²? Sai — là 200 dm². Diện tích nhảy ×100 mỗi bậc, không phải ×10.</text>`;
+      host.innerHTML = `<svg id="areaunits" width="548" height="258" viewBox="0 0 548 258">` + rows + x100 + sq + conv + err + `</svg>`;
+      const svg = host.querySelector('#areaunits');
+      if (svg && svg.querySelectorAll) svg.querySelectorAll('g[data-au]').forEach((g) => g.addEventListener('pointerdown', () => { state.auUnit = +g.dataset.au; drawVisual(); render(); }));
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st), bigU = Math.min(d.u, 5), smallU = bigU + 1;
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${this.noun(d.u)} rộng ${this.lvf(d.num)} ${this.U[d.u]}. Nếu lát bằng viên ${this.U[smallU]} thì cần bao nhiêu viên — gấp mấy lần con số đo bằng ${this.U[bigU]}?`, hint: 'Diện tích đơn vị nhỏ hơn ⇒ số đo gấp 100 lần mỗi bậc (không phải 10).' };
+      if (s === 2) return { cap: `Sơ đồ ô vuông: hình vuông cạnh 1 ${this.U[bigU].replace('²', '')} = cạnh ${this.U[smallU]} dài 10 ô, nên CHIA được 10 × 10 = 100 ô ${this.U[smallU]}. Vậy 1 ${this.U[bigU]} = 100 ${this.U[smallU]} — đơn vị diện tích liền nhau hơn kém 100 lần vì cả HAI chiều đều ×10.`, hint: 'Độ dài ×10 mỗi bậc, nhưng diện tích = dài × rộng nên ×10 ×10 = ×100.' };
+      if (s === 3) return { cap: `Phép tính: ${this.lvf(d.num)} ${this.U[d.u]} = ${this.lvf(d.sqm)} m² = ${this.lvf(d.cnt[6])} mm². ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: ${this.lvf(d.num)} ${this.U[d.u]} bằng bao nhiêu mét vuông? Đi từ ${this.U[d.u]} tới m² là ${Math.abs(3 - d.u)} bậc, ${d.u < 3 ? ('×100 mỗi bậc = ×' + Math.pow(100, 3 - d.u)) : (d.u > 3 ? (':100 mỗi bậc = :' + Math.pow(100, d.u - 3)) : 'bằng mét vuông rồi')}.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); return `${this.lvf(d.num)} ${this.U[d.u]} = ${this.lvf(d.sqm)} m²`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), g = new THREE.Group();
+      const matSel = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.5 }), matCell = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.55 });
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.12, 3.6), matSel); plate.position.set(0, 0.06, 0); g.add(plate);
+      const cell = 3.24 / 10;
+      for (let r = 0; r < 10; r++) for (let c = 0; c < 10; c++) { const m = new THREE.Mesh(new THREE.BoxGeometry(cell * 0.86, 0.22, cell * 0.86), matCell); m.position.set(-1.62 + cell * (c + 0.5), 0.23, -1.62 + cell * (r + 0.5)); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3895,6 +3973,11 @@ EX['don-vi-do-do-dai'] = [
   { prompt: 'Đổi: 4 m = ? cm', choices: ['40', '400', '4000'], answer: '400', explanation: 'Từ m xuống cm là 2 bậc (m → dm → cm) nên ×10 rồi ×10 = ×100 → 4 × 100 = 400 cm.', errorTag: 'dem_sai_so_bac_x10' },
   { prompt: 'Đổi: 3 km = ? m', choices: ['30', '300', '3000'], answer: '3000', explanation: 'km → hm → dam → m là 3 bậc XUỐNG → ×1000 → 3 km = 3000 m (chú ý km gấp mét 1000 lần, không phải 100).', errorTag: 'nham_km_gap_m_100_lan' },
   { prompt: 'Đổi: 50 cm = ? m', choices: ['0,5', '5', '500'], answer: '0,5', explanation: 'cm lên m là 2 bậc LÊN → :10 rồi :10 = :100 → 50 : 100 = 0,5 m. Đơn vị to hơn thì số đo nhỏ đi.', errorTag: 'nham_chieu_len_xuong_cua_bac' },
+];
+EX['don-vi-do-dien-tich'] = [
+  { prompt: 'Đổi: 2 m² = ? dm²', choices: ['20', '200', '2000'], answer: '200', explanation: 'm² → dm² là 1 bậc XUỐNG và đơn vị diện tích ×100 mỗi bậc → 2 × 100 = 200 dm² (KHÔNG phải ×10 như độ dài).', errorTag: 'dung_quan_he_x10_cua_do_dai_cho_dien_tich' },
+  { prompt: 'Đổi: 5 cm² = ? mm²', choices: ['50', '500', '5000'], answer: '500', explanation: 'cm² → mm² là 1 bậc xuống, ×100 → 5 × 100 = 500 mm².', errorTag: 'dung_quan_he_x10_cua_do_dai_cho_dien_tich' },
+  { prompt: 'Đổi: 3 km² = ? m²', choices: ['3000', '300000', '3000000'], answer: '3000000', explanation: 'km² → m² là 3 bậc xuống, mỗi bậc ×100 → ×100³ = ×1000000 → 3 km² = 3 000 000 m².', errorTag: 'nham_km2_gap_m2_1000_lan' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
