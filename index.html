@@ -427,6 +427,10 @@ const LESSONS = {
     khoi_dong:'Cô có hai dải ruy băng dài 3,4 dm và 2,5 dm. Nối hai dải lại thì được dài bao nhiêu đề-xi-mét? Có phải chỉ cần lấy 34 + 25 = 59 rồi… lúng túng không biết dấu phẩy đặt ở đâu? Vì sao khi tính phải đặt hai DẤU PHẨY THẲNG HÀNG nhau?',
     chot:'Muốn cộng (hay trừ) hai số thập phân, ta viết sao cho các DẤU PHẨY THẲNG HÀNG nhau (đơn vị dưới đơn vị, phần mười dưới phần mười), rồi cộng/trừ như số tự nhiên, cuối cùng viết dấu phẩy của kết quả THẲNG HÀNG với các dấu phẩy bên trên. Nhớ: 10 phần mười = 1 đơn vị, nên khi tổng phần mười ≥ 10 ta NHỚ 1, khi phần mười không đủ trừ ta MƯỢN 1 của đơn vị.',
     obj:'3,4 + 2,5', dcAW:3, dcAT:4, dcBW:2, dcBT:5, dcOp:1 },
+  'chia-so-tu-nhien-ra-so-thap-phan': { model:'natdivdec', ten:'Chia số tự nhiên cho số tự nhiên ra thương thập phân',
+    khoi_dong:'Có 7 chiếc bánh chia đều cho 2 bạn. Mỗi bạn lấy được 3 cái nguyên, còn THỪA 1 cái. Em nói "3 dư 1" — nhưng chia TIẾP cái thừa đó cho 2 bạn thì được bao nhiêu nữa? Làm sao để thương không còn là "dư" mà thành một số thập phân?',
+    chot:'Khi chia số tự nhiên mà còn dư, ta viết DẤU PHẨY vào thương, rồi THÊM CHỮ SỐ 0 vào bên phải phần dư và chia tiếp; cứ thế đến khi không còn dư (hoặc đến số chữ số thập phân muốn). 7 : 2 = 3,5 vì còn dư 1 → thêm 0 thành 10, 10 : 2 = 5 (phần mười). Không được dừng lại viết "3 (dư 1)" khi đề bài cần thương là số thập phân.',
+    obj:'7 : 2', ndA:7, ndB:2 },
 };
 
 const state = {
@@ -479,6 +483,7 @@ const state = {
   fmN1: 1, fmD1: 2, fmN2: 1, fmD2: 3, fmOp: 1,
   daM: 3, daN: 4,
   dcAW: 3, dcAT: 4, dcBW: 2, dcBT: 5, dcOp: 1, dcSel: 0,
+  ndA: 7, ndB: 2,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3619,6 +3624,68 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // ======================= Model: natdivdec (chia STN cho STN ra thương thập phân — beyond-bank) =======================
+  // Ý cốt: học trò DỪNG ở "thương dư" khi đề bài cần số thập phân. Khi còn dư thì THÊM 0 vào bên phải phần dư rồi chia
+  // TIẾP → ra chữ số hàng phần mười. 7 : 2 = 3 (dư 1) → 10 : 2 = 5 → 3,5. Cắt phần dư thành 10 phần mười, chia đều các phần.
+  natdivdec: {
+    res(st) { const a = clamp(Math.round(st.ndA), 1, 20), b = clamp(Math.round(st.ndB), 2, 5); const q = Math.floor(a / b), r = a - q * b; const t = Math.floor((r * 10) / b), r2 = r * 10 - t * b; const full = Math.round((a / b) * 100) / 100; return { a, b, q, r, t, r2, full, exact: Math.abs(full * b - a) < 1e-9 }; },
+    fmt2(x) { const s = Math.round(x * 100) / 100; if (Number.isInteger(s)) return String(s); let t = s.toFixed(2); if (t.endsWith('0')) t = t.slice(0, -1); return t.replace('.', ','); },
+    defaults(st, L) { st.ndA = (L.ndA != null ? L.ndA : 7); st.ndB = (L.ndB != null ? L.ndB : 2); },
+    geomSig(st) { const d = this.res(st); return 'nd' + d.a + ',' + d.b; },
+    params() { return [{ key: 'ndA', label: 'Số bị chia', min: 1, max: 20 }, { key: 'ndB', label: 'Số chia (số phần chia đều)', min: 2, max: 5 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Giơ 2–5 ngón = SỐ CHIA (chia thành mấy phần đều nhau); +/− đặt số bị chia và số chia. Phần còn DƯ được cắt thành 10 phần mười rồi chia tiếp.'; },
+    hand(st, f) { st.ndB = clamp(Math.round(f), 2, 5); },
+    handLabel(f) { return '→ chia cho ' + clamp(Math.round(f), 2, 5) + ' phần'; },
+    draw2d(host, st) {
+      const d = this.res(st);
+      const us = 15, gp = 2, x0 = 16, yu = 44;
+      let units = '';
+      for (let j = 0; j < d.a; j++) { const col = j % 10, row = Math.floor(j / 10); const x = x0 + col * (us + gp), y = yu + row * (us + 4); const whole = j < d.q * d.b; units += `<rect x="${x}" y="${y}" width="${us}" height="${us}" fill="${whole ? 'rgba(127,201,191,.85)' : 'rgba(240,143,107,.85)'}" stroke="var(--chalk)" stroke-width="1"></rect>`; }
+      const rows = Math.max(1, Math.ceil(d.a / 10));
+      const below = yu + rows * (us + 4) + 8;
+      const uLbl = `<text x="${x0}" y="${yu - 8}" fill="rgba(242,240,230,.72)" font-size="12">${d.a} ô — ${d.r > 0 ? `xanh: chia đều ${d.b} phần · cam: ${d.r} ô còn dư` : 'chia đều, không còn dư'}</text>`;
+      const qval = d.a / d.b, px = 15, barX = x0, barY = below, bw = Math.max(2, qval * px);
+      let bar = `<text x="${barX}" y="${barY - 4}" fill="var(--accent)" font-size="12" font-weight="700">Mỗi phần (thương) = ${d.q},${d.t}${d.exact ? '' : '…'}</text>`;
+      bar += `<rect x="${barX}" y="${barY}" width="${bw.toFixed(1)}" height="16" fill="rgba(127,201,191,.75)" stroke="var(--chalk)"></rect>`;
+      for (let k = 1; k <= Math.floor(qval); k++) bar += `<line x1="${(barX + k * px).toFixed(1)}" y1="${barY}" x2="${(barX + k * px).toFixed(1)}" y2="${barY + 16}" stroke="rgba(242,240,230,.45)" stroke-width="1"></line>`;
+      if (d.t > 0) bar += `<rect x="${(barX + d.q * px).toFixed(1)}" y="${barY}" width="${((d.t / 10) * px).toFixed(1)}" height="16" fill="var(--warn)" opacity="0.9"></rect>`;
+      const remY = barY + 32;
+      let rem = '';
+      if (d.r > 0) {
+        rem += `<text x="${x0}" y="${remY}" fill="var(--warn)" font-size="12" font-weight="700">Dư ${d.r} ô → cắt mỗi ô 10 phần mười = ${d.r * 10} phần; chia đều ${d.b} phần → mỗi phần ${d.t} phần mười${d.r2 > 0 ? `, còn dư ${d.r2}` : ', vừa hết'}.</text>`;
+        const sx = x0, sy = remY + 5, w = 12, g2 = 2, show = Math.min(d.r * 10, 20);
+        for (let j = 0; j < show; j++) { const filled = j < d.t; rem += `<rect x="${sx + j * (w + g2)}" y="${sy}" width="${w}" height="10" fill="${filled ? 'var(--warn)' : 'rgba(242,240,230,.14)'}" stroke="var(--chalk)" stroke-width="0.6"></rect>`; }
+      } else {
+        rem += `<text x="${x0}" y="${remY}" fill="var(--ok)" font-size="12" font-weight="700">Chia hết, không còn dư — thương là số tự nhiên.</text>`;
+      }
+      const exX = 344;
+      const eq = `<text x="${exX}" y="58" fill="var(--chalk)" font-size="20" font-weight="700">${d.a} : ${d.b}</text>`
+        + `<text x="${exX}" y="86" fill="var(--ok)" font-size="20" font-weight="700">= ${this.fmt2(d.full)}</text>`
+        + `<text x="${exX}" y="112" fill="rgba(242,240,230,.85)" font-size="12">1) ${d.a} : ${d.b} = ${d.q} dư ${d.r}</text>`
+        + `<text x="${exX}" y="132" fill="rgba(242,240,230,.85)" font-size="12">2) viết dấu phẩy, thêm 0 → ${d.r}0</text>`
+        + `<text x="${exX}" y="152" fill="rgba(242,240,230,.85)" font-size="12">3) ${d.r * 10} : ${d.b} = ${d.t}${d.r2 > 0 ? ' dư ' + d.r2 : ''}</text>`;
+      const err = `<text x="${x0}" y="240" fill="var(--warn)" font-size="11.5">❌ Lỗi hay gặp: dừng ở "${d.q} dư ${d.r}" khi đề cần thương thập phân → phải thêm 0 chia tiếp → ${this.fmt2(d.full)}.</text>`;
+      host.innerHTML = `<svg id="natdivdec" width="548" height="258" viewBox="0 0 548 258">` + uLbl + units + bar + rem + eq + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: có ${d.a} chiếc bánh chia đều cho ${d.b} bạn → mỗi bạn ${d.q} cái nguyên, còn thừa ${d.r} cái. Chia tiếp cái thừa thế nào?`, hint: d.r > 0 ? 'Cắt phần thừa thành 10 phần bằng nhau rồi mới chia.' : 'Chia vừa hết, không còn phần thừa.' };
+      if (s === 2) return { cap: `Sơ đồ: ${d.r > 0 ? `cắt ${d.r} cái thừa thành ${d.r * 10} phần mười, chia đều ${d.b} phần → mỗi bạn ${d.t} phần mười${d.r2 > 0 ? ` (còn dư ${d.r2}, lại thêm 0 chia tiếp)` : ''}` : 'mỗi bạn đúng ' + d.q + ' cái, vừa hết'}. Thương = ${d.q},${d.t}${d.exact ? '' : '…'}.`, hint: 'Viết DẤU PHẨY vào thương ngay khi bắt đầu chia phần thừa.' };
+      if (s === 3) return { cap: `Phép tính: ${d.a} : ${d.b} = ${this.fmt2(d.full)}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: ${d.a} : ${d.b} bằng bao nhiêu? Chia đến hết phần nguyên, còn dư thì THÊM 0 chia tiếp ra phần thập phân.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); return `${d.a} : ${d.b} = ${this.fmt2(d.full)}${d.exact ? '' : '…'}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), n = clamp(d.a, 1, 20), side = Math.ceil(Math.sqrt(n)), sc = Math.min(3.6 / side, 0.55);
+      const g = new THREE.Group(), matT = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.5 }), matW = new THREE.MeshStandardMaterial({ color: 0xf08f6b, roughness: 0.5 });
+      for (let j = 0; j < n; j++) { const rr = Math.floor(j / side), c = j % side; const msh = new THREE.Mesh(new THREE.BoxGeometry(sc * 0.8, sc * 0.3, sc * 0.8), j < d.q * d.b ? matT : matW); msh.position.set((c - (side - 1) / 2) * sc, 0, (rr - (side - 1) / 2) * sc); g.add(msh); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3752,6 +3819,11 @@ EX['cong-tru-so-thap-phan'] = [
   { prompt: 'Tính: 3,4 + 2,5 = ?', choices: ['5,9', '5,19', '59'], answer: '5,9', explanation: 'Thẳng dấu phẩy: phần mười 4 + 5 = 9 (bé hơn 10 nên KHÔNG nhớ), đơn vị 3 + 2 = 5 → 5,9.', errorTag: 'quen_dau_phay_o_ket_qua' },
   { prompt: 'Tính: 5,6 + 2,7 = ?', choices: ['8,3', '7,13', '8,13'], answer: '8,3', explanation: 'Phần mười 6 + 7 = 13 → viết 3 NHỚ 1. Đơn vị 5 + 2 + 1 (nhớ) = 8 → 8,3. KHÔNG được viết 7,13.', errorTag: 'quen_nho_1_khi_tong_phan_muoi_du_10' },
   { prompt: 'Tính: 5,2 − 2,7 = ?', choices: ['2,5', '3,5', '2,4'], answer: '2,5', explanation: 'Phần mười 2 trừ 7 không được → MƯỢN 1 của đơn vị (thành 12 − 7 = 5). Đơn vị còn 4 − 2 = 2 → 2,5.', errorTag: 'quen_muon_1_khi_tru_khong_du' },
+];
+EX['chia-so-tu-nhien-ra-so-thap-phan'] = [
+  { prompt: 'Tính: 7 : 2 = ?', choices: ['3,5', '3 dư 1', '3,2'], answer: '3,5', explanation: '7 : 2 = 3 còn dư 1. Viết dấu phẩy, thêm 0 vào 1 thành 10; 10 : 2 = 5 → 3,5. Không dừng ở "3 dư 1".', errorTag: 'dung_o_so_du_khi_can_thuong_thap_phan' },
+  { prompt: 'Tính: 5 : 4 = ?', choices: ['1,25', '1,2', '1 dư 1'], answer: '1,25', explanation: '5 : 4 = 1 dư 1 → thêm 0: 10 : 4 = 2 dư 2 → thêm 0 nữa: 20 : 4 = 5 → 1,25. Phải chia TIẾP hai lượt để ra hai chữ số thập phân.', errorTag: 'ngung_qua_somuoi_chi_mot_chu_so' },
+  { prompt: 'Tính: 1 : 2 = ?', choices: ['0,5', '0,2', '2'], answer: '0,5', explanation: '1 nhỏ hơn 2 nên thương bắt đầu bằng 0, rồi 1 thêm 0 thành 10; 10 : 2 = 5 → 0,5.', errorTag: 'quen_viet_0_o_hang_don_vi' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
