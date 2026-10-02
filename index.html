@@ -455,6 +455,10 @@ const LESSONS = {
     khoi_dong:'Mặt đồng hồ có 12 số nhưng quanh viền là 60 vạch nhỏ. Kim phút đi hết MỘT vòng thì kim giờ nhích đúng 1 bước — nghĩa là 1 giờ = 60 phút. Khác hẳn mét hay ki-lô-gam (nhảy ×10), thời gian nhảy ×60. Vì sao lại là 60? Và "1 giờ rưỡi" là 1 giờ 30 phút hay 1 giờ 50 phút?',
     chot:'Bảng đơn vị đo thời gian: 1 thế kỉ = 100 năm, 1 ngày = 24 giờ, 1 giờ = 60 phút, 1 phút = 60 giây. Mỗi bậc thời gian liền nhau hơn kém NHAU 60 LẦN (KHÔNG phải 10 hay 100). CHÚ Ý lỗi kinh điển: 1,5 giờ = 1 giờ 30 phút (vì 0,5 giờ = 60 : 2 = 30 phút), KHÔNG phải 1 giờ 50 phút. Đổi thời gian phải nhớ số 60, không được áp dụng quy tắc ×10 của số thập phân.',
     obj:'1 giờ 30 phút', tuNum:2, tuUnit:0 },
+  'hon-so': { model:'mixed', ten:'Hỗn số (đổi giữa phân số và hỗn số)',
+    khoi_dong:'Cô có 5 MẢNH bánh, mỗi cái bánh được cắt thành 3 phần bằng nhau. Ghép 3 mảnh lại thì thành đúng 1 cái bánh nguyên. Hỏi với 5 mảnh ấy cô ghép được mấy cái bánh nguyên và còn thừa mấy mảnh? Vì sao 5/3 không phải là "5 cái bánh" mà là "1 cái và 2/3 cái" — hỗn số là gì?',
+    chot:'Hỗn số gồm một SỐ TỰ NHIÊN (phần nguyên) đứng trước và một PHÂN SỐ bé hơn 1 (phần phân số) đứng sau, ví dụ 2 1/3. Một phân số LỚN HƠN 1 đổi sang hỗn số bằng cách: lấy TỬ số CHIA MẪU số — thương là phần nguyên, số dư là tử của phần phân số, MẪU số GIỮ NGUYÊN. Ví dụ 5/3: 5 : 3 = 1 dư 2 nên 5/3 = 1 2/3. Ngược lại đổi hỗn số về phân số: lấy phần nguyên × mẫu số rồi cộng tử số. CHÚ Ý: 5/3 KHÔNG phải là 5 1/3 — phải CHIA 5 cho 3 trước.',
+    obj:'5/3', mxTop:5, mxDen:3 },
 };
 
 const state = {
@@ -514,6 +518,7 @@ const state = {
   prK: 3, prX: 2,
   inK: 12, inX: 2,
   tuNum: 2, tuUnit: 0,
+  mxTop: 5, mxDen: 3,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4125,6 +4130,68 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // ======================= Model: mixed (HỖN SỐ — beyond-bank) =======================
+  // Một phân số lớn hơn 1 = phần NGUYÊN + phần PHÂN SỐ. Đổi: lấy TỬ CHIA MẪU → thương = phần nguyên, dư = tử mới, mẫu giữ nguyên.
+  mixed: {
+    res(st) { const D = clamp(Math.round(st.mxDen), 2, 6), T = clamp(Math.round(st.mxTop), 1, 12); const Q = Math.floor(T / D), R = T % D; return { D, T, Q, R, mixed: R === 0 ? String(Q) : (Q === 0 ? `${R}/${D}` : `${Q} ${R}/${D}`) }; },
+    defaults(st, L) { st.mxTop = (L.mxTop != null ? L.mxTop : 5); st.mxDen = (L.mxDen != null ? L.mxDen : 3); },
+    geomSig(st) { const d = this.res(st); return 'mx' + d.T + ',' + d.D; },
+    params() { return [{ key: 'mxTop', label: 'Số phần tô (tử số)', min: 1, max: 12 }, { key: 'mxDen', label: 'Mẫu số (số phần mỗi ô)', min: 2, max: 6 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bấm một MẪU SỐ (2…6) để chọn cỡ mỗi phần; giơ 1–12 ngón đặt số phần tô (tử số). Hỗn số: lấy TỬ CHIA MẪU → thương = phần nguyên, dư = tử phần sau.'; },
+    hand(st, f) { st.mxTop = clamp(Math.round(f), 1, 12); },
+    handLabel(f) { return '→ số phần = ' + clamp(Math.round(f), 1, 12); },
+    draw2d(host, st) {
+      const d = this.res(st);
+      const ox = 16, oy = 40, sq = 48, gap = 12, step = sq + gap;
+      const N = d.Q > 0 ? (d.R > 0 ? d.Q + 1 : d.Q) : 1;
+      let cells = '';
+      for (let s = 0; s < N; s++) {
+        const bx = ox + s * step;
+        cells += `<rect x="${bx}" y="${oy}" width="${sq}" height="${sq}" fill="none" stroke="rgba(242,240,230,.5)" stroke-width="1.4"></rect>`;
+        for (let k = 0; k < d.D; k++) {
+          const cx = bx + (k * sq) / d.D, cw = sq / d.D, on = (s * d.D + k) < d.T;
+          cells += `<rect x="${cx.toFixed(1)}" y="${oy}" width="${cw.toFixed(1)}" height="${sq}" fill="${on ? 'rgba(240,196,92,.5)' : 'rgba(255,255,255,.02)'}" stroke="rgba(242,240,230,.28)" stroke-width="0.7"></rect>`;
+        }
+      }
+      let axis = `<line x1="${ox}" y1="${oy + sq + 8}" x2="${ox + N * step - gap}" y2="${oy + sq + 8}" stroke="rgba(242,240,230,.5)"></line>`;
+      for (let s = 0; s <= N; s++) { const bx = ox + s * step; axis += `<line x1="${bx}" y1="${oy + sq + 4}" x2="${bx}" y2="${oy + sq + 12}" stroke="rgba(242,240,230,.6)"></line><text x="${bx}" y="${oy + sq + 24}" text-anchor="middle" font-size="11" fill="rgba(242,240,230,.8)">${s}</text>`; }
+      const cards = `<text x="360" y="30" fill="var(--chalk)" font-size="12.5" font-weight="700">Hai cách viết CÙNG một số:</text>`
+        + `<rect x="360" y="40" width="84" height="30" rx="4" fill="rgba(127,201,191,.14)" stroke="rgba(127,201,191,.5)"></rect><text x="402" y="60" text-anchor="middle" font-size="14" font-weight="800" fill="var(--chalk)">${d.T}/${d.D}</text>`
+        + `<text x="450" y="60" font-size="16" fill="var(--accent)">=</text>`
+        + `<rect x="462" y="40" width="78" height="30" rx="4" fill="rgba(240,196,92,.18)" stroke="var(--accent)"></rect><text x="501" y="60" text-anchor="middle" font-size="14" font-weight="800" fill="var(--accent)">${d.mixed}</text>`
+        + `<text x="360" y="92" fill="rgba(242,240,230,.85)" font-size="11.5">Tử chia mẫu: ${d.T} : ${d.D} = ${d.Q} dư ${d.R}.</text>`
+        + `<text x="360" y="110" fill="rgba(242,240,230,.85)" font-size="11.5">→ phần nguyên ${d.Q}, dư ${d.R} là tử,</text>`
+        + `<text x="360" y="128" fill="rgba(242,240,230,.85)" font-size="11.5">mẫu vẫn là ${d.D}. Mỗi ô = ${d.D} phần.</text>`;
+      const denLabel = `<text x="16" y="150" fill="rgba(242,240,230,.7)" font-size="11.5">Mẫu số (số phần mỗi ô) — bấm để đổi:</text>`;
+      let chips = '';
+      for (let D = 2; D <= 6; D++) { const cx = 16 + (D - 2) * 44, on = D === d.D; chips += `<g data-mxd="${D}" style="cursor:pointer"><rect x="${cx}" y="158" width="38" height="24" rx="3" fill="${on ? 'rgba(240,196,92,.20)' : 'rgba(255,255,255,.03)'}" stroke="${on ? 'var(--accent)' : 'rgba(242,240,230,.14)'}" stroke-width="${on ? 2 : 1}"></rect><text x="${cx + 19}" y="175" text-anchor="middle" font-size="13" font-weight="${on ? 800 : 500}" fill="${on ? 'var(--accent)' : 'var(--chalk)'}">${D}</text></g>`; }
+      const title = `<text x="16" y="16" fill="var(--chalk)" font-size="13" font-weight="700">Hỗn số = phần NGUYÊN + phần bé hơn 1</text>`;
+      const err = `<text x="16" y="216" fill="var(--warn)" font-size="11">❌ Nhầm: ${d.T}/${d.D} = ${d.T} ${d.R === 0 ? 1 : d.R}/${d.D}? Sai — phải LẤY TỬ CHIA MẪU: ${d.T} : ${d.D} = ${d.Q} dư ${d.R}, nên ${d.T}/${d.D} = ${d.mixed}.</text>`;
+      host.innerHTML = `<svg id="mixed" width="548" height="258" viewBox="0 0 548 258">` + title + cells + axis + cards + denLabel + chips + err + `</svg>`;
+      const svg = host.querySelector('#mixed');
+      if (svg && svg.querySelectorAll) svg.querySelectorAll('g[data-mxd]').forEach((g) => g.addEventListener('pointerdown', () => { state.mxDen = +g.dataset.mxd; drawVisual(); render(); }));
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: mỗi cái bánh cắt ${d.D} phần bằng nhau. Cô có ${d.T} mảnh. Ghép ${d.D} mảnh = 1 cái nguyên, nên ghép được ${d.Q} cái nguyên và thừa ${d.R} mảnh — tức ${d.mixed} cái bánh.`, hint: 'Cứ đủ ' + d.D + ' mảnh là sang một cái nguyên mới.' };
+      if (s === 2) return { cap: `Sơ đồ ô vuông + trục số: mỗi ô là 1 cái bánh = ${d.D}/${d.D} (${d.D} phần). Tô ${d.T} phần: đi đầy ${d.Q} ô rồi mới lan sang ô thứ ${d.Q + 1} được ${d.R} phần. Vậy ${d.T}/${d.D} = ${d.mixed}.`, hint: 'Phần nguyên = số Ô ĐÃ ĐẦY; phần phân số = số phần tô ở ô cuối.' };
+      if (s === 3) return { cap: `Phép tính: ${d.T} : ${d.D} = ${d.Q} dư ${d.R} ⟹ ${d.T}/${d.D} = ${d.mixed}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: ${d.T}/${d.D} đổi ra hỗn số thế nào? Lấy ${d.T} : ${d.D} được ${d.Q} dư ${d.R}. Muốn đổi ngược về phân số thì ${d.Q} × ${d.D} + ${d.R}.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); return `${d.T}/${d.D} = ${d.mixed}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), g = new THREE.Group();
+      const matFull = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.55 }), matPart = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const sz = 1.1, sp = 1.4; let x = 0;
+      for (let i = 0; i < d.Q; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(sz, sz, sz), matFull); m.position.set(x, sz / 2, 0); g.add(m); x += sp; }
+      if (d.R > 0) { const m = new THREE.Mesh(new THREE.BoxGeometry(sz * (d.R / d.D), sz, sz), matPart); m.position.set(x + (sz * (d.R / d.D)) / 2, sz / 2, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4293,6 +4360,11 @@ EX['don-vi-do-thoi-gian'] = [
   { prompt: 'Đổi: 2 giờ = ? phút', choices: ['120 phút', '100 phút', '200 phút'], answer: '120 phút', explanation: '1 giờ = 60 phút nên 2 giờ = 2 × 60 = 120 phút. KHÔNG phải 100 hay 200 — thời gian nhảy ×60 chứ không phải ×100.', errorTag: 'doi_gio_phut_nham_x100' },
   { prompt: '1 giờ 30 phút viết thành số thập phân (giờ) là?', choices: ['1,5 giờ', '1,3 giờ', '1,30 giờ'], answer: '1,5 giờ', explanation: '30 phút = 30 : 60 = 0,5 giờ, nên 1 giờ 30 phút = 1,5 giờ. Không viết 1,3 vì 30 phút không phải 0,3 giờ.', errorTag: 'doc_phut_nhu_phan_tram' },
   { prompt: 'Phải: 1,5 giờ bằng bao nhiêu?', choices: ['1 giờ 30 phút', '1 giờ 50 phút', '15 phút'], answer: '1 giờ 30 phút', explanation: 'Phần 0,5 giờ = 0,5 × 60 = 30 phút. Vậy 1,5 giờ = 1 giờ 30 phút, KHÔNG phải 1 giờ 50 phút.', errorTag: 'nham_1gio5_la_1gio50' },
+];
+EX['hon-so'] = [
+  { prompt: 'Hỗn số 2 1/3 viết thành phân số là?', choices: ['7/3', '6/3', '2/3'], answer: '7/3', explanation: 'Lấy phần nguyên × mẫu + tử: 2 × 3 + 1 = 7, mẫu giữ nguyên 3. Vậy 2 1/3 = 7/3. Không phải 6/3 (quên cộng tử) hay 2/3.', errorTag: 'doi_hon_so_nham_cong' },
+  { prompt: 'Phân số 5/2 viết thành hỗn số là?', choices: ['2 1/2', '2 2/2', '5 1/2'], answer: '2 1/2', explanation: 'Lấy tử CHIA mẫu: 5 : 2 = 2 dư 1. Thương 2 là phần nguyên, dư 1 là tử, mẫu giữ nguyên 2. Vậy 5/2 = 2 1/2. Không phải 5 1/2.', errorTag: 'nham_tu_la_phan_nguyen' },
+  { prompt: '8/3 bằng hỗn số nào?', choices: ['2 2/3', '3 2/3', '2 1/3'], answer: '2 2/3', explanation: '8 : 3 = 2 dư 2, nên 8/3 = 2 2/3. Kiểm lại: 2 × 3 + 2 = 8 đúng.', errorTag: 'chia_mau_nham_du' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
