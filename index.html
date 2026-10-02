@@ -451,6 +451,10 @@ const LESSONS = {
     khoi_dong:'Chia 12 cái kẹo cho các bạn. 1 bạn thì được 12 cái, 2 bạn mỗi bạn 6 cái, 3 bạn mỗi bạn 4 cái… Càng nhiều bạn thì mỗi bạn càng nhận ÍT đi. Số bạn và số kẹo mỗi bạn "tỉ lệ nghịch" — nghĩa là cái gì ở đây KHÔNG đổi?',
     chot:'Hai đại lượng tỉ lệ nghịch khi đại lượng này gấp lên bao nhiêu LẦN thì đại lượng kia RÚT đi đúng BẤY NHIÊU LẦN. Luôn có x · y = A với A không đổi (gọi là tích không đổi), hay y = A : x. TÍCH x·y không đổi. Đồ thị của hai đại lượng tỉ lệ nghịch là một ĐƯỜNG CONG đi xuống, KHÔNG đi qua gốc. CHÚ Ý: khác tỉ lệ thuận (ở đó THƯƠNG y:x không đổi, đồ thị là đường thẳng qua gốc).',
     obj:'x = 2', inK:12, inX:2 },
+  'don-vi-do-thoi-gian': { model:'timeunits', ten:'Bảng đơn vị đo thời gian (giờ · phút · giây)',
+    khoi_dong:'Mặt đồng hồ có 12 số nhưng quanh viền là 60 vạch nhỏ. Kim phút đi hết MỘT vòng thì kim giờ nhích đúng 1 bước — nghĩa là 1 giờ = 60 phút. Khác hẳn mét hay ki-lô-gam (nhảy ×10), thời gian nhảy ×60. Vì sao lại là 60? Và "1 giờ rưỡi" là 1 giờ 30 phút hay 1 giờ 50 phút?',
+    chot:'Bảng đơn vị đo thời gian: 1 thế kỉ = 100 năm, 1 ngày = 24 giờ, 1 giờ = 60 phút, 1 phút = 60 giây. Mỗi bậc thời gian liền nhau hơn kém NHAU 60 LẦN (KHÔNG phải 10 hay 100). CHÚ Ý lỗi kinh điển: 1,5 giờ = 1 giờ 30 phút (vì 0,5 giờ = 60 : 2 = 30 phút), KHÔNG phải 1 giờ 50 phút. Đổi thời gian phải nhớ số 60, không được áp dụng quy tắc ×10 của số thập phân.',
+    obj:'1 giờ 30 phút', tuNum:2, tuUnit:0 },
 };
 
 const state = {
@@ -509,6 +513,7 @@ const state = {
   vuNum: 1, vuUnit: 0,
   prK: 3, prX: 2,
   inK: 12, inX: 2,
+  tuNum: 2, tuUnit: 0,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4041,6 +4046,85 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // ======================= Model: timeunits (bảng đơn vị đo THỜI GIAN — beyond-bank) =======================
+  // Giờ · phút · giây: MỖI BẬC ×60 (khác độ dài/diện tích/thể tích ×10/×100/×1000). Bẫy kinh điển: 1,5 giờ = 1 giờ 30 phút, KHÔNG phải 1 giờ 50 phút.
+  timeunits: {
+    U: ['giờ', 'phút', 'giây'],
+    lvf(x) { if (x > 0 && Math.round(x * 1e6) === 0) return '≈0'; const r = Math.round(x * 1e6) / 1e6; if (Number.isInteger(r)) return String(r); let t = r.toFixed(6).replace(/0+$/, ''); if (t.endsWith('.')) t = t.slice(0, -1); return t.replace('.', ','); },
+    noun(u) { return ['một tiết học 1 giờ', 'một phút trực nhật', 'một nhịp thở ngắn'][clamp(u, 0, 2)]; },
+    res(st) { const u = clamp(Math.round(st.tuUnit), 0, 2), num = clamp(Math.round(st.tuNum), 1, 9); const cnt = []; for (let i = 0; i < 3; i++) cnt.push(num * Math.pow(60, i - u)); return { u, num, cnt, giay: num * Math.pow(60, 2 - u) }; },
+    defaults(st, L) { st.tuNum = (L.tuNum != null ? L.tuNum : 2); st.tuUnit = (L.tuUnit != null ? L.tuUnit : 0); },
+    geomSig(st) { const d = this.res(st); return 'tu' + d.num + ',' + d.u; },
+    params() { return [{ key: 'tuNum', label: 'Số đo ở đơn vị đang chọn', min: 1, max: 9 }, { key: 'tuUnit', label: 'Đơn vị đang chọn (bậc)', min: 0, max: 2 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bấm một BẬC để chọn đơn vị đang đo; giơ 1–9 ngón đặt con số; +/− chỉnh. THỜI GIAN mỗi bậc ×60 (giờ→phút→giây), KHÁC độ dài ×10 / diện tích ×100 / thể tích ×1000.'; },
+    hand(st, f) { st.tuNum = clamp(Math.round(f), 1, 9); },
+    handLabel(f) { return '→ số đo = ' + clamp(Math.round(f), 1, 9); },
+    draw2d(host, st) {
+      const d = this.res(st);
+      const yb = (i) => 76 + i * 36;
+      let rows = '', x60 = '';
+      for (let i = 0; i < 3; i++) {
+        const on = i === d.u, y = yb(i);
+        rows += `<g data-tu="${i}" style="cursor:pointer"><rect x="12" y="${y - 16}" width="150" height="26" rx="3" fill="${on ? 'rgba(240,196,92,.20)' : 'rgba(255,255,255,.03)'}" stroke="${on ? 'var(--accent)' : 'rgba(242,240,230,.14)'}" stroke-width="${on ? 2 : 1}"></rect>`
+          + `<text x="20" y="${y}" font-size="13" font-weight="${on ? 700 : 500}" fill="${on ? 'var(--accent)' : 'var(--chalk)'}">${this.U[i]}</text>`
+          + `<text x="156" y="${y}" text-anchor="end" font-size="14" font-weight="${on ? 800 : 500}" fill="${on ? 'var(--accent)' : 'rgba(242,240,230,.92)'}">${this.lvf(d.cnt[i])}</text></g>`;
+        if (i < 2) x60 += `<text x="166" y="${y + 20}" font-size="9" fill="rgba(242,240,230,.55)">×60</text>`;
+      }
+      const cx = 258, cy = 134, R = 54;
+      const wedge = `<path d="M ${cx} ${cy} L ${cx} ${cy - R} A ${R} ${R} 0 0 1 ${cx} ${cy + R} Z" fill="rgba(240,196,92,.14)" stroke="none"></path>`;
+      let ticks = '';
+      for (let t = 0; t < 60; t++) {
+        const a = (-90 + t * 6) * Math.PI / 180, big = (t % 5 === 0), r0 = big ? R - 10 : R - 5;
+        const x1 = (cx + Math.cos(a) * R).toFixed(1), y1 = (cy + Math.sin(a) * R).toFixed(1);
+        const x2 = (cx + Math.cos(a) * r0).toFixed(1), y2 = (cy + Math.sin(a) * r0).toFixed(1);
+        ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${big ? 'var(--chalk)' : 'rgba(242,240,230,.45)'}" stroke-width="${big ? 1.5 : 0.7}"></line>`;
+      }
+      const clock = `<text x="${cx}" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--chalk)">Mặt đồng hồ: 60 vạch · ½ vòng = 30 phút</text>`
+        + wedge
+        + `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--accent)" stroke-width="1.6"></circle>`
+        + ticks
+        + `<text x="${cx}" y="${cy - R - 3}" text-anchor="middle" font-size="8.5" fill="rgba(242,240,230,.6)">0</text>`
+        + `<text x="${cx + R + 4}" y="${cy + 3}" font-size="8.5" fill="rgba(242,240,230,.6)">15</text>`
+        + `<text x="${cx}" y="${cy + R + 9}" text-anchor="middle" font-size="8.5" fill="rgba(242,240,230,.6)">30</text>`
+        + `<text x="${cx - R - 4}" y="${cy + 3}" text-anchor="end" font-size="8.5" fill="rgba(242,240,230,.6)">45</text>`
+        + `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="12" font-weight="800" fill="var(--accent)">${this.lvf(d.num)} ${this.U[d.u]}</text>`;
+      const conv = `<text x="404" y="52" fill="rgba(242,240,230,.7)" font-size="11.5">Cùng MỘT khoảng thời gian:</text>`
+        + `<text x="404" y="78" fill="var(--accent)" font-size="18" font-weight="800">${this.lvf(d.num)} ${this.U[d.u]}</text>`
+        + `<text x="404" y="102" fill="var(--chalk)" font-size="14">= ${this.lvf(d.cnt[1])} phút</text>`
+        + `<text x="404" y="124" fill="var(--chalk)" font-size="14">= ${this.lvf(d.giay)} giây</text>`
+        + `<text x="404" y="152" fill="rgba(242,240,230,.85)" font-size="11.5">1 giờ = 60 phút,</text>`
+        + `<text x="404" y="168" fill="rgba(242,240,230,.85)" font-size="11.5">1 phút = 60 giây.</text>`
+        + `<text x="404" y="192" fill="var(--warn)" font-size="11.5" font-weight="700">½ giờ = 30 phút</text>`
+        + `<text x="404" y="208" fill="var(--warn)" font-size="11.5">(KHÔNG phải 50 phút)</text>`;
+      const err = `<text x="12" y="250" fill="var(--warn)" font-size="11">❌ Nhầm: 1,5 giờ = 1 giờ 50 phút? Sai — 0,5 giờ = 30 phút, vậy 1,5 giờ = 1 giờ 30 phút. Thời gian nhảy ×60 mỗi bậc, không phải ×10 hay ×100.</text>`;
+      host.innerHTML = `<svg id="timeunits" width="548" height="258" viewBox="0 0 548 258">` + rows + x60 + clock + conv + err + `</svg>`;
+      const svg = host.querySelector('#timeunits');
+      if (svg && svg.querySelectorAll) svg.querySelectorAll('g[data-tu]').forEach((g) => g.addEventListener('pointerdown', () => { state.tuUnit = +g.dataset.tu; drawVisual(); render(); }));
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${this.noun(d.u)}. Nhìn mặt đồng hồ: kim phút đi hết MỘT vòng (60 vạch) thì kim giờ nhích đúng 1 bước — vậy 1 giờ = 60 phút, không phải 100. ${this.lvf(d.num)} ${this.U[d.u]} tương ứng bao nhiêu phút?`, hint: 'Thời gian nhảy ×60 mỗi bậc, KHÁC hẳn độ dài/diện tích/thể tích (×10/×100/×1000).' };
+      if (s === 2) return { cap: `Sơ đồ: mặt đồng hồ chia 60 vạch phút ⟹ 1 giờ = 60 phút. Nửa vòng (vạch số 30, tô vàng) là ½ giờ = 30 phút — KHÔNG phải 50 phút! Vì thế 1,5 giờ = 1 giờ 30 phút. Ở đây ${this.lvf(d.num)} ${this.U[d.u]} = ${this.lvf(d.cnt[1])} phút.`, hint: 'Đừng lấy phần thập phân ×100: phút là phần của 60, không phải của 100.' };
+      if (s === 3) return { cap: `Phép tính: ${this.lvf(d.num)} ${this.U[d.u]} = ${this.lvf(d.cnt[1])} phút = ${this.lvf(d.giay)} giây. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: ${this.lvf(d.num)} ${this.U[d.u]} bằng mấy phút, mấy giây? Đi xuống từ ${this.U[d.u]} tới giây là ${2 - d.u} bậc ⟹ ×60 mỗi bậc = ×${Math.pow(60, 2 - d.u)}.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); return `${this.lvf(d.num)} ${this.U[d.u]} = ${this.lvf(d.cnt[1])} phút = ${this.lvf(d.giay)} giây`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), g = new THREE.Group();
+      const matDisc = new THREE.MeshStandardMaterial({ color: 0x2b3a42, roughness: 0.6, transparent: true, opacity: 0.55 });
+      const matTick = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.55 });
+      const matHour = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 0.12, 48), matDisc); disc.rotation.set(Math.PI / 2, 0, 0); disc.position.set(0, 1.6, 0); g.add(disc);
+      const face = new THREE.Group(); face.position.set(0, 1.6, 0.1);
+      for (let t = 0; t < 60; t++) { const a = t / 60 * Math.PI * 2, big = (t % 5 === 0); const sz = big ? 0.14 : 0.07; const m = new THREE.Mesh(new THREE.BoxGeometry(sz, sz, 0.06), big ? matHour : matTick); m.position.set(Math.cos(a) * 1.6, Math.sin(a) * 1.6, 0); face.add(m); }
+      g.add(face);
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4204,6 +4288,11 @@ EX['ti-le-nghich'] = [
   { prompt: 'x và y tỉ lệ nghịch, x = 3 thì y = 4. Tích x·y không đổi bằng?', choices: ['12', '7', '1'], answer: '12', explanation: 'Tỉ lệ nghịch: x·y = A không đổi. A = 3 × 4 = 12. Vậy khi x = 6 thì y = 12 : 6 = 2.', errorTag: 'nham_tich_thuong_cua_tile_nghich' },
   { prompt: 'Số người làm và số ngày xong (tỉ lệ nghịch). 2 người hết 6 ngày. 3 người hết?', choices: ['4 ngày', '9 ngày', '12 ngày'], answer: '4 ngày', explanation: 'Tích không đổi: 2 × 6 = 12 (người·ngày). 3 người → 12 : 3 = 4 ngày. Nhiều người hơn thì ÍT ngày đi.', errorTag: 'nham_nghich_thanh_thuan_cong_them' },
   { prompt: 'Đại lượng này gấp 2 lần, đại lượng kia RÚT đi 2 lần. Hai đại lượng đó…', choices: ['tỉ lệ nghịch', 'tỉ lệ thuận', 'không liên quan'], answer: 'tỉ lệ nghịch', explanation: 'Gấp đôi ↔ rút một nửa (tích không đổi) là DẤU HIỆU tỉ lệ nghịch. Tỉ lệ thuận là cùng gấp lên.', errorTag: 'nham_hai_loai_ti_le' },
+];
+EX['don-vi-do-thoi-gian'] = [
+  { prompt: 'Đổi: 2 giờ = ? phút', choices: ['120 phút', '100 phút', '200 phút'], answer: '120 phút', explanation: '1 giờ = 60 phút nên 2 giờ = 2 × 60 = 120 phút. KHÔNG phải 100 hay 200 — thời gian nhảy ×60 chứ không phải ×100.', errorTag: 'doi_gio_phut_nham_x100' },
+  { prompt: '1 giờ 30 phút viết thành số thập phân (giờ) là?', choices: ['1,5 giờ', '1,3 giờ', '1,30 giờ'], answer: '1,5 giờ', explanation: '30 phút = 30 : 60 = 0,5 giờ, nên 1 giờ 30 phút = 1,5 giờ. Không viết 1,3 vì 30 phút không phải 0,3 giờ.', errorTag: 'doc_phut_nhu_phan_tram' },
+  { prompt: 'Phải: 1,5 giờ bằng bao nhiêu?', choices: ['1 giờ 30 phút', '1 giờ 50 phút', '15 phút'], answer: '1 giờ 30 phút', explanation: 'Phần 0,5 giờ = 0,5 × 60 = 30 phút. Vậy 1,5 giờ = 1 giờ 30 phút, KHÔNG phải 1 giờ 50 phút.', errorTag: 'nham_1gio5_la_1gio50' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
