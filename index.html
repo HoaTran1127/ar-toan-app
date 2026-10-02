@@ -266,6 +266,10 @@ const LESSONS = {
     khoi_dong:'Đo trên bản đồ được 3 cm. Ngoài đời thật con đường đó dài bao nhiêu?',
     chot:'Một xăng-ti-mét trên bản đồ ứng với một số mét thật ghi ở thước tỉ lệ; độ dài thật bằng số đo trên bản đồ nhân với hệ số tỉ lệ.',
     obj:'bản đồ' },
+  'phan-so-cua-mot-so': { model:'fracof', ten:'Tìm phân số của một số', fcTotal:12, fcDen:3, fcTu:1,
+    khoi_dong:'Một hòm có 12 đồng vàng, lấy ra 1/3 hòm. Lấy mấy đồng?',
+    chot:'Chia số đó cho mẫu số để ra giá trị một phần, rồi nhân với tử số; phải chia thành nhóm bằng nhau trước rồi mới lấy phần.',
+    obj:'hòm vàng' },
 };
 
 const state = {
@@ -292,6 +296,7 @@ const state = {
   piU: 5, piH: false, piSel: 0, pi0: 3, pi1: 5, pi2: 2, pi3: 4,
   mtS: 120, mtV1: 40, mtV2: 20, mtT: 1,
   scCm: 3, scReal: 10,
+  fcTotal: 12, fcDen: 3, fcTu: 1,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -1673,6 +1678,60 @@ const MODELS = {
       const bar = (col, y, w) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.14, 0.4), new THREE.MeshStandardMaterial({ color: col, roughness: .55 })); b.position.set(left + w / 2, y, 0); g.add(b); };
       bar(0x3a4a52, 0.7, len); bar(0x5fb0a5, 0.7, Math.max(0.02, mlen));
       bar(0x3a4a52, -0.3, len); bar(0xffd166, -0.3, Math.max(0.02, mlen));
+      return g;
+    },
+    paint3d() {},
+  },
+
+  // ======================= Model: fracof (tìm phân số của một số — chia NHÓM rồi lấy) =======================
+  // Repo phan-so-cua-mot-so: "chia số đó cho mẫu số ra giá trị MỘT PHẦN, rồi nhân tử số;
+  // phải chia thành nhóm bằng nhau TRƯỚC rồi mới lấy phần". Khác pie: đây là MỘT TẬP rời rạc N đối tượng.
+  fracof: {
+    fmt(n) { return ('' + (Math.round(n * 100) / 100)).replace('.', ','); },
+    eff(st) { const Total = Math.max(1, st.fcTotal), Den = clamp(st.fcDen, 2, 12), Tu = clamp(st.fcTu, 0, Den);
+      const part = Total / Den; return { Total, Den, Tu, part, taken: Math.round(part * Tu * 100) / 100 }; },
+    defaults(st, L) { st.fcTotal = L.fcTotal; st.fcDen = L.fcDen; st.fcTu = L.fcTu; },
+    geomSig(st) { const e = this.eff(st); return 'fracof' + e.Total + ':' + e.Den + ':' + e.Tu; },
+    params() { return [
+      { key:'fcTu', label:'Số nhóm lấy (tử số)', min:0, max:8 },
+      { key:'fcDen', label:'Chia thành mấy nhóm (mẫu số)', min:2, max:8 },
+      { key:'fcTotal', label:'Tổng số đối tượng', min:4, max:24 }]; },
+    ctlHint() { return 'Giơ 0–(mẫu số) ngón = số nhóm lấy; đổi tổng số đối tượng và số nhóm bằng +/−.'; },
+    draw2d(host, st) {
+      const e = this.eff(st), { Total, Den, Tu, part, taken } = e, f = this.fmt.bind(this);
+      const W = 560, Hh = 250, pad = 26, topY = 78, step = Math.min(20, (W - 2 * pad) / Total), r = Math.min(8, step * 0.4);
+      const X = (j) => pad + j * step + step / 2;
+      let s = `<text x="${pad}" y="34" fill="var(--chalk)" font-size="14">Tập ${Total} đối tượng — chia ${Den} nhóm bằng nhau, lấy ${Tu} nhóm</text>`;
+      // vạch ngăn nhóm
+      for (let g = 1; g < Den; g++) { const bx = pad + (part * g) * step;
+        s += `<line x1="${bx.toFixed(1)}" y1="${topY-16}" x2="${bx.toFixed(1)}" y2="${topY+16}" stroke="rgba(242,240,230,.35)" stroke-dasharray="3 3"></line>`; }
+      // các chấm
+      for (let j = 0; j < Total; j++) { const gi = Math.floor(j / part + 1e-9); const on = gi < Tu;
+        s += `<circle cx="${X(j).toFixed(1)}" cy="${topY}" r="${r.toFixed(1)}" fill="${on ? '#5fb0a5' : 'rgba(242,240,230,.22)'}" stroke="${on ? '#bfeee8' : 'rgba(242,240,230,.35)'}" stroke-width="1"></circle>`; }
+      // ngoặc phần lấy
+      if (Tu > 0) { const xa = pad, xb = pad + (part * Tu) * step;
+        s += `<rect x="${xa.toFixed(1)}" y="${topY-20}" width="${(xb-xa).toFixed(1)}" height="40" fill="none" stroke="var(--accent)" stroke-width="2" rx="4"></rect>`; }
+      s += `<text x="${W/2}" y="150" fill="var(--chalk)" font-size="15" text-anchor="middle">Một phần = ${Total} : ${Den} = ${f(part)}</text>`;
+      s += `<text x="${W/2}" y="205" fill="var(--accent)" font-size="18" font-weight="700" text-anchor="middle">${Tu}/${Den} của ${Total} = ${f(part)} × ${Tu} = ${f(taken)}</text>`;
+      host.innerHTML = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}">` + s + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, e = this.eff(st), f = this.fmt.bind(this);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hòm có ${e.Total} đồng vàng. "${e.Tu}/${e.Den} hòm" nghĩa là chia đều hòm ra ${e.Den} nhóm rồi lấy ${e.Tu} nhóm.`, hint: 'Giơ ngón tay để đặt số nhóm lấy.' };
+      if (s === 2) return { cap: `Sơ đồ: CHIA ${e.Total} thành ${e.Den} nhóm BẰNG NHAU trước — mỗi nhóm ${e.Total} : ${e.Den} = ${f(e.part)} cái. Rồi mới LẤY ${e.Tu} nhóm.`, hint: 'Phải chia nhóm đều TRƯỚC, không lấy bừa từng cái.' };
+      if (s === 3) return { cap: `Phép tính: ${e.Tu}/${e.Den} của ${e.Total} = ${e.Total} : ${e.Den} × ${e.Tu} = ${f(e.taken)}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: ${e.Tu}/${e.Den} của ${e.Total} bằng bao nhiêu? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const e = this.eff(st), f = this.fmt.bind(this); return `${e.Tu}/${e.Den} của ${e.Total} = ${f(e.taken)}`; },
+    showFromStep() { return 2; },
+    hand(st, f) { st.fcTu = clamp(f, 0, Math.max(2, st.fcDen)); },
+    handLabel(f, st) { const Den = clamp(st.fcDen, 2, 12); return `→ lấy ${clamp(f, 0, Den)}/${Den} nhóm`; },
+    build3d(st) {
+      const g = new THREE.Group(), e = this.eff(st), Total = e.Total, cols = Math.min(8, Math.ceil(Math.sqrt(Total)));
+      for (let j = 0; j < Total; j++) { const gi = Math.floor(j / e.part + 1e-9), on = gi < e.Tu;
+        const m = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12), new THREE.MeshStandardMaterial({ color: on ? 0x5fb0a5 : 0x3a4a52, roughness: .5 }));
+        m.position.set((j % cols - (cols - 1) / 2) * 0.62, 0.7 - Math.floor(j / cols) * 0.62, 0); g.add(m); }
       return g;
     },
     paint3d() {},
