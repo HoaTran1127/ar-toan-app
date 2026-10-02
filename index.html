@@ -274,6 +274,10 @@ const LESSONS = {
     khoi_dong:'Công thức nấu cho 2 người, nhưng nhà mình có 6 người ăn. Mỗi nguyên liệu phải làm gì?',
     chot:'Mọi nguyên liệu cùng nhân một hệ số thì tỉ số giữa chúng không đổi; hệ số bằng số khẩu phần mới chia cho số khẩu phần cũ.',
     obj:'nấu ăn' },
+  'tan-ta-kg-can': { model:'units', ten:'Tấn, tạ, ki-lô-gam và cân hai đĩa', unL:3, unLu:3, unR:3, unRu:0,
+    khoi_dong:'Một con voi và một túi đường. Vì sao không ai nói "con voi nặng 3 ki-lô-gam" dù số 3 rất nhỏ?',
+    chot:'Một tấn bằng 10 tạ bằng 1000 kg; đổi đơn vị là nhân hoặc chia đúng 10 mỗi bậc, và phải đổi về cùng đơn vị trước khi so sánh.',
+    obj:'cân nặng' },
 };
 
 const state = {
@@ -302,6 +306,7 @@ const state = {
   scCm: 3, scReal: 10,
   fcTotal: 12, fcDen: 3, fcTu: 1,
   rpBase: 2, rpNew: 6,
+  unL: 3, unLu: 3, unR: 3, unRu: 0,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1,
 };
 
@@ -1792,6 +1797,88 @@ const MODELS = {
       return g;
     },
     paint3d() {},
+  },
+
+  // ======================= Model: units (tấn-tạ-yến-kg — cân đổi đơn vị) =======================
+  // Repo 'Tấn, tạ, ki-lô-gam, gam và cân hai đĩa' (dòng 39–41): cùng con số 3 nhưng
+  // 3 TẤN ≠ 3 KG → "phải đổi về cùng đơn vị trước khi so sánh"; mỗi bậc ×/÷ đúng 10.
+  units: {
+    twoHands: true,
+    UNITS() { return [['kg', 1], ['yến', 10], ['tạ', 100], ['tấn', 1000]]; },
+    fmtKg(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); },
+    kg(st, side) { const u = this.UNITS(), val = side === 'L' ? st.unL : st.unR, idx = clamp(side === 'L' ? st.unLu : st.unRu, 0, 3); return val * u[idx][1]; },
+    uName(st, side) { return this.UNITS()[clamp(side === 'L' ? st.unLu : st.unRu, 0, 3)][0]; },
+    defaults(st, L) { st.unL = L.unL; st.unLu = L.unLu; st.unR = L.unR; st.unRu = L.unRu; },
+    geomSig(st) { return 'units' + st.unL + ':' + st.unLu + ':' + st.unR + ':' + st.unRu; },
+    params() { return [
+      { key: 'unL', label: 'Đĩa trái · số đo', min: 0, max: 9 },
+      { key: 'unLu', label: 'Đĩa trái · đơn vị (0 kg · 1 yến · 2 tạ · 3 tấn)', min: 0, max: 3 },
+      { key: 'unR', label: 'Đĩa phải · số đo', min: 0, max: 9 },
+      { key: 'unRu', label: 'Đĩa phải · đơn vị (0 kg · 1 yến · 2 tạ · 3 tấn)', min: 0, max: 3 }]; },
+    ctlHint() { return 'Giơ HAI tay đặt số đo mỗi đĩa (trái/phải); chọn ĐƠN VỊ mỗi đĩa bằng +/−. Cùng con số nhưng khác đơn vị thì cân lệch.'; },
+    tiltDeg(st) { const a = this.kg(st, 'L'), b = this.kg(st, 'R'); if (a === b) return 0;
+      const mag = clamp(Math.log10((Math.max(a, b) + 1e-9) / (Math.min(a, b) + 1e-9)) / 3, 0, 1) * 22; return a > b ? mag : -mag; },
+    verdict(st) { const a = this.kg(st, 'L'), b = this.kg(st, 'R'); return a === b ? '=' : (a > b ? '>' : '<'); },
+    draw2d(host, st) {
+      const kgL = this.kg(st, 'L'), kgR = this.kg(st, 'R'), v = this.verdict(st);
+      const cx = 260, cy = 88, HL = 168, SL = 54, W = 520, H = 300;
+      const rad = this.tiltDeg(st) * Math.PI / 180;
+      const lx = cx - HL * Math.cos(rad), ly = cy + HL * Math.sin(rad);
+      const rx = cx + HL * Math.cos(rad), ry = cy - HL * Math.sin(rad);
+      const pan = (px, py) => `<path d="M ${px - 34} ${py} Q ${px} ${py + 24} ${px + 34} ${py} Z" fill="rgba(255,255,255,.12)" stroke="var(--chalk)" stroke-width="2"></path>`;
+      const weight = (px, py, val, unit, fill) => { const w = 46, h = 34, bx = px - w / 2, by = py - h - 2;
+        return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${w}" height="${h}" rx="6" fill="${fill}" stroke="#d9a520"></rect>`
+          + `<text x="${px.toFixed(1)}" y="${(by + h / 2 + 6).toFixed(1)}" fill="#10201c" font-size="15" font-weight="700" text-anchor="middle">${val} ${unit}</text>`; };
+      const lab = (px, py, kgl) => `<text x="${px.toFixed(1)}" y="${(py + SL + 40).toFixed(1)}" fill="rgba(242,240,230,.7)" font-size="13" text-anchor="middle">= ${this.fmtKg(kgl)} kg</text>`;
+      const nTip = { x: cx + 46 * Math.sin(rad), y: cy - 46 * Math.cos(rad) };
+      host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`
+        + `<line x1="${cx}" y1="${cy - 6}" x2="${cx}" y2="${cy - 56}" stroke="rgba(242,240,230,.35)" stroke-width="2" stroke-dasharray="4 4"></line>`
+        + `<line x1="${lx}" y1="${ly}" x2="${rx}" y2="${ry}" stroke="var(--chalk)" stroke-width="5" stroke-linecap="round"></line>`
+        + `<line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${lx.toFixed(1)}" y2="${(ly + SL).toFixed(1)}" stroke="var(--chalk)" stroke-width="1.5"></line>`
+        + `<line x1="${rx.toFixed(1)}" y1="${ry.toFixed(1)}" x2="${rx.toFixed(1)}" y2="${(ry + SL).toFixed(1)}" stroke="var(--chalk)" stroke-width="1.5"></line>`
+        + pan(lx, ly + SL) + weight(lx, ly + SL, st.unL, this.uName(st, 'L'), '#7fc9bf')
+        + pan(rx, ry + SL) + weight(rx, ry + SL, st.unR, this.uName(st, 'R'), '#9fd0e0')
+        + lab(lx, ly + SL, kgL) + lab(rx, ry + SL, kgR)
+        + `<polygon points="${cx - 14},${cy + 18} ${cx + 14},${cy + 18} ${cx},${cy}" fill="var(--chalk)"></polygon>`
+        + `<line x1="${cx}" y1="${cy}" x2="${nTip.x.toFixed(1)}" y2="${nTip.y.toFixed(1)}" stroke="var(--warn)" stroke-width="3"></line>`
+        + `<text x="${cx}" y="${H - 10}" fill="var(--accent)" font-size="22" font-weight="700" text-anchor="middle">${this.fmtKg(kgL)} kg  ${v}  ${this.fmtKg(kgR)} kg</text>`
+        + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, v = this.verdict(st), uL = this.uName(st, 'L'), uR = this.uName(st, 'R');
+      const kgL = this.kg(st, 'L'), kgR = this.kg(st, 'R'), f = this.fmtKg.bind(this);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: đĩa trái ${st.unL} ${uL}, đĩa phải ${st.unR} ${uR}. Cùng một con số mà chưa chắc nặng như nhau.`, hint: 'Giơ HAI tay đặt số đo mỗi đĩa; đổi đơn vị bằng +/−.' };
+      if (s === 2) return { cap: `Sơ đồ: phải ĐỔI VỀ CÙNG ĐƠN VỊ mới so được. Trái ${st.unL} ${uL} = ${f(kgL)} kg; phải ${st.unR} ${uR} = ${f(kgR)} kg → ${f(kgL)} ${v} ${f(kgR)}; đĩa ${kgL === kgR ? 'thăng bằng' : (v === '>' ? 'trái hạ xuống' : 'phải hạ xuống')}.`, hint: 'Đơn vị to hơn thì nặng hơn, dù số đo nhỏ.' };
+      if (s === 3) return { cap: `Phép tính: mỗi bậc kg→yến→tạ→tấn là ×/÷ đúng 10; 1 tấn = 10 tạ = 100 yến = 1000 kg. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: 2 tấn đổi ra bao nhiêu ki-lô-gam? Cô đếm tay giơ, hoặc bấm +1/+5.`, hint: '' };
+    },
+    value(st) { const f = this.fmtKg.bind(this); return `${st.unL} ${this.uName(st, 'L')} = ${f(this.kg(st, 'L'))} kg  ${this.verdict(st)}  ${st.unR} ${this.uName(st, 'R')} = ${f(this.kg(st, 'R'))} kg`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; // màn chiếu mirror qua CSS → đảo trục
+        if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.unL = clamp(l, 0, 9);
+      if (r !== null) st.unR = clamp(r, 0, 9);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), pivot = new THREE.Group();
+      pivot.rotation.z = this.tiltDeg(st) * Math.PI / 180; g.add(pivot); g.userData.pivot = pivot;
+      const chalk = new THREE.MeshStandardMaterial({ color: 0xf2f0e6, roughness: .6 }), HL = 2.0;
+      pivot.add(new THREE.Mesh(new THREE.BoxGeometry(HL * 2, 0.12, 0.12), chalk));
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, 0.9, 12), chalk); post.position.set(0, -0.5, 0); pivot.add(post);
+      const drop = (side, val, unit) => { const x = side * HL;
+        const pan = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.55, 0.14, 20), new THREE.MeshStandardMaterial({ color: 0x9fb0bd, roughness: .55 }));
+        pan.position.set(x, -0.9, 0); pivot.add(pan);
+        const k = Math.log10(Math.max(1, val) * this.UNITS()[clamp(unit, 0, 3)][1]) + 0.5, s = clamp(0.25 + 0.16 * k, 0.3, 1.1);
+        const cube = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), new THREE.MeshStandardMaterial({ color: side < 0 ? 0x5fb0a5 : 0x8fbcd4, roughness: .5 }));
+        cube.position.set(x, -0.9 - s / 2 - 0.05, 0); pivot.add(cube);
+      };
+      drop(-1, st.unL, st.unLu); drop(1, st.unR, st.unRu);
+      return g;
+    },
+    paint3d(g, st) { if (g.userData.pivot) g.userData.pivot.rotation.z = this.tiltDeg(st) * Math.PI / 180; },
   },
 };
 
