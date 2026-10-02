@@ -475,6 +475,10 @@ const LESSONS = {
     khoi_dong:'Hai rổ cam hơn nhau đúng 24 quả. Rổ lớn theo tỉ số 5 phần, rổ bé 2 phần (5 : 2). Vì sao 24 quả đó ứng với (5 − 2) = 3 PHẦN, chứ KHÔNG phải 5 + 2 = 7 phần? Mỗi phần là bao nhiêu quả, rổ lớn và rổ bé có mấy quả?',
     chot:'Dạng toán TÌM HAI SỐ KHI BIẾT HIỆU và TỈ SỐ: vẽ sơ đồ — số lớn gồm a phần bằng nhau, số bé gồm b phần (a lớn hơn b). HIỆU đúng bằng (a − b) phần, nên GIÁ TRỊ MỘT PHẦN = HIỆU : (a − b). Số bé = b × một phần, số lớn = a × một phần. CHÚ Ý: phải chia cho HIỆU SỐ PHẦN (a − b), KHÔNG phải TỔNG số phần (a + b) — đó là điểm khác căn bản so với dạng TỔNG và tỉ số.',
     obj:'hiệu 24, tỉ 5 : 2', drBig:5, drSmall:2, drDiff:24 },
+  'tong-va-hieu': { model:'sumdiff', ten:'Tìm hai số khi biết TỔNG và HIỆU của hai số đó',
+    khoi_dong:'Hai tấm vải dài tổng cộng 96 m, tấm thứ nhất dài hơn tấm thứ hai 12 m. Vì sao bớt 12 m ở tấm dài thì hai tấm bằng nhau và mỗi tấm còn (96 − 12) : 2 = 42 m? Hai tấm vải dài bao nhiêu mét?',
+    chot:'Dạng toán TÌM HAI SỐ KHI BIẾT TỔNG và HIỆU: Số bé = (TỔNG − HIỆU) : 2, Số lớn = (TỔNG + HIỆU) : 2. Giải thích: nếu BỚT đi phần hơn (HIỆU) ở số lớn thì hai số bằng nhau và đều bằng số bé, lúc đó tổng mới = TỔNG − HIỆU = 2 × số bé. CHÚ Ý: (tổng + hiệu) : 2 ra số LỚN, (tổng − hiệu) : 2 ra số BÉ — đừng đổi ngược.',
+    obj:'tổng 96, hiệu 12', sdSum:96, sdDiff:12 },
 };
 
 const state = {
@@ -539,6 +543,7 @@ const state = {
   zmMant: 3, zmZeros: 1, zmB: 4,
   agA: 27, agB: 43, agC: 15,
   drBig: 5, drSmall: 2, drDiff: 24,
+  sdSum: 96, sdDiff: 12,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4457,6 +4462,67 @@ const MODELS = {
     },
     paint3d() {},
   },
+  sumdiff: {
+    res(st) {
+      const S = clamp(Math.round(st.sdSum), 2, 120), D = clamp(Math.round(st.sdDiff), 0, 60);
+      const ok = S > D;
+      const big = ok ? (S + D) / 2 : 0, small = ok ? (S - D) / 2 : 0;
+      return { S, D, ok, big, small };
+    },
+    defaults(st, L) { st.sdSum = (L.sdSum != null ? L.sdSum : 96); st.sdDiff = (L.sdDiff != null ? L.sdDiff : 12); },
+    geomSig(st) { const d = this.res(st); return 'sd' + d.S + ',' + d.D; },
+    params() { return [{ key: 'sdSum', label: 'TỔNG hai số', min: 2, max: 120 }, { key: 'sdDiff', label: 'HIỆU hai số', min: 0, max: 60 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Hai thanh trượt: TỔNG (2–120), HIỆU (0–60) — hiệu không được lớn hơn tổng. Giơ 1–9 ngón đặt HIỆU. Số bé = (tổng − hiệu) : 2; số lớn = (tổng + hiệu) : 2.'; },
+    hand(st, f) { st.sdDiff = clamp(Math.round(f), 0, 60); },
+    handLabel(f) { return '→ hiệu = ' + clamp(Math.round(f), 0, 60); },
+    draw2d(host, st) {
+      const d = this.res(st);
+      const nf = (x) => { const r = Math.round(x * 1000) / 1000; return Number.isInteger(r) ? String(r) : String(r).replace('.', ','); };
+      const ox = 120, rowBigY = 46, rowSmallY = 82, bh = 26;
+      const U = Math.min(13, 380 / Math.max(d.big, 1));
+      const bigW = d.big * U, smallW = d.small * U;
+      let g = '';
+      if (d.ok) {
+        g += `<rect x="${ox}" y="${rowSmallY}" width="${smallW.toFixed(0)}" height="${bh}" fill="rgba(127,201,191,.28)" stroke="rgba(127,201,191,.8)" stroke-width="1.5"></rect>`;
+        g += `<rect x="${ox}" y="${rowBigY}" width="${bigW.toFixed(0)}" height="${bh}" fill="rgba(127,201,191,.16)" stroke="var(--accent)" stroke-width="1.5"></rect>`;
+        const exX = ox + smallW, exW = bigW - smallW;
+        g += `<rect x="${exX.toFixed(0)}" y="${rowBigY}" width="${exW.toFixed(0)}" height="${bh}" fill="rgba(240,196,92,.3)" stroke="var(--accent)" stroke-width="1.5"></rect>`;
+        g += `<text x="${ox}" y="${rowSmallY - 6}" font-size="12" fill="var(--chalk)">số bé = ${nf(d.small)}</text>`;
+        g += `<text x="${ox}" y="${rowBigY - 6}" font-size="12" fill="var(--chalk)">số lớn = ${nf(d.big)}</text>`;
+        g += `<text x="${(exX + exW / 2).toFixed(0)}" y="${rowBigY + bh + 14}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--accent)">hiệu ${d.D}</text>`;
+        g += `<text x="${(ox + bigW + 10).toFixed(0)}" y="${rowBigY + bh / 2 + 4}" font-size="11" fill="rgba(242,240,230,.85)">tổng ${d.S}</text>`;
+      } else {
+        g += `<text x="${ox}" y="66" font-size="12" fill="var(--warn)">⚠ HIỆU không thể lớn hơn (hoặc bằng) TỔNG — cô chọn số phù hợp.</text>`;
+      }
+      const l1 = `<text x="14" y="150" font-size="12" fill="rgba(242,240,230,.9)">${d.ok ? 'Số bé = (tổng − hiệu) : 2 = (' + d.S + ' − ' + d.D + ') : 2 = ' + nf(d.small) : ''}</text>`;
+      const l2 = `<text x="14" y="172" font-size="13" font-weight="700" fill="var(--chalk)">${d.ok ? 'Số lớn = (tổng + hiệu) : 2 = (' + d.S + ' + ' + d.D + ') : 2 = ' + nf(d.big) : ''}</text>`;
+      const err = `<text x="14" y="196" font-size="10.5" fill="var(--warn)">❌ Lấy (tổng + hiệu) : 2 rồi gọi là số BÉ? Sai — (tổng + hiệu) : 2 là số LỚN; số bé là (tổng − hiệu) : 2.</text>`;
+      const title = `<text x="150" y="16" font-size="13" font-weight="700" fill="var(--chalk)">Tìm hai số khi biết TỔNG và HIỆU</text>`;
+      host.innerHTML = `<svg id="sumdiff" width="520" height="214" viewBox="0 0 520 214">` + title + g + l1 + l2 + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st);
+      const nf = (x) => { const r = Math.round(x * 1000) / 1000; return Number.isInteger(r) ? String(r) : String(r).replace('.', ','); };
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hai đống gộp lại ${d.S} cái, đống lớn hơn đống bé đúng ${d.D} cái. Bớt ${d.D} cái ở đống lớn thì hai đống bằng nhau, mỗi đống còn (${d.S} − ${d.D}) : 2 = ${nf(d.small)}.`, hint: d.ok ? 'Gấp đôi số bé rồi cộng hiệu thì ra tổng.' : 'Hiệu phải bé hơn tổng.' };
+      if (s === 2) return { cap: `Sơ đồ: số bé một đoạn, số lớn = số bé + ${d.D}. Tổng ${d.S} = 2 × số bé + ${d.D} ⟹ số bé = (${d.S} − ${d.D}) : 2 = ${nf(d.small)}, số lớn = ${nf(d.big)}.`, hint: '(tổng − hiệu) : 2 = số bé; (tổng + hiệu) : 2 = số lớn.' };
+      if (s === 3) return { cap: `Phép tính: (${d.S} − ${d.D}) : 2 = ${nf(d.small)}; (${d.S} + ${d.D}) : 2 = ${nf(d.big)}. Thử lại ${nf(d.big)} + ${nf(d.small)} = ${d.S}, ${nf(d.big)} − ${nf(d.small)} = ${d.D}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: tổng ${d.S}, hiệu ${d.D}. Số lớn = (${d.S} + ${d.D}) : 2 = ${nf(d.big)}, số bé = (${d.S} − ${d.D}) : 2 = ${nf(d.small)}.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); const nf = (x) => { const r = Math.round(x * 1000) / 1000; return Number.isInteger(r) ? String(r) : String(r).replace('.', ','); }; return d.ok ? `Số lớn ${nf(d.big)}, số bé ${nf(d.small)} (tổng ${d.S}, hiệu ${d.D})` : `hiệu < tổng`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), g = new THREE.Group();
+      const matSmall = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const matExtra = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const nS = Math.max(0, Math.round(d.small)), nB = Math.max(0, Math.round(d.big));
+      for (let k = 0; k < nS; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), matSmall); m.position.set(k * 0.9, 0, 0); g.add(m); }
+      for (let k = 0; k < nB; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), k < nS ? matSmall : matExtra); m.position.set(k * 0.9, 0.9, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4650,6 +4716,11 @@ EX['hieu-va-ti'] = [
   { prompt: 'Hiệu hai số là 12, tỉ số của chúng là 3 : 1. Số lớn là:', choices: ['18', '6', '12'], answer: '18', explanation: 'Lệch 3 − 1 = 2 phần = 12 → 1 phần = 6. Số lớn = 3 × 6 = 18 (số bé = 6). Chia cho TỔNG 4 phần là sai.', errorTag: 'chia_cho_tong_phan' },
   { prompt: 'Hai số hơn nhau 15, số lớn gấp 4 lần số bé (4 : 1). Số bé là:', choices: ['5', '15', '3'], answer: '5', explanation: 'Lệch 4 − 1 = 3 phần = 15 → 1 phần = 5 chính là số bé; số lớn = 4 × 5 = 20.', errorTag: 'chia_sai_hieu_so_phan' },
   { prompt: 'Số lớn hơn số bé 30 và có tỉ số 5 : 3. Tổng hai số là:', choices: ['120', '60', '90'], answer: '120', explanation: 'Lệch 5 − 3 = 2 phần = 30 → 1 phần = 15. Số lớn = 75, số bé = 45, tổng = 120.', errorTag: 'tinh_nham_tong_phan' },
+];
+EX['tong-va-hieu'] = [
+  { prompt: 'Tổng hai số 40, hiệu 10. Số lớn là:', choices: ['25', '15', '30'], answer: '25', explanation: 'Số lớn = (tổng + hiệu) : 2 = (40 + 10) : 2 = 25. Số bé = (40 − 10) : 2 = 15.', errorTag: 'doi_nghe_cong_tru' },
+  { prompt: 'Hai số có tổng 90 và hiệu 20. Số bé là:', choices: ['35', '55', '70'], answer: '35', explanation: 'Số bé = (tổng − hiệu) : 2 = (90 − 20) : 2 = 35; số lớn = (90 + 20) : 2 = 55.', errorTag: 'doi_nghe_cong_tru' },
+  { prompt: 'Anh hơn em 4 tuổi, tổng số tuổi hai anh em 30. Tuổi em là:', choices: ['13', '17', '26'], answer: '13', explanation: 'Tuổi em (bé) = (30 − 4) : 2 = 13; tuổi anh (lớn) = (30 + 4) : 2 = 17.', errorTag: 'nham_ai_be_ai_lon' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
