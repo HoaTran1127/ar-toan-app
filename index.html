@@ -395,6 +395,10 @@ const LESSONS = {
     khoi_dong:'Cô có một hình thang (đáy trên ngắn, đáy dưới dài). Nếu cô quay một hình thang GIỐNG HỆT rồi áp vào cạnh nghiêng, hai hình ghép thành một hình bình hành. Hình bình hành đó có đáy bằng bao nhiêu, và hình thang chiếm mấy phần của nó?',
     chot:'Diện tích hình thang = (đáy lớn + đáy nhỏ) × chiều cao ÷ 2. Sở dĩ CỘNG hai đáy rồi chia 2 vì hai hình thang giống hệt ghép thành hình bình hành đáy (a + b). Phải CỘNG hai đáy TRƯỚC khi nhân chiều cao, rồi mới chia 2.',
     obj:'hình thang đáy lớn 12, đáy nhỏ 6, cao 5', tpA:12, tpB:6, tpH:5 },
+  'dien-tich-hinh-hop': { model:'sa', ten:'Diện tích xung quanh & toàn phần của hình hộp chữ nhật',
+    khoi_dong:'Một cái hộp quà hình chữ nhật. Nếu cô dán giấy quanh 4 mặt XUNG QUANH rồi mới dán thêm NẮP và ĐÁY, em cần giấy cho mấy mặt mỗi lần? Diện tích xung quanh khác diện tích toàn phần ở chỗ nào?',
+    chot:'Diện tích XUNG QUANH = (độ dài + độ rộng) × 2 × chiều cao (chỉ 4 mặt bên). Diện tích TOÀN PHẦN = xung quanh + 2 × (dài × rộng) (thêm nắp và đáy). ĐỪNG nhầm: toàn phần = xung quanh CỘNG hai mặt đáy.',
+    obj:'hộp dài 6 rộng 4 cao 3', saA:6, saB:4, saC:3 },
 };
 
 const state = {
@@ -439,6 +443,7 @@ const state = {
   coR: 5,
   trB: 10, trH: 6,
   tpA: 12, tpB: 6, tpH: 5,
+  saA: 6, saB: 4, saC: 3,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3065,6 +3070,72 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // beyond-bank 9: DIỆN TÍCH XUNG QUANH & TOÀN PHẦN HÌNH HỘP CHỮ NHẬT — mở hộp thành LƯỚI 6 mặt,
+  // tách rõ 4 mặt bên (xung quanh) khỏi 2 mặt đáy. Chặn LỖI KINH ĐIỂN "nhầm xung quanh với toàn phần".
+  sa: {
+    twoHands: true,
+    defaults(st, L) { st.saA = (L.saA != null ? L.saA : 6); st.saB = (L.saB != null ? L.saB : 4); st.saC = (L.saC != null ? L.saC : 3); },
+    fmt(n) { const s = Math.round(n * 100) / 100; if (Number.isInteger(s)) return String(s); let t = s.toFixed(2); if (t.endsWith('0')) t = t.slice(0, -1); return t.replace('.', ','); },
+    a(st) { return clamp(st.saA, 1, 20); },
+    b(st) { return clamp(st.saB, 1, 20); },
+    c(st) { return clamp(st.saC, 1, 20); },
+    Sxq(st) { return 2 * (this.a(st) + this.b(st)) * this.c(st); },
+    Sdq(st) { return this.a(st) * this.b(st) * 2; },
+    Stp(st) { return this.Sxq(st) + this.Sdq(st); },
+    V(st) { return this.a(st) * this.b(st) * this.c(st); },
+    geomSig(st) { return 'sa' + this.a(st) + ':' + this.b(st) + ':' + this.c(st); },
+    params() { return [
+      { key: 'saA', label: 'Chiều dài a', min: 1, max: 20 },
+      { key: 'saB', label: 'Chiều rộng b', min: 1, max: 20 },
+      { key: 'saC', label: 'Chiều cao c', min: 1, max: 20 }]; },
+    ctlHint() { return 'Tay TRÁI đặt CHIỀU DÀI, tay PHẢI đặt CHIỀU RỘNG; CHIỀU CAO chỉnh bằng +/− (tới 20). Mở hộp thành LƯỚI 6 mặt: 4 mặt bên (xanh) = xung quanh, 2 đáy (vàng) thêm vào = toàn phần.'; },
+    draw2d(host, st) {
+      const a = this.a(st), b = this.b(st), c = this.c(st), f = this.fmt.bind(this);
+      const s = Math.min(470 / (2 * (a + b)), 145 / (2 * b + c), 14);
+      const nx = 30, ny = 32, as = a * s, bs = b * s, cs = c * s, stripW = 2 * (a + b) * s, stripY = ny + bs;
+      const teal = 'rgba(127,201,191,.42)', gold = 'rgba(255,209,102,.5)';
+      const cell = (x, y, w, hh, fill, txt) => `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${hh.toFixed(1)}" fill="${fill}" stroke="var(--chalk)" stroke-width="1.5"></rect>`
+        + (w > 30 && hh > 15 ? `<text x="${(x + w / 2).toFixed(1)}" y="${(y + hh / 2 + 3.5).toFixed(1)}" fill="#0e1b22" font-size="10.5" font-weight="700" text-anchor="middle">${txt}</text>` : '');
+      let g = cell(nx, ny, as, bs, gold, 'đáy')
+        + cell(nx, stripY, as, cs, teal, 'a×c')
+        + cell(nx + as, stripY, bs, cs, teal, 'b×c')
+        + cell(nx + as + bs, stripY, as, cs, teal, 'a×c')
+        + cell(nx + 2 * as + bs, stripY, bs, cs, teal, 'b×c')
+        + cell(nx, ny + bs + cs, as, bs, gold, 'đáy');
+      const dim = `<text x="${(nx + as / 2).toFixed(1)}" y="${(stripY + cs + 12).toFixed(1)}" fill="var(--accent)" font-size="11" font-weight="700" text-anchor="middle">a=${a}</text>`
+        + `<text x="${(nx + as + bs / 2).toFixed(1)}" y="${(stripY + cs + 12).toFixed(1)}" fill="var(--accent)" font-size="11" font-weight="700" text-anchor="middle">b=${b}</text>`
+        + `<text x="${(nx + stripW + 6).toFixed(1)}" y="${(stripY + cs / 2 + 4).toFixed(1)}" fill="var(--accent)" font-size="11" font-weight="700">c=${c}</text>`;
+      const info = `<text x="20" y="198" fill="var(--ok)" font-size="12.5" font-weight="700">XUNG QUANH = 4 mặt bên = (a + b) × 2 × c = (${a} + ${b}) × 2 × ${c} = ${f(this.Sxq(st))}</text>`
+        + `<text x="20" y="219" fill="var(--warn)" font-size="12.5" font-weight="700">HAI ĐÁY = a × b × 2 = ${a} × ${b} × 2 = ${f(this.Sdq(st))}</text>`
+        + `<text x="20" y="240" fill="var(--chalk)" font-size="13.5" font-weight="700">TOÀN PHẦN = xung quanh + hai đáy = ${f(this.Sxq(st))} + ${f(this.Sdq(st))} = ${f(this.Stp(st))}</text>`;
+      host.innerHTML = `<svg id="sa" width="548" height="258" viewBox="0 0 548 258">`
+        + `<text x="16" y="18" fill="rgba(242,240,230,.72)" font-size="12.5">Hình hộp mở thành lưới 6 mặt — xanh = 4 mặt bên (xung quanh), vàng = 2 đáy</text>`
+        + g + dim + info + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, a = this.a(st), b = this.b(st), c = this.c(st), f = this.fmt.bind(this);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: một cái HỘP chữ nhật dài ${a}, rộng ${b}, cao ${c} (hộp quà, bể cá, phong bì...).`, hint: 'Tay trái đặt chiều dài, tay phải đặt chiều rộng, +/− cho chiều cao.' };
+      if (s === 2) return { cap: `Sơ đồ: mở hộp ra thành LƯỚI 6 mặt. Chỉ 4 mặt bên (xanh) mới là DIỆN TÍCH XUNG QUANH = (a + b) × 2 × c = ${f(this.Sxq(st))}; 2 mặt đáy (vàng) KHÔNG nằm trong xung quanh.`, hint: 'Nhầm Sxq với Stp là lỗi hay gặp — để ý đúng 4 mặt xanh thôi.' };
+      if (s === 3) return { cap: `Sxq = ${f(this.Sxq(st))}; hai đáy = ${f(this.Sdq(st))}; Stp = Sxq + hai đáy = ${f(this.Stp(st))}. (Thể tích V = a × b × c = ${f(this.V(st))}.) ` + L.chot, hint: '' };
+      return { cap: `Cả lớp trả lời: hộp dài ${a}, rộng ${b}, cao ${c} có diện tích TOÀN PHẦN là bao nhiêu? (đừng nhầm với xung quanh!)`, hint: '' };
+    },
+    value(st) { return `Sxq = ${this.fmt(this.Sxq(st))} · Stp = ${this.fmt(this.Stp(st))}`; },
+    showFromStep() { return 2; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.saA = clamp(l, 1, 20);
+      if (r !== null) st.saB = clamp(r, 1, 20);
+    },
+    build3d(st) {
+      const g = new THREE.Group(), a = this.a(st), b = this.b(st), c = this.c(st);
+      const sc = Math.min(3.4 / Math.max(a, b, c), 0.7);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(a * sc, b * sc, c * sc), new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.5 }));
+      mesh.position.set(0, (b * sc) / 2, 0); g.add(mesh); return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3161,6 +3232,11 @@ EX['dien-tich-tam-giac'] = [
 EX['dien-tich-hinh-thang'] = [
   { prompt: 'Một hình thang có đáy lớn 12 cm, đáy nhỏ 8 cm, chiều cao 6 cm. Diện tích của nó là bao nhiêu?', choices: ['60 cm²', '120 cm²', '26 cm²'], answer: '60 cm²', explanation: 'S = (đáy lớn + đáy nhỏ) × cao ÷ 2 = (12 + 8) × 6 ÷ 2 = 20 × 6 ÷ 2 = 60 cm². Phải CỘNG hai đáy trước, rồi nhân cao, rồi chia 2.', errorTag: 'cong-thieu-day-hoac-quen-chia-2-hinh-thang' },
   { prompt: 'Vì sao diện tích hình thang bằng (đáy lớn + đáy nhỏ) × chiều cao RỒI CHIA 2?', choices: ['Vì hai hình thang giống hệt ghép thành hình bình hành đáy (a + b)', 'Vì hình thang có bốn cạnh', 'Vì chiều cao luôn ngắn hơn đáy'], answer: 'Vì hai hình thang giống hệt ghép thành hình bình hành đáy (a + b)', explanation: 'Quay một hình thang giống hệt áp vào cạnh nghiêng → được hình bình hành có đáy bằng TỔNG hai đáy (a + b), cao h. Hình thang = một nửa, nên S = (a + b) × h ÷ 2.', errorTag: 'khong-hieu-vi-sao-cong-hai-day-roi-chia-2' },
+];
+// Diện tích hình hộp chữ nhật không có trong examples.mjs của bank → 2 câu SGK-style tự tác.
+EX['dien-tich-hinh-hop'] = [
+  { prompt: 'Một hộp chữ nhật có chiều dài 6 cm, chiều rộng 4 cm, chiều cao 3 cm. Diện tích XUNG QUANH của hộp là bao nhiêu?', choices: ['60 cm²', '108 cm²', '72 cm²'], answer: '60 cm²', explanation: 'Sxq = (dài + rộng) × 2 × cao = (6 + 4) × 2 × 3 = 60 cm². Xung quanh chỉ tính 4 MẶT BÊN, chưa cộng hai đáy.', errorTag: 'tinh-nham-xung-quanh-thanh-toan-phan' },
+  { prompt: 'Với hộp ở trên (dài 6, rộng 4, cao 3), diện tích TOÀN PHẦN là bao nhiêu?', choices: ['108 cm²', '60 cm²', '48 cm²'], answer: '108 cm²', explanation: 'Stp = Sxq + 2 × (dài × rộng) = 60 + 2 × (6 × 4) = 60 + 48 = 108 cm². Toàn phần phải CỘNG thêm hai mặt đáy vào diện tích xung quanh.', errorTag: 'quen-cong-hai-day-khi-tinh-toan-phan' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
