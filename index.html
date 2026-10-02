@@ -447,6 +447,10 @@ const LESSONS = {
     khoi_dong:'Một cái bút giá 3 nghìn. Mua 1 bút hết 3 nghìn, 2 bút hết 6 nghìn, 3 bút hết 9 nghìn. Số bút tăng thì số tiền cũng tăng theo. Hai cái đó "tỉ lệ thuận" với nhau nghĩa là thế nào — có phải cộng thêm mãi không, hay nhân lên?',
     chot:'Hai đại lượng tỉ lệ thuận khi đại lượng này gấp (hoặc rút đi) bao nhiêu LẦN thì đại lượng kia gấp (hoặc rút đi) đúng BẤY NHIÊU LẦN. Luôn có y = k·x với k không đổi (gọi là hệ số tỉ lệ). Thương y : x không đổi. Đồ thị của hai đại lượng tỉ lệ thuận là một ĐƯỜNG THẲNG đi qua gốc 0. CHÚ Ý: tỉ lệ thuận là NHÂN/GẤP, không phải CỘNG thêm.',
     obj:'x = 2', prK:3, prX:2 },
+  'ti-le-nghich': { model:'inprop', ten:'Hai đại lượng tỉ lệ nghịch (x·y = A)',
+    khoi_dong:'Chia 12 cái kẹo cho các bạn. 1 bạn thì được 12 cái, 2 bạn mỗi bạn 6 cái, 3 bạn mỗi bạn 4 cái… Càng nhiều bạn thì mỗi bạn càng nhận ÍT đi. Số bạn và số kẹo mỗi bạn "tỉ lệ nghịch" — nghĩa là cái gì ở đây KHÔNG đổi?',
+    chot:'Hai đại lượng tỉ lệ nghịch khi đại lượng này gấp lên bao nhiêu LẦN thì đại lượng kia RÚT đi đúng BẤY NHIÊU LẦN. Luôn có x · y = A với A không đổi (gọi là tích không đổi), hay y = A : x. TÍCH x·y không đổi. Đồ thị của hai đại lượng tỉ lệ nghịch là một ĐƯỜNG CONG đi xuống, KHÔNG đi qua gốc. CHÚ Ý: khác tỉ lệ thuận (ở đó THƯƠNG y:x không đổi, đồ thị là đường thẳng qua gốc).',
+    obj:'x = 2', inK:12, inX:2 },
 };
 
 const state = {
@@ -504,6 +508,7 @@ const state = {
   auNum: 1, auUnit: 3,
   vuNum: 1, vuUnit: 0,
   prK: 3, prX: 2,
+  inK: 12, inX: 2,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3978,6 +3983,64 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // ======================= Model: inprop (hai đại lượng TỈ LỆ NGHỊCH — beyond-bank) =======================
+  // y = A : x: x gấp lên mấy lần thì y RÚT đi đúng mấy lần; TÍCH x·y KHÔNG đổi; đồ thị là ĐƯỜNG CONG đi xuống (hyperbola).
+  inprop: {
+    res(st) { const A = Math.max(12, Math.round(clamp(Math.round(st.inK), 12, 60) / 12) * 12), x = clamp(Math.round(st.inX), 1, 4); const xs = [1, 2, 3, 4]; const ys = xs.map((i) => A / i); return { A, x, xs, ys }; },
+    defaults(st, L) { st.inK = (L.inK != null ? L.inK : 12); st.inX = (L.inX != null ? L.inX : 2); },
+    geomSig(st) { const d = this.res(st); return 'ip' + d.A + ',' + d.x; },
+    params() { return [{ key: 'inK', label: 'Tích không đổi A (= x·y)', min: 12, max: 60 }, { key: 'inX', label: 'Giá trị x đang đọc', min: 1, max: 4 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bấm một CỘT (x = 1…4) để chọn; giơ 1–4 ngón đặt x; +/− đổi tích A. TỈ LỆ NGHỊCH: x gấp mấy lần thì y RÚT đi bấy nhiêu (x·y = A).'; },
+    hand(st, f) { st.inX = clamp(Math.round(f), 1, 4); },
+    handLabel(f) { return '→ x = ' + clamp(Math.round(f), 1, 4); },
+    draw2d(host, st) {
+      const d = this.res(st);
+      let tbl = `<text x="12" y="30" fill="var(--chalk)" font-size="13" font-weight="700">Bảng: x · y = ${d.A}</text>`;
+      tbl += `<text x="16" y="70" fill="rgba(242,240,230,.7)" font-size="12">x</text><text x="16" y="104" fill="rgba(242,240,230,.7)" font-size="12">y</text>`;
+      for (let i = 1; i <= 4; i++) {
+        const cx = 54 + (i - 1) * 46, on = i === d.x;
+        tbl += `<g data-inx="${i}" style="cursor:pointer"><rect x="${cx - 18}" y="54" width="40" height="58" rx="3" fill="${on ? 'rgba(240,196,92,.20)' : 'rgba(255,255,255,.03)'}" stroke="${on ? 'var(--accent)' : 'rgba(242,240,230,.14)'}" stroke-width="${on ? 2 : 1}"></rect>`
+          + `<text x="${cx}" y="70" text-anchor="middle" font-size="13" fill="${on ? 'var(--accent)' : 'var(--chalk)'}">${i}</text>`
+          + `<text x="${cx}" y="104" text-anchor="middle" font-size="13" font-weight="${on ? 800 : 500}" fill="${on ? 'var(--accent)' : 'rgba(242,240,230,.92)'}">${d.ys[i - 1]}</text></g>`;
+      }
+      tbl += `<text x="12" y="132" fill="rgba(242,240,230,.85)" font-size="11.5">Tích x · y = ${d.A} — luôn không đổi.</text>`;
+      tbl += `<text x="12" y="150" fill="rgba(242,240,230,.85)" font-size="11.5">x ×2 thì y :2 · x ×3 thì y :3.</text>`;
+      const ox = 300, oy = 205, ux = 52, uY = 150 / d.A;
+      const px = (i) => ox + i * ux, py = (i) => oy - (d.A / i) * uY;
+      let curve = '';
+      for (let i = 1; i < 4; i++) curve += `<line x1="${px(i)}" y1="${py(i)}" x2="${px(i + 1)}" y2="${py(i + 1)}" stroke="rgba(127,201,191,.8)" stroke-width="2"></line>`;
+      let dots = '';
+      for (let i = 1; i <= 4; i++) { const on = i === d.x; dots += `<circle cx="${px(i)}" cy="${py(i)}" r="${on ? 5 : 3.2}" fill="${on ? 'var(--accent)' : 'var(--chalk)'}" opacity="${on ? 1 : 0.85}"></circle>`; if (on) dots += `<text x="${px(i)}" y="${py(i) - 9}" text-anchor="middle" font-size="11" fill="var(--accent)">${d.ys[i - 1]}</text>`; }
+      const axes = `<line x1="${ox}" y1="${oy}" x2="${ox + 4 * ux + 12}" y2="${oy}" stroke="rgba(242,240,230,.5)"></line>`
+        + `<line x1="${ox}" y1="${oy}" x2="${ox}" y2="${oy - 168}" stroke="rgba(242,240,230,.5)"></line>`
+        + `<text x="${ox + 4 * ux + 8}" y="${oy + 14}" font-size="10" fill="rgba(242,240,230,.6)">x</text>`
+        + `<text x="${ox - 14}" y="${oy - 160}" font-size="10" fill="rgba(242,240,230,.6)">y</text>`;
+      const graph = `<text x="${ox}" y="30" fill="var(--chalk)" font-size="13" font-weight="700">Đồ thị đường CONG (không qua gốc)</text>` + axes + curve + dots;
+      const err = `<text x="12" y="232" fill="var(--warn)" font-size="11">❌ Nhầm: nghịch là y bớt đều mỗi lần trừ? Sai — TÍCH x·y = ${d.A} không đổi (y = ${d.A} : x), nên đồ thị là ĐƯỜNG CONG.</text>`;
+      host.innerHTML = `<svg id="inprop" width="548" height="258" viewBox="0 0 548 258">` + tbl + graph + err + `</svg>`;
+      const svg = host.querySelector('#inprop');
+      if (svg && svg.querySelectorAll) svg.querySelectorAll('g[data-inx]').forEach((g) => g.addEventListener('pointerdown', () => { state.inX = +g.dataset.inx; drawVisual(); render(); }));
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: chia ${d.A} cái kẹo cho 1 bạn → mỗi bạn ${d.A} cái; cho 2 bạn → ${d.A / 2} cái; 3 bạn → ${Math.round(d.A / 3)} cái; ${d.x} bạn → ${d.ys[d.x - 1]} cái. Càng NHIỀU bạn thì mỗi bạn nhận ÍT đi.`, hint: 'Hai đại lượng: cái này gấp lên bao nhiêu lần thì cái kia rút đi đúng bấy nhiêu lần ⟹ tỉ lệ nghịch.' };
+      if (s === 2) return { cap: `Sơ đồ đồ thị: các điểm (1, ${d.A}), (2, ${d.A / 2}), (3, ${d.A / 3}), (4, ${d.A / 4}) nằm trên một ĐƯỜNG CONG đi xuống (không qua gốc). Vì x · y = ${d.A} nên x gấp lên mấy lần thì y rút đi đúng mấy lần; TÍCH x·y luôn bằng ${d.A} không đổi.`, hint: 'Đồ thị tỉ lệ nghịch là đường cong, khác đường thẳng qua gốc của tỉ lệ thuận (prop).' };
+      if (s === 3) return { cap: `Phép tính: x = ${d.x} ⟹ y = ${d.A} : ${d.x} = ${d.ys[d.x - 1]}. Kiểm tra: x × y = ${d.x} × ${d.ys[d.x - 1]} = ${d.A} (không đổi). ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: với tích ${d.A}, nếu x = ${d.x} thì y = ? Lấy ${d.A} : ${d.x}. Muốn đổi tích A thì +/−; muốn chọn x thì bấm một CỘT hoặc giơ 1–4 ngón.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); return `x = ${d.x} → y = ${d.A} : ${d.x} = ${d.ys[d.x - 1]}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), g = new THREE.Group();
+      const matB = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.55 }), matH = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const bw = 0.7, gap = 0.45, s = 1.8 / d.A;
+      for (let i = 1; i <= 4; i++) { const h = (d.A / i) * s; const m = new THREE.Mesh(new THREE.BoxGeometry(bw, h, bw), i === d.x ? matH : matB); m.position.set((i - 2.5) * (bw + gap), h / 2, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4136,6 +4199,11 @@ EX['ti-le-thuan'] = [
   { prompt: 'x và y tỉ lệ thuận. x gấp 3 lần thì y?', choices: ['gấp 3 lần', 'thêm 3', 'gấp 6 lần'], answer: 'gấp 3 lần', explanation: 'Tỉ lệ thuận: y = k·x. x ×3 thì y ×3 đúng bằng nhau. KHÔNG phải cộng thêm 3.', errorTag: 'cong_them_thay_vi_gap_len' },
   { prompt: 'x = 4 thì y = 12 (tỉ lệ thuận). Hệ số k = y : x là?', choices: ['3', '8', '16'], answer: '3', explanation: 'k = y : x = 12 : 4 = 3, không đổi. Vậy y = 3·x.', errorTag: 'tim_sai_he_so_tile_thuan' },
   { prompt: 'Mỗi bút 5 000 đồng. 4 bút hết? (số tiền ∼ số bút)', choices: ['20 000 đồng', '9 000 đồng', '24 000 đồng'], answer: '20 000 đồng', explanation: 'Số tiền tỉ lệ thuận số bút: 5 000 × 4 = 20 000 đồng. (9 000 là lấy 5 000 + 4 — sai vì cộng.)', errorTag: 'cong_le_the_nhan' },
+];
+EX['ti-le-nghich'] = [
+  { prompt: 'x và y tỉ lệ nghịch, x = 3 thì y = 4. Tích x·y không đổi bằng?', choices: ['12', '7', '1'], answer: '12', explanation: 'Tỉ lệ nghịch: x·y = A không đổi. A = 3 × 4 = 12. Vậy khi x = 6 thì y = 12 : 6 = 2.', errorTag: 'nham_tich_thuong_cua_tile_nghich' },
+  { prompt: 'Số người làm và số ngày xong (tỉ lệ nghịch). 2 người hết 6 ngày. 3 người hết?', choices: ['4 ngày', '9 ngày', '12 ngày'], answer: '4 ngày', explanation: 'Tích không đổi: 2 × 6 = 12 (người·ngày). 3 người → 12 : 3 = 4 ngày. Nhiều người hơn thì ÍT ngày đi.', errorTag: 'nham_nghich_thanh_thuan_cong_them' },
+  { prompt: 'Đại lượng này gấp 2 lần, đại lượng kia RÚT đi 2 lần. Hai đại lượng đó…', choices: ['tỉ lệ nghịch', 'tỉ lệ thuận', 'không liên quan'], answer: 'tỉ lệ nghịch', explanation: 'Gấp đôi ↔ rút một nửa (tích không đổi) là DẤU HIỆU tỉ lệ nghịch. Tỉ lệ thuận là cùng gấp lên.', errorTag: 'nham_hai_loai_ti_le' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
