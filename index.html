@@ -467,6 +467,10 @@ const LESSONS = {
     khoi_dong:'Cô bảo 30 × 4. Nhiều em nhảy ngay vào tính 30 × 4 theo cột dọc rất lâu. Nhưng có một cách NHẨM nhanh: tạm BỎ chữ số 0 ở tận cùng, tính 3 × 4, rồi viết lại chữ số 0 đó. Vì sao làm thế được? Kết quả là bao nhiêu và vì sao KHÔNG phải 12?',
     chot:'Khi nhân với số có chữ số 0 ở tận cùng: ta TẠM BỎ các chữ số 0, nhân PHẦN KHÁC 0 với nhau, rồi VIẾT LẠI đúng BẤY NHIÊU chữ số 0 vào tận cùng tích. Số 0 ở tận cùng chỉ "to gấp 10, 100…", không làm thay đổi phép nhân cơ bản. Ví dụ 30 × 4: bỏ 1 chữ số 0 → 3 × 4 = 12 → viết lại 1 chữ số 0 → 120. CHÚ Ý: quên viết lại chữ số 0 là ra 12 (sai), viết dư là ra 1 200 (cũng sai).',
     obj:'30 × 4', zmMant:3, zmZeros:1, zmB:4 },
+  'cong-nhom-tron': { model:'addgroup', ten:'Cộng bằng cách nhóm tạo tròn chục (giao hoán + kết hợp)',
+    khoi_dong:'Cô viết 27 + 43 + 15. Nếu cộng lần lượt từ trái sang thì 27 + 43 đã phải nhớ lung tung. Nhưng nhìn chữ số tận cùng: 7 và 3 ghép lại vừa đủ thành 10! Vì sao nên ĐỔI CHỖ các số hạng, ghép 27 với 43 thành 70 trước rồi mới cộng 15? Kết quả ra bao nhiêu?',
+    chot:'Muốn cộng nhiều số cho nhanh, ta vận dụng TÍNH CHẤT GIAO HOÁN và KẾT HỢP của phép cộng: ĐỔI CHỖ để các số hạng có chữ số tận cùng BÙ NHAU THÀNH 0 đứng cạnh nhau, rồi THÊM NGOẶC để cộng chúng trước tạo số TRÒN CHỤC (hoặc tròn trăm). Ví dụ 27 + 43 + 15 = (27 + 43) + 15 = 70 + 15 = 85. Tổng KHÔNG ĐỔI dù ta đổi thứ tự và cách nhóm.',
+    obj:'27 + 43 + 15', agA:27, agB:43, agC:15 },
 };
 
 const state = {
@@ -529,6 +533,7 @@ const state = {
   mxTop: 5, mxDen: 3,
   dfExp: 1, dfNum: 7,
   zmMant: 3, zmZeros: 1, zmB: 4,
+  agA: 27, agB: 43, agC: 15,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4322,6 +4327,79 @@ const MODELS = {
     },
     paint3d() {},
   },
+  addgroup: {
+    res(st) {
+      const A = clamp(Math.round(st.agA), 2, 99), B = clamp(Math.round(st.agB), 2, 99), C = clamp(Math.round(st.agC), 2, 99);
+      const vals = [A, B, C];
+      const tz = (n) => { if (!n) return 0; let k = 0; while (n % 10 === 0 && k < 4) { k++; n = Math.floor(n / 10); } return k; };
+      const cand = [{ p: [0, 1], s: A + B }, { p: [0, 2], s: A + C }, { p: [1, 2], s: B + C }];
+      let best = cand[0];
+      for (const c of cand) { if (tz(c.s) > tz(best.s)) best = c; }
+      const total = A + B + C;
+      const otherIdx = [0, 1, 2].find(i => i !== best.p[0] && i !== best.p[1]);
+      const other = vals[otherIdx];
+      return { A, B, C, vals, pair: best.p, pairSum: best.s, otherIdx, other, total, round: best.s % 10 === 0 };
+    },
+    defaults(st, L) { st.agA = (L.agA != null ? L.agA : 27); st.agB = (L.agB != null ? L.agB : 43); st.agC = (L.agC != null ? L.agC : 15); },
+    geomSig(st) { const d = this.res(st); return 'ag' + d.A + ',' + d.B + ',' + d.C; },
+    params() { return [{ key: 'agA', label: 'Số hạng ①', min: 2, max: 99 }, { key: 'agB', label: 'Số hạng ②', min: 2, max: 99 }, { key: 'agC', label: 'Số hạng ③', min: 2, max: 99 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Ba thanh trượt cho ba số hạng (2–99). Giơ 1–9 ngón đổi số ①. Muốn nhanh: chọn hai số có chữ số TẬN CÙNG bù nhau về 0 (7+3, 4+6, 8+2…) để nhóm thành tròn chục.'; },
+    hand(st, f) { st.agA = clamp(Math.round(f), 2, 99); },
+    handLabel(f) { return '→ số ① = ' + clamp(Math.round(f), 2, 99); },
+    draw2d(host, st) {
+      const d = this.res(st);
+      const lab = ['①', '②', '③'];
+      const cellW = 96, cellH = 66, y0 = 58, gap = 34, x0 = 44;
+      let tiles = '';
+      for (let i = 0; i < 3; i++) {
+        const bx = x0 + i * (cellW + gap);
+        const inPair = d.pair.includes(i);
+        const stroke = inPair ? 'var(--accent)' : 'rgba(127,201,191,.7)';
+        const fill = inPair ? 'rgba(240,196,92,.16)' : 'rgba(127,201,191,.08)';
+        tiles += `<rect x="${bx}" y="${y0}" width="${cellW}" height="${cellH}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="2"></rect>`
+          + `<text x="${(bx + cellW / 2).toFixed(0)}" y="${y0 + 30}" text-anchor="middle" font-size="26" font-weight="800" fill="var(--chalk)">${d.vals[i]}</text>`
+          + `<text x="${(bx + cellW / 2).toFixed(0)}" y="${y0 + 54}" text-anchor="middle" font-size="11" fill="rgba(242,240,230,.7)">${lab[i]} · tận cùng ${d.vals[i] % 10}</text>`;
+      }
+      const pi = d.pair[0], pj = d.pair[1];
+      const cx1 = x0 + pi * (cellW + gap) + cellW / 2, cx2 = x0 + pj * (cellW + gap) + cellW / 2;
+      const brY = y0 - 10;
+      const conn = `<path d="M ${cx1.toFixed(0)} ${brY} Q ${((cx1 + cx2) / 2).toFixed(0)} ${brY - 22} ${cx2.toFixed(0)} ${brY}" fill="none" stroke="var(--accent)" stroke-width="2"></path>`
+        + `<text x="${((cx1 + cx2) / 2).toFixed(0)}" y="${brY - 26}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--accent)">nhóm = ${d.pairSum}</text>`;
+      const plus1 = `<text x="${(x0 + cellW + gap / 2).toFixed(0)}" y="${y0 + cellH / 2 + 8}" text-anchor="middle" font-size="20" font-weight="800" fill="var(--chalk)">+</text>`;
+      const plus2 = `<text x="${(x0 + 2 * (cellW + gap) - gap / 2).toFixed(0)}" y="${y0 + cellH / 2 + 8}" text-anchor="middle" font-size="20" font-weight="800" fill="var(--chalk)">+</text>`;
+      const ey = y0 + cellH + 34;
+      const expr = `<text x="16" y="${ey}" font-size="15" fill="var(--chalk)" font-weight="700">= (${d.vals[pi]} + ${d.vals[pj]}) + ${d.other} = ${d.pairSum} + ${d.other} = ${d.total}</text>`;
+      const note = `<text x="16" y="${ey + 22}" font-size="11" fill="rgba(240,196,92,.9)">${d.round ? '✓ Hai số tận cùng bù về 0 → nhóm ra ' + d.pairSum + ' tròn ' + (d.pairSum % 100 === 0 ? 'trăm' : 'chục') + ', cộng nhẩm rất nhanh.' : '⚠ Chưa có cặp nào cộng ra tròn chục — cô chọn hai số có chữ số tận cùng bù nhau (7 và 3, 4 và 6…).'}</text>`;
+      const err = `<text x="16" y="${ey + 46}" font-size="10.5" fill="var(--warn)">❌ Cộng tuần tự ${d.A} + ${d.B} rồi + ${d.C} dễ sai ở chỗ nhớ; nên ĐỔI CHỖ + THÊM NGOẶC để ghép số tròn chục trước (tính chất giao hoán + kết hợp).</text>`;
+      const title = `<text x="170" y="16" fill="var(--chalk)" font-size="13" font-weight="700">Nhóm tạo tròn chục khi cộng</text>`;
+      host.innerHTML = `<svg id="addgroup" width="548" height="258" viewBox="0 0 548 258">` + title + conn + tiles + plus1 + plus2 + expr + note + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, d = this.res(st);
+      const lab = ['①', '②', '③'];
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${d.vals[d.pair[0]]} viên + ${d.vals[d.pair[1]]} viên ghép lại = ${d.pairSum}${d.round ? ' (đúng tròn ' + (d.pairSum % 100 === 0 ? 'trăm' : 'chục') + ')' : ''}, rồi cộng tiếp ${d.other} viên → ${d.total} viên.`, hint: 'Ưu tiên ghép hai đống thành tròn chục rồi mới cộng đống còn lại.' };
+      if (s === 2) return { cap: `Sơ đồ: ${d.A} + ${d.B} + ${d.C}. Nhóm ${lab[d.pair[0]]}+${lab[d.pair[1]]} = ${d.vals[d.pair[0]]} + ${d.vals[d.pair[1]]} = ${d.pairSum}, rồi ${d.pairSum} + ${d.other} = ${d.total}.`, hint: 'ĐỔI CHỖ (giao hoán) để hai số bù nhau đứng cạnh, THÊM NGOẶC (kết hợp) để cộng chúng trước.' };
+      if (s === 3) return { cap: `Phép tính: (${d.vals[d.pair[0]]} + ${d.vals[d.pair[1]]}) + ${d.other} = ${d.pairSum} + ${d.other} = ${d.total}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: tính ${d.A} + ${d.B} + ${d.C}? Tìm hai số có tận cùng bù về 0 để nhóm thành tròn chục (${d.vals[d.pair[0]]} + ${d.vals[d.pair[1]]} = ${d.pairSum}), rồi cộng ${d.other} → ${d.total}.`, hint: '' };
+    },
+    value(st) { const d = this.res(st); return `${d.A} + ${d.B} + ${d.C} = ${d.total}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const d = this.res(st), g = new THREE.Group();
+      const matPair = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const matOther = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const w = 0.8;
+      for (let i = 0; i < 3; i++) {
+        const hh = d.vals[i] / 12;
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, hh, w), d.pair.includes(i) ? matPair : matOther);
+        m.position.set((i - 1) * 1.1, hh / 2, 0); g.add(m);
+      }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4505,6 +4583,11 @@ EX['nhan-so-0'] = [
   { prompt: 'Tính nhẩm: 20 × 5.', choices: ['100', '50', '1 000'], answer: '100', explanation: 'Bỏ 1 chữ số 0: 2 × 5 = 10, viết lại 1 chữ số 0 → 100. Không phải 50 (thiếu một chữ số 0) hay 1 000 (viết dư).', errorTag: 'quen_viet_lai_so_0' },
   { prompt: 'Tính nhẩm: 300 × 4.', choices: ['1 200', '120', '12 000'], answer: '1 200', explanation: '300 có HAI chữ số 0. Bỏ 0: 3 × 4 = 12, viết lại 2 chữ số 0 → 1 200. Quên một chữ số 0 là ra 120 (sai).', errorTag: 'thieu_so_0_viet_lai' },
   { prompt: 'Tính nhẩm: 40 × 60.', choices: ['2 400', '240', '24 000'], answer: '2 400', explanation: 'Mỗi thừa số có 1 chữ số 0, tổng 2 chữ số 0. Bỏ 0: 4 × 6 = 24, viết lại 2 chữ số 0 → 2 400.', errorTag: 'cong_nham_so_0_hai_thua_so' },
+];
+EX['cong-nhom-tron'] = [
+  { prompt: 'Tính nhanh: 18 + 25 + 2.', choices: ['45', '40', '65'], answer: '45', explanation: 'Nhóm 18 + 2 = 20 (tròn chục) trước, rồi 20 + 25 = 45. Cộng 18 + 25 trước thì phải nhớ, chậm và dễ sai.', errorTag: 'khong_nhom_tron_chuc' },
+  { prompt: 'Tính nhanh: 34 + 19 + 6.', choices: ['59', '58', '69'], answer: '59', explanation: 'Tận cùng 4 và 6 bù nhau về 0: nhóm 34 + 6 = 40, rồi 40 + 19 = 59.', errorTag: 'nham_cap_bu_nhau' },
+  { prompt: 'Tổng của 27 + 43 + 15 bằng:', choices: ['85', '75', '95'], answer: '85', explanation: '(27 + 43) + 15 = 70 + 15 = 85. Ghép 27 với 43 (7 và 3 bù thành 10) ra 70 tròn chục rồi mới cộng 15.', errorTag: 'quen_nhom_so_hang' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
