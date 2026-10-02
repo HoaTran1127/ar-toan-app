@@ -499,6 +499,10 @@ const LESSONS = {
     khoi_dong:'Tính 24 × 11 mà không đặt tính. Vì sao 24 × 11 = 240 + 24 = 264 — chỉ cần "thêm một cái 24 nữa" vào số tròn chục?',
     chot:'NHÂN NHẨM mẹo: ×11 = ×10 rồi CỘNG chính nó (a×11 = a0 + a). ×25 = ×100 rồi CHIA 4 (a×25 = a00 : 4). ×99 = ×100 rồi TRỪ chính nó (a×99 = a00 − a). Gốc của mẹo là đổi số khó nhân (11, 25, 99) về số tròn (10, 100) mà em đã biết, rồi hiệu chỉnh bằng đúng phần thừa/thiếu. CHÚ Ý: ×11 KHÔNG phải "viết a rồi thêm 0" — phải cộng thêm chính a.',
     obj:'nhẩm 24 × 11', nhA: 24, nhM: 0 },
+  'tinh-chat-nhan': { model:'multprop', ten:'Tính chất giao hoán và kết hợp của phép nhân — nhóm ra tròn chục/trăm để tính nhanh',
+    khoi_dong:'Tính 25 × 7 × 4 mà không đặt tính. Vì sao ta ĐẢO chỗ 4 lên cạnh 25 rồi tính (25 × 4) × 7 = 100 × 7 = 700, nhanh hơn nhiều so với 25 × 7 = 175 rồi × 4?',
+    chot:'GIAO HOÁN: đổi chỗ các thừa số thì tích KHÔNG đổi (a × b = b × a). KẾT HỢP: được nhóm hai thừa số lại trước (a × b) × c = a × (b × c). Mẹo tính nhanh: DÙNG giao hoán để KÉO hai thừa số nhân ra tròn chục/round trăm (25 với 4 → 100; 125 với 8 → 1000; 5 với số chẵn → tròn 10) đứng cạnh nhau, rồi KẾT HỢP nhóm chúng tính trước. Đáp số CUỐI luôn bằng nhau dù nhóm cách nào — chính hai tính chất này cho phép làm thế.',
+    obj:'tính nhanh 25 × 7 × 4', mA: 25, mB: 7, mC: 4 },
 };
 
 const state = {
@@ -4826,6 +4830,61 @@ const MODELS = {
     },
     paint3d() {},
   },
+  multprop: {
+    res(st) {
+      const f = [clamp(Math.round(st.mA), 1, 25), clamp(Math.round(st.mB), 1, 25), clamp(Math.round(st.mC), 1, 25)];
+      const tz = (n) => { let t = 0; while (t < 4 && n % 10 === 0) { n /= 10; t++; } return t; };
+      const pairs = [{ i: 0, j: 1, k: 2 }, { i: 0, j: 2, k: 1 }, { i: 1, j: 2, k: 0 }];
+      let best = pairs[0], bestScore = -1;
+      for (const p of pairs) { const prod = f[p.i] * f[p.j]; const sc = tz(prod) * 10000 + prod; if (sc > bestScore) { bestScore = sc; best = p; } }
+      const x = f[best.i], y = f[best.j], z = f[best.k], pair = x * y, total = f[0] * f[1] * f[2], naive1 = f[0] * f[1];
+      return { f, x, y, z, pair, total, naive1, tzp: tz(pair) };
+    },
+    defaults(st, L) { st.mA = (L.mA != null ? L.mA : 25); st.mB = (L.mB != null ? L.mB : 7); st.mC = (L.mC != null ? L.mC : 4); },
+    geomSig(st) { const r = this.res(st); return 'mp' + r.f.join('-'); },
+    params() { return [{ key: 'mA', label: 'Thừa số ①', min: 1, max: 25 }, { key: 'mB', label: 'Thừa số ②', min: 1, max: 25 }, { key: 'mC', label: 'Thừa số ③', min: 1, max: 25 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Ba thanh trượt: ba THỪA SỐ (mỗi số 1–25). App tự tìm CẶP nhân ra tròn chục/trăm rồi nhóm lại (kết hợp). Giơ 1–9 ngón đặt thừa số ①.'; },
+    hand(st, f) { st.mA = clamp(Math.round(f), 1, 25); },
+    handLabel(f) { return '→ thừa số ① = ' + clamp(Math.round(f), 1, 25); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const teal = 'rgba(127,201,191,.6)', gold = 'rgba(240,196,92,.65)';
+      const roundNote = r.tzp > 0 ? ` (tròn ${r.pair % 1000 === 0 ? 'nghìn' : r.pair % 100 === 0 ? 'trăm' : 'chục'})` : '';
+      let g = `<text x="14" y="20" font-size="14" font-weight="700" fill="var(--chalk)">Nhân nhanh ${r.f[0]} × ${r.f[1]} × ${r.f[2]}</text>`;
+      g += `<rect x="14" y="28" width="470" height="26" rx="4" fill="rgba(242,240,230,.08)"></rect>`;
+      g += `<text x="24" y="46" font-size="13" fill="rgba(242,240,230,.85)">Đổi chỗ (giao hoán) để ${r.x} đứng cạnh ${r.y}, rồi nhóm lại (kết hợp)</text>`;
+      g += `<text x="14" y="78" font-size="14" fill="var(--chalk)" font-weight="700">${r.f[0]} × ${r.f[1]} × ${r.f[2]}  =  (${r.x} × ${r.y}) × ${r.z}</text>`;
+      g += `<text x="14" y="102" font-size="15" fill="var(--accent)" font-weight="700">= ${r.pair} × ${r.z} = ${r.total}</text>`;
+      g += `<rect x="14" y="112" width="${(Math.min(300, 18 + r.pair * 0.45)).toFixed(1)}" height="15" rx="3" fill="${gold}"></rect>`;
+      g += `<text x="${(20 + Math.min(300, 18 + r.pair * 0.45)).toFixed(1)}" y="124" font-size="11.5" fill="rgba(242,240,230,.8)">${r.x} × ${r.y} = ${r.pair}${roundNote}</text>`;
+      g += `<rect x="14" y="132" width="${(Math.min(300, 18 + r.z * 9)).toFixed(1)}" height="15" rx="3" fill="${teal}"></rect>`;
+      g += `<text x="${(20 + Math.min(300, 18 + r.z * 9)).toFixed(1)}" y="144" font-size="11.5" fill="rgba(242,240,230,.8)">× ${r.z} → ${r.total}</text>`;
+      const err = `<text x="14" y="168" font-size="10.5" fill="var(--warn)">❌ Tính trái→phải: ${r.f[0]} × ${r.f[1]} = ${r.naive1} rồi × ${r.f[2]} — ĐÚNG nhưng chậm; nhóm cặp ra tròn trước thì nhanh hơn.</text>`;
+      host.innerHTML = `<svg id="multprop" width="520" height="176" viewBox="0 0 520 176">` + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      const trick = r.tzp > 0 ? `nhóm (${r.x} × ${r.y}) = ${r.pair} (tròn) trước` : `nhóm (${r.x} × ${r.y}) = ${r.pair} trước`;
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${r.f[0]} × ${r.f[1]} × ${r.f[2]} là xếp từng lớp khối; ĐỔI thứ tự các lớp hay NHÓM hai lớp lại trước thì tổng số khối KHÔNG đổi.`, hint: 'Giao hoán + kết hợp: tích không đổi dù đổi chỗ / nhóm lại.' };
+      if (s === 2) return { cap: `Sơ đồ: ${trick}, rồi × ${r.z}. Bars: đoạn vàng = ${r.pair}, đoạn teal = ${r.z}.`, hint: '' };
+      if (s === 3) return { cap: `Phép tính: (${r.x} × ${r.y}) × ${r.z} = ${r.pair} × ${r.z} = ${r.total}.`, hint: '' };
+      return { cap: `Cả lớp: ${r.f[0]} × ${r.f[1]} × ${r.f[2]} = ${r.total}. Nhờ giao hoán + kết hợp nên đổi chỗ & nhóm lại KHÔNG làm đổi tích — mẹo hợp lệ.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.f[0]} × ${r.f[1]} × ${r.f[2]} = ${r.total}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mG = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.5 });
+      const mT = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const b1 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mG); b1.scale.set(r.x, 0.6, 0.6); b1.position.set(r.x / 2, 1, 0); g.add(b1);
+      const b2 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mG); b2.scale.set(r.y, 0.6, 0.6); b2.position.set(r.x + r.y / 2, 1, 0); g.add(b2);
+      const b3 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mT); b3.scale.set(r.z, 0.6, 0.6); b3.position.set(r.z / 2, 0, 0); g.add(b3);
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5049,6 +5108,11 @@ EX['nhan-nham-11-25-99'] = [
   { prompt: 'Nhẩm nhanh: 24 × 11 = ?', choices: ['264', '242', '240'], answer: '264', explanation: '24 × 11 = 24 × 10 + 24 = 240 + 24 = 264. Nhầm "thêm 0" chỉ cho 240 (thiếu 1 nhóm 24); 242 là ghép chữ số sai.', errorTag: 'nham_11_sai_quy_tac' },
   { prompt: 'Nhẩm nhanh: 16 × 25 = ?', choices: ['400', '40', '160'], answer: '400', explanation: '16 × 25 = 16 × 100 : 4 = 1600 : 4 = 400. Quên chia 4 (để 1600) hoặc chia sai hàng (40) là lỗi phổ biến.', errorTag: 'nham_25_quen_chia_4' },
   { prompt: 'Nhẩm nhanh: 45 × 99 = ?', choices: ['4455', '4500', '495'], answer: '4455', explanation: '45 × 99 = 45 × 100 − 45 = 4500 − 45 = 4455. 4500 là quên trừ 45 (99 ≠ 100).', errorTag: 'nham_99_quen_tru_a' },
+];
+EX['tinh-chat-nhan'] = [
+  { prompt: 'Tính nhanh 25 × 9 × 4 bằng cách nhóm lại:', choices: ['900', '90', '9000'], answer: '900', explanation: '(25 × 4) × 9 = 100 × 9 = 900. Nhóm 25 với 4 ra tròn trăm rồi nhân 9. 90 là thiếu một chữ số 0 (nhầm 100 thành 10); 9000 là thừa 0.', errorTag: 'nhom_sai_cap_thua_so' },
+  { prompt: 'Tính nhanh 125 × 7 × 8:', choices: ['7000', '700', '175'], answer: '7000', explanation: '125 × 8 = 1000 (giao hoán để 125 cạnh 8), rồi 1000 × 7 = 7000. 700 là quên một chữ số 0; 175 là mới tính 25 × 7 mà quên nhóm 125 × 8.', errorTag: 'nhom_sai_cap_thua_so' },
+  { prompt: 'Tính nhanh 5 × 32 × 2:', choices: ['320', '160', '3200'], answer: '320', explanation: '(5 × 2) × 32 = 10 × 32 = 320. Nhóm 5 với 2 (số chẵn) ra tròn chục. 160 là 5 × 32 rồi quên × 2; 3200 là thừa 0.', errorTag: 'nhom_sai_cap_thua_so' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
