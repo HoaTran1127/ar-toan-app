@@ -415,6 +415,10 @@ const LESSONS = {
     khoi_dong:'Cô có số 12,34. Nếu nhân nó với 10, các chữ số 1, 2, 3, 4 có đổi đi không, hay chỉ có dấu phẩy là dời chỗ? Dời sang bên nào, dời mấy chữ số?',
     chot:'Nhân số thập phân với 10, 100, 1000… ta DỊCH dấu phẩy sang PHẢI đúng số chữ số 0 của số ấy (10→1 chữ số, 100→2, 1000→3); chia thì DỊCH sang TRÁI bấy nhiêu chữ số. Thiếu chữ số thì VIẾT THÊM số 0. Thứ tự các chữ số KHÔNG bao giờ thay đổi — chỉ dấu phẩy dời chỗ.',
     obj:'12,34 nhân 10', dsWhich:0, dsK:1 },
+  'cong-tru-phan-so-khac-mau': { model:'fracdiff', ten:'Cộng · trừ hai phân số khác mẫu số',
+    khoi_dong:'Cô có 1/2 băng giấy màu vàng và 1/3 băng giấy màu xanh (hai băng dài bằng nhau). Đem tô lại rồi cộng thì được bao nhiêu phần của cả băng? Có phải lấy 1+2 tử và 2+3 mẫu thành 2/5 không?',
+    chot:'Muốn cộng (hoặc trừ) hai phân số KHÁC mẫu số, ta phải QUY ĐỒNG về CÙNG một mẫu số trước (thông thường lấy BCNN của hai mẫu), rồi chỉ CỘNG/TRỪ hai TỬ số, GIỮ NGUYÊN mẫu chung. TUYỆT đối không cộng cả mẫu: 1/2 + 1/3 = 3/6 + 2/6 = 5/6, KHÔNG phải 2/5.',
+    obj:'1/2 + 1/3', fmN1:1, fmD1:2, fmN2:1, fmD2:3, fmOp:1 },
 };
 
 const state = {
@@ -464,6 +468,7 @@ const state = {
   rcA: 6, rcB: 4,
   fdNum: 3, fdDen: 4, fdDiv: 2,
   dsWhich: 0, dsK: 1,
+  fmN1: 1, fmD1: 2, fmN2: 1, fmD2: 3, fmOp: 1,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -3385,6 +3390,70 @@ const MODELS = {
     },
     paint3d() {},
   },
+  // beyond-bank 14: CỘNG · TRỪ hai phân số KHÁC mẫu số. Hai tay = hai TỬ số (mẫu số bằng +/−). Hai băng giấy được
+  // CẮT LẠI trên cùng lưới chung (mẫu chung = BCNN) → thấy ô to hoá nhiều ô bé, rồi CỘNG/TRỪ số ô tô trên cùng cỡ ô.
+  // Chặn lỗi kinh điển "cộng cả tử lẫn mẫu" (1/2 + 1/3 ≠ 2/5) và "quy đồng sai mẫu chung".
+  fracdiff: {
+    twoHands: true,
+    defaults(st, L) {
+      st.fmN1 = (L.fmN1 != null ? L.fmN1 : 1); st.fmD1 = (L.fmD1 != null ? L.fmD1 : 2);
+      st.fmN2 = (L.fmN2 != null ? L.fmN2 : 1); st.fmD2 = (L.fmD2 != null ? L.fmD2 : 3);
+      st.fmOp = (L.fmOp != null ? L.fmOp : 1);
+    },
+    gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a || 1; },
+    lcm(a, b) { return Math.round(a / this.gcd(a, b) * b); },
+    eff(st) {
+      const d1 = clamp(Math.round(st.fmD1), 2, 9), d2 = clamp(Math.round(st.fmD2), 2, 9);
+      const L = this.lcm(d1, d2), k1 = L / d1, k2 = L / d2;
+      const n1 = clamp(Math.round(st.fmN1), 0, d1), n2 = clamp(Math.round(st.fmN2), 0, d2);
+      const f1 = n1 * k1, f2 = n2 * k2;
+      const add = Math.round(st.fmOp) >= 1;
+      const R = add ? f1 + f2 : f1 - f2;
+      const g = this.gcd(R, L);
+      return { d1, d2, L, k1, k2, n1, n2, f1, f2, add, R, rr: R / g, rl: L / g };
+    },
+    geomSig(st) { const e = this.eff(st); return `fm${e.n1},${e.d1}|${e.n2},${e.d2}|${e.add ? 1 : 0}`; },
+    params() { return [{ key: 'fmD1', label: 'Mẫu số 1', min: 2, max: 9 }, { key: 'fmD2', label: 'Mẫu số 2', min: 2, max: 9 }, { key: 'fmOp', label: 'Phép (1=cộng, 0=trừ)', min: 0, max: 1 }]; },
+    ctlHint() { return 'HAI TAY = hai TỬ số (trái = tử phân số 1, phải = tử phân số 2). Mẫu số và phép +/− bằng dải +/−. Hai băng tự cắt lại trên LƯỚI CHUNG để nhìn rõ ô to thành ô bé.'; },
+    hand2(st, hands) {
+      let l = null, r = null;
+      for (const h of hands) { const sx = 1 - h.x; if (sx < 0.5) { if (l === null || h.f > l) l = h.f; } else { if (r === null || h.f > r) r = h.f; } }
+      if (l !== null) st.fmN1 = clamp(Math.round(l), 0, clamp(Math.round(st.fmD1), 2, 9));
+      if (r !== null) st.fmN2 = clamp(Math.round(r), 0, clamp(Math.round(st.fmD2), 2, 9));
+    },
+    draw2d(host, st) {
+      const e = this.eff(st), W = 428, x0 = 44, BH = 26;
+      const bar = (y, cells, fill, color) => { const cw = W / cells; let s = ''; for (let i = 0; i < cells; i++) { s += `<rect x="${(x0 + i * cw).toFixed(1)}" y="${y}" width="${(cw - 1.5).toFixed(1)}" height="${BH}" fill="${i < fill ? color : 'rgba(242,240,230,.05)'}" stroke="var(--chalk)" stroke-width="1"></rect>`; } return s; };
+      const sign = e.add ? '+' : '−';
+      const row1 = `<text x="12" y="44" fill="var(--warn)" font-size="12" font-weight="700">① ${e.n1}/${e.d1}</text>` + bar(26, e.d1, e.n1, 'var(--warn)');
+      const row2 = `<text x="12" y="80" fill="var(--accent)" font-size="12" font-weight="700">② ${e.n2}/${e.d2}</text>` + bar(62, e.d2, e.n2, 'var(--accent)');
+      const cut = `<text x="12" y="120" fill="rgba(242,240,230,.72)" font-size="12">QUY ĐỒNG về mẫu chung ${e.L} (mỗi ô ① ×${e.k1}, mỗi ô ② ×${e.k2})</text>`;
+      const row3 = `<text x="12" y="138" fill="var(--warn)" font-size="12" font-weight="700">= ${e.f1}/${e.L}</text>` + bar(120, e.L, e.f1, 'var(--warn)');
+      const row4 = `<text x="12" y="174" fill="var(--accent)" font-size="12" font-weight="700">= ${e.f2}/${e.L}</text>` + bar(156, e.L, e.f2, 'var(--accent)');
+      const resFill = e.R > 0 ? Math.min(e.R, e.L) : 0;
+      const row5 = `<text x="12" y="212" fill="var(--ok)" font-size="12" font-weight="700">${e.R}/${e.L}${e.rl !== e.L ? ' = ' + e.rr + '/' + e.rl : ''}</text>` + bar(194, e.L, resFill, 'var(--ok)');
+      const wrong = e.d1 + e.d2 > 0 ? `<text x="12" y="240" fill="var(--err)" font-size="12.5" font-weight="700">❌ SAI: ${e.n1}/${e.d1} ${sign} ${e.n2}/${e.d2} ≠ ${e.add ? e.n1 + e.n2 : e.n1 - e.n2}/${e.d1 + e.d2} (không được cộng/trừ MẪU số)</text>` : '';
+      host.innerHTML = `<svg id="fracdiff" width="548" height="258" viewBox="0 0 548 258">` + row1 + row2 + cut + row3 + row4 + row5 + wrong + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, e = this.eff(st), sign = e.add ? '+' : '−';
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hai băng giấy — băng ① chia ${e.d1} ô tô ${e.n1}, băng ② chia ${e.d2} ô tô ${e.n2}. Ô của hai băng TO NHỎ khác nhau nên chưa cộng được ngay.`, hint: 'Muốn cộng, hai băng phải có Ô BẰNG NHAU → quy đồng.' };
+      if (s === 2) return { cap: `Sơ đồ: quy đồng về mẫu chung ${e.L} → ① = ${e.f1}/${e.L}, ② = ${e.f2}/${e.L}. Bây giờ ${e.n1}/${e.d1} ${sign} ${e.n2}/${e.d2} = ${e.f1} ${sign} ${e.f2} (${e.L}) = ${e.R}/${e.L}.`, hint: 'Cộng/trừ chỉ số Ô TÔ (tử), mẫu chung giữ nguyên.' };
+      if (s === 3) return { cap: `Phép tính: ${e.n1}/${e.d1} ${sign} ${e.n2}/${e.d2} = ${e.R}/${e.L}${e.rl !== e.L ? ' = ' + e.rr + '/' + e.rl : ''}. ` + L.chot, hint: '' };
+      return { cap: `Cả lớp: ${e.n1}/${e.d1} ${sign} ${e.n2}/${e.d2} bằng bao nhiêu? Đổi hai tử bằng hai tay, mẫu và phép tính bằng +/−.`, hint: '' };
+    },
+    value(st) { const e = this.eff(st); return `${e.n1}/${e.d1} ${e.add ? '+' : '−'} ${e.n2}/${e.d2} = ${e.R}/${e.L}${e.rl !== e.L ? ' = ' + e.rr + '/' + e.rl : ''}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const e = this.eff(st), n = clamp(Math.max(e.R, 0), 0, 40), sc = n > 0 ? Math.min(3.4 / n, 0.5) : 0.5;
+      const g = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.5 });
+      for (let j = 0; j < n; j++) { const m = new THREE.Mesh(new THREE.BoxGeometry(sc * 0.85, sc * 0.6, sc * 0.6), mat); m.position.set((j - (n - 1) / 2) * sc, 0, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -3503,6 +3572,11 @@ EX['nhan-chia-10-100-1000'] = [
   { prompt: 'Tính: 2,5 × 100 = ?', choices: ['250', '25', '2500'], answer: '250', explanation: 'Nhân 100 → dịch dấu phẩy sang PHẢI 2 chữ số (100 có 2 số 0): 2,5 → 25 → 250 (thêm 1 chữ số 0 vì hết chỗ). Các chữ số 2 và 5 không đổi.', errorTag: 'dich_sai_so_chu_so' },
   { prompt: 'Tính: 3,7 : 10 = ?', choices: ['0,37', '37', '0,037'], answer: '0,37', explanation: 'Chia 10 → dịch dấu phẩy sang TRÁI 1 chữ số: 3,7 → 0,37 (thiếu chỗ bên trái thì viết thêm chữ số 0 ở trước dấu phẩy).', errorTag: 'dich_nguon_huong_trai_phai' },
   { prompt: 'Tính: 0,45 × 1000 = ?', choices: ['450', '45', '4,5'], answer: '450', explanation: 'Nhân 1000 → dịch dấu phẩy sang PHẢI 3 chữ số: 0,45 → 4,5 → 45 → 450 (thêm 1 số 0). Thứ tự chữ số 4, 5 giữ nguyên.', errorTag: 'dich_sai_so_chu_so' },
+];
+EX['cong-tru-phan-so-khac-mau'] = [
+  { prompt: 'Tính: 1/2 + 1/3 = ?', choices: ['5/6', '2/5', '2/6'], answer: '5/6', explanation: 'Mẫu chung 6: 1/2 = 3/6, 1/3 = 2/6 → 3/6 + 2/6 = 5/6. KHÔNG được lấy (1+1)/(2+3) = 2/5 — mẫu số KHÔNG cộng được.', errorTag: 'cong_ca_tu_va_mau' },
+  { prompt: 'Tính: 3/4 + 1/2 = ?', choices: ['5/4', '4/6', '5/6'], answer: '5/4', explanation: 'Mẫu chung 4: 1/2 = 2/4 → 3/4 + 2/4 = 5/4 (băng giấy tô vượt 1 lần, kết quả là phân số lớn hơn 1). Giữ mẫu chung, chỉ cộng tử.', errorTag: 'quy_dong_sai_mau_chung' },
+  { prompt: 'Tính: 2/3 − 1/6 = ?', choices: ['1/2', '3/6', '1/3'], answer: '1/2', explanation: 'Mẫu chung 6: 2/3 = 4/6 → 4/6 − 1/6 = 3/6 = 1/2 (rút gọn). Trừ tử số trên cùng mẫu chung rồi mới rút gọn.', errorTag: 'tru_ca_tu_va_mau' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
