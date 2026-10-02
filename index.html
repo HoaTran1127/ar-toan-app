@@ -483,6 +483,10 @@ const LESSONS = {
     khoi_dong:'Dãy số 3, 7, 11, 15, … mỗi số hơn số liền trước 4 đơn vị. Vì sao muốn tìm số hạng thứ 12 ta lấy 3 + (12 − 1) × 4 = 47, chứ KHÔNG phải 12 × 4 = 48?',
     chot:'Dãy số CÁCH ĐỀU: Số hạng thứ n = SỐ ĐẦU + (n − 1) × CÔNG SỐ. Từ số đầu đến số thứ n có đúng (n − 1) BƯỚC nhảy, mỗi bước thêm đúng công số d. CHÚ Ý: phải nhân (n − 1), không phải n — số đầu chưa tính là một bước. Số số hạng từ a đến b: (b − a) : d + 1.',
     obj:'dãy 3, 7, 11, … ; số hạng thứ 12', sqA:3, sqD:4, sqN:12 },
+  'rut-gon-phan-so': { model:'psimp', ten:'Rút gọn phân số — chia cả tử và mẫu cho cùng một số',
+    khoi_dong:'Lớp có 18 bạn, trong đó 12 bạn thích vẽ. Vì sao nói "12/18 = 2/3" được — cả tử và mẫu cùng chia cho 6 thì giá trị phần chỉ số bạn thích vẽ có đổi không?',
+    chot:'RÚT GỌN phân số: chia cả TỬ SỐ và MẪU SỐ cho cùng một số (khác 0) thì phân số KHÔNG đổi giá trị. Rút đến khi tử và mẫu không còn chia chung được nữa (ƯCLN = 1) gọi là phân số TỐI GIẢN — muốn nhanh thì chia một lần cho ƯCLN. CHÚ Ý: phải chia CẢ HAI; chỉ chia tử hoặc chỉ chia mẫu là SAI.',
+    obj:'rút gọn 12/18', psN:12, psD:18 },
 };
 
 const state = {
@@ -549,6 +553,7 @@ const state = {
   drBig: 5, drSmall: 2, drDiff: 24,
   sdSum: 96, sdDiff: 12,
   sqA: 3, sqD: 4, sqN: 12,
+  psN: 12, psD: 18,
   chSel: 0,
   exIdx: 0, exPick: null, exReveal: false,
   M: null, camOn: false, vote: { correct: 0, wrong: 0 }, boardWiped: false, handApplied: -1, twoApplied: '-1/-1',
@@ -4589,6 +4594,64 @@ const MODELS = {
     },
     paint3d() {},
   },
+  psimp: {
+    res(st) {
+      const n = clamp(Math.round(st.psN), 1, 24), d = clamp(Math.round(st.psD), 2, 30);
+      const gcd = (x, y) => (y ? gcd(y, x % y) : x);
+      const g = gcd(n, d), p = n / g, q = d / g;
+      return { n, d, g, p, q };
+    },
+    defaults(st, L) { st.psN = (L.psN != null ? L.psN : 12); st.psD = (L.psD != null ? L.psD : 18); },
+    geomSig(st) { const r = this.res(st); return 'ps' + r.n + '/' + r.d; },
+    params() { return [{ key: 'psN', label: 'Tử số', min: 1, max: 24 }, { key: 'psD', label: 'Mẫu số', min: 2, max: 30 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Hai thanh trượt: TỬ SỐ (1–24), MẪU SỐ (2–30). Giơ 1–9 ngón đặt TỬ SỐ. Chia CẢ tử và mẫu cho ƯCLN để được phân số tối giản.'; },
+    hand(st, f) { st.psN = clamp(Math.round(f), 1, 24); },
+    handLabel(f) { return '→ tử số = ' + clamp(Math.round(f), 1, 24); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const cell = 12, step = 13, ox = 88;
+      const row = (y, count, tone, mark) => {
+        let s = '';
+        for (let k = 0; k < count; k++) {
+          const x = ox + k * step;
+          const sep = mark && r.g > 1 && (k % r.g === r.g - 1) && k < count - 1;
+          s += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2" fill="${tone}" stroke="${sep ? 'var(--accent)' : 'rgba(242,240,230,.3)'}" stroke-width="1"></rect>`;
+        }
+        return s;
+      };
+      let g = `<text x="14" y="18" font-size="13" font-weight="700" fill="var(--chalk)">Rút gọn phân số ${r.n}/${r.d}</text>`;
+      g += `<text x="14" y="50" font-size="11.5" fill="rgba(242,240,230,.85)">tử = ${r.n}</text>` + row(40, r.n, 'rgba(127,201,191,.6)', true);
+      g += `<text x="14" y="82" font-size="11.5" fill="rgba(242,240,230,.85)">mẫu = ${r.d}</text>` + row(72, r.d, 'rgba(242,240,230,.35)', true);
+      const line = r.g > 1
+        ? `<text x="14" y="106" font-size="12" font-weight="700" fill="var(--accent)">Chia CẢ HAI cho ƯCLN = ${r.g}:  ${r.n} ÷ ${r.g} = ${r.p}   ;   ${r.d} ÷ ${r.g} = ${r.q}</text>`
+        : `<text x="14" y="106" font-size="12" fill="var(--warn)">Đã tối giản (ƯCLN = 1) — tử và mẫu không còn chia chung được nữa.</text>`;
+      g += line;
+      g += `<text x="14" y="134" font-size="11.5" fill="rgba(242,240,230,.85)">mẫu mới = ${r.q}</text>` + row(126, r.q, 'rgba(240,196,92,.6)', false);
+      g += `<text x="14" y="164" font-size="15" font-weight="700" fill="var(--chalk)">${r.n}/${r.d} = ${r.p}/${r.q}</text>`;
+      const err = `<text x="14" y="186" font-size="10.5" fill="var(--warn)">❌ Chia tử mà quên chia mẫu? Sai — phải chia CẢ HAI số thì giá trị phân số mới không đổi.</text>`;
+      host.innerHTML = `<svg id="psimp" width="520" height="196" viewBox="0 0 520 196">` + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${r.d} ô bằng nhau, tô ${r.n} ô. Nhóm ${r.n}/${r.d} ô này lại theo từng cụm ${r.g} ô thì còn ${r.p} cụm trên tổng ${r.q} cụm — vẫn đúng một phần như cũ.`, hint: r.g > 1 ? 'Chia cả hai cho cùng một số.' : 'Đã tối giản.' };
+      if (s === 2) return { cap: `Sơ đồ: tử ${r.n} và mẫu ${r.d} cùng chia được cho ${r.g > 1 ? 'ƯCLN = ' + r.g : 'chỉ số 1'}. Chia cả hai → ${r.p}/${r.q}.`, hint: 'giá trị không đổi vì chia cả trên và dưới.' };
+      if (s === 3) return { cap: `Phép tính: ${r.n} ÷ ${r.g} = ${r.p}; ${r.d} ÷ ${r.g} = ${r.q}; vậy ${r.n}/${r.d} = ${r.p}/${r.q}` + (r.g > 1 ? '.' : ' (đã tối giản). ') + L.chot, hint: '' };
+      return { cap: `Cả lớp: rút gọn ${r.n}/${r.d} = ${r.p}/${r.q} (chia cả hai cho ${r.g}). Kiểm tra ${r.p}/${r.q} tối giản vì ƯCLN(${r.p}, ${r.q}) = 1.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.n}/${r.d} = ${r.p}/${r.q} (ƯCLN ${r.g})`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mT = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mG = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      for (let k = 0; k < r.n; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), mT); m.position.set(k * 0.8, 0, 0); g.add(m); }
+      for (let k = 0; k < r.q; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), mG); m.position.set(k * 0.8, 1.0, 0); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -4792,6 +4855,11 @@ EX['day-so-cach-deu'] = [
   { prompt: 'Dãy số 2, 5, 8, 11, … Số hạng thứ 10 là:', choices: ['29', '30', '32'], answer: '29', explanation: 'Công số 3. Số hạng thứ 10 = 2 + (10 − 1) × 3 = 2 + 27 = 29. Sai 30 là vì lấy 10 × 3 mà quên số đầu và (n − 1).', errorTag: 'nhan_n_thay_vi_n_tru_1' },
   { prompt: 'Dãy số 1, 4, 7, … Số hạng thứ 12 là:', choices: ['34', '36', '37'], answer: '34', explanation: 'Công số 3. Số hạng thứ 12 = 1 + (12 − 1) × 3 = 1 + 33 = 34. (Lấy 12 × 3 = 36 là sai.)', errorTag: 'nhan_n_thay_vi_n_tru_1' },
   { prompt: 'Dãy 3, 7, 11, …, 27 có bao nhiêu số hạng?', choices: ['7', '6', '8'], answer: '7', explanation: 'Số số hạng = (27 − 3) : 4 + 1 = 24 : 4 + 1 = 7. Đừng quên + 1 (đếm cả số đầu).', errorTag: 'quen_tru_1_khi_dem' },
+];
+EX['rut-gon-phan-so'] = [
+  { prompt: 'Rút gọn 12/18 ta được phân số tối giản:', choices: ['2/3', '3/2', '6/9'], answer: '2/3', explanation: 'ƯCLN(12, 18) = 6 → 12 ÷ 6 = 2, 18 ÷ 6 = 3 → 2/3. 6/9 mới chia 2 nên CHƯA tối giản.', errorTag: 'rut_chua_toi_gian' },
+  { prompt: 'Rút gọn 15/25 ta được:', choices: ['3/5', '5/3', '1/5'], answer: '3/5', explanation: 'Cùng chia cho 5: 15 ÷ 5 = 3, 25 ÷ 5 = 5 → 3/5.', errorTag: 'chi_chia_tu_quen_mau' },
+  { prompt: 'Rút gọn 8/12 ta được phân số tối giản:', choices: ['2/3', '4/6', '3/4'], answer: '2/3', explanation: 'ƯCLN(8, 12) = 4 → 8 ÷ 4 = 2, 12 ÷ 4 = 3 → 2/3 (4/6 chưa tối giản).', errorTag: 'rut_chua_toi_gian' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
