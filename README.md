@@ -47,7 +47,7 @@ App không còn code cứng một bài. Dải của cô có **bộ chọn Bài h
 một **mô hình** (`MODELS`) và một dòng dữ liệu (`LESSONS`) — thêm chữ, `khoi_dong`,
 `chot` lấy thật từ repo `../repo` (`tools/data/lessons.mjs`, `tools/data/props.mjs`).
 
-Ba mươi bảy mô hình đang có:
+Ba mươi tám mô hình đang có:
 
 | model | dùng cho | 2D | 3D | tay điều khiển |
 |-------|----------|----|----|----------------|
@@ -88,8 +88,9 @@ Ba mươi bảy mô hình đang có:
 | `divis` | **Dấu hiệu chia hết 2·5·3·9** (beyond-bank) | ô **hàng chục \| hàng đơn vị** + 4 **huy hiệu** `n ⋮ d` (✓ vàng / ✗ đỏ), ghi rõ 2·5 nhìn **tận cùng**, 3·9 nhìn **tổng** | trụ hàng chục + khối hàng đơn vị | **hai tay**: trái = chữ số chục, phải = chữ số đơn vị; đổi số → 4 dấu hiệu cập nhật ngay |
 | `piechart` | **Biểu đồ hình quạt** (beyond-bank): mỗi nhóm = một quạt, đọc **% của tổng** | vòng tròn chia quạt theo tỉ lệ + **chú giải** từng nhóm "{n} em · {p}%"; quạt đang chọn **lồi ra** & viền vàng, trong quạt ghi % (bỏ ghi nếu quạt quá nhỏ) | 4 lát **trụ tròn** (CylinderGeometry theo góc) xếp thành chiếc bánh | bấm quạt/chú giải để chọn, **số ngón = số em** của nhóm đang chọn; +/− từng nhóm → quạt chia lại đúng tỉ lệ |
 | `line` | **Biểu đồ đoạn thẳng** (beyond-bank): đọc **xu thế theo thời gian** (nhiệt độ trong ngày) | trục ngang = GIỜ, trục dọc = °C; **5 điểm** nối thành đường gấp khúc + lưới ngang; **con đọc** (gạch đứt cam) chỉ mốc đang xem, dóng ra trục dọc đọc đúng giá trị | 5 cột + 5 khối cầu, cầu đỏ = con đọc | **lòng bàn tay ngang** quét trái↔phải để dời con đọc; hoặc bấm vào điểm, +/− từng giờ |
+| `svt` | **Tam giác đại lượng S–v–t** (beyond-bank): che ô cần tìm → ra phép tính | **tam giác**: S ở chóp, v·t ở đáy (kẻ gạch ngang + dọc chia 3 ô); ô ĐANG CHE nền vàng ghi `? = kết quả`, hai ô kia hiện số; dưới tam giác là **dòng công thức** đầy đủ | 3 hộp, hộp đang che màu vàng, hai hộp xanh | **giơ ngón = chọn ô che**: 1 → S, 2 → v, 3 → t; +/− hai số còn lại đổi đề → ô che tự tính |
 
-Bài hiện có (43 bài · 37 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 4 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
+Bài hiện có (44 bài · 38 model — phủ kín toàn bộ 39 giáo án trong bank, **CỘNG 5 bài beyond-bank** *Tiền Việt Nam* (money) + *Dấu hiệu chia hết* (divis) + *Biểu đồ hình quạt* (piechart) + *Biểu đồ đoạn thẳng* (line) + *Đại lượng S–v–t* (svt), mỗi bài đều có bài tập LUYỆN TẬP): *Phân số ban đầu* (pie), *Phép nhân* + *Diện tích ô vuông*
 (·array), *Làm tròn* (numline), *Giá trị theo hàng* (sticks), *Hình bình hành* (shear),
 *Hai vế như hai đĩa cân* (balance), *Đọc giờ phút* (clock), *Đo góc* (goc), *Thể tích*
 (cube), **hai bài dùng chung `grid100`**: *Số thập phân* (25/100 = 0,25) + *Phần trăm*
@@ -105,7 +106,7 @@ nối chéo chia 4 tam giác, ghép ra nửa hình chữ nhật bao: `d₁ × d�
 hình dựng 2D + 3D từ **cùng một `state`**, chỉnh bằng **stepper +/−**, và lùi về chuột khi
 không có camera/3D. Giờ đã có **bốn model phục vụ nhiều bài**: `array` (2), `grid100` (2), `fracbar` (2), `chooser` (4 bài ôn tập).
 
-**Bài beyond-bank — `money` + `divis` + `piechart` + `line` (Vòng 69–72):** SGK lớp 4 có mạch
+**Bài beyond-bank — `money` + `divis` + `piechart` + `line` + `svt` (Vòng 69–73):** SGK lớp 4 có mạch
 "Tiền Việt Nam" (đọc tờ bạc, cộng thành tổng tiền, mua hàng tìm tiền thối) nhưng **bank
 giáo án 39 cụm chưa có cụm này** → app viết thêm MỘT `MODELS.money` + một dòng `LESSONS`
 (`tien-viet-nam`) + 2 câu bài tập tự tác, **không đụng** bank và **không đụng** các model cũ.
@@ -121,7 +122,10 @@ Vòng 72 thêm mạch thứ tư: `line` (**biểu đồ đoạn thẳng** — nh
 nối 5 điểm theo giờ, **con đọc** gạch đứt chỉ mốc đang xem; **lòng bàn tay ngang** quét trái↔phải
 dời con đọc (dùng lại khế ước `usesPalm`), chặn lỗi "nhầm trục ngang (thời gian) với trục dọc (đại
 lượng)". Với `bar`/`piechart`/`line`, họ **biểu đồ lớp 4–5 đã đủ cả ba kiểu** (cột = so sánh, quạt =
-% của tổng, đoạn thẳng = xu thế theo thời gian).
+% của tổng, đoạn thẳng = xu thế theo thời gian). Vòng 73 thêm mạch thứ năm: `svt` — **tam giác đại
+lượng** S (chóp) / v·t (đáy). Giơ 1·2·3 ngón để CHE đúng ô cần tìm, hai số còn lại đặt bằng +/−, ô bị
+che **tự tính** kèm dòng công thức (`S = v × t`, `v = S ÷ t`, `t = S ÷ v`); có chặn chia cho 0. Đây là
+công cụ "che tam giác" kinh điển để học sinh nhớ quan hệ ba đại lượng mà không thuộc máy móc.
 
 **Vòng 70 còn sửa một LỖI CHỨC NĂNG thật của điều khiển hai tay:** nhánh `twoHands` trong
 `loopDetect` vốn so `state.balL + '/' + state.balR` để quyết định vẽ lại — hai biến CHỈ model
