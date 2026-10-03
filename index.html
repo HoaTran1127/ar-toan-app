@@ -539,6 +539,10 @@ const LESSONS = {
     khoi_dong:'Một dãy số được viết ra: 1, 3, 5, 7, 9. Em có nhận ra mỗi số hơn số đứng trước đúng 2 đơn vị (dãy CÁCH ĐỀU)? Muốn tìm trung bình cộng, thay vì cộng 1 + 3 + 5 + 7 + 9 rồi chia 5, em chỉ cần lấy (số đầu + số cuối) : 2 = (1 + 9) : 2 = 5. Vì sao kết quả lại ĐÚNG BẰNG số nằm chính giữa dãy?',
     chot:'Với DÃY SỐ CÁCH ĐỀU, TRUNG BÌNH CỘNG = (số hạng ĐẦU + số hạng CUỐI) : 2; nếu số số hạng LẺ thì nó đúng bằng SỐ CHÍNH GIỮA. Ví dụ 1, 3, 5, 7, 9: (1 + 9) : 2 = 5 = số giữa. Lý do (công thức Gauss): ghép đầu với cuối, thứ hai với áp chót, … mỗi cặp có tổng NHƯ NHAU (= số đầu + số cuối); nên Tổng = (số đầu + số cuối) × số số hạng : 2, chia lại cho số số hạng còn đúng (số đầu + số cuối) : 2. Lỗi kinh điển: lấy SỐ LỚN NHẤT làm trung bình, hoặc quên rằng quy tắc "số chính giữa" CHỈ ĐÚNG với dãy cách đều (dãy không đều phải cộng hết rồi chia). Nối với model mean (san bằng) và seq (dãy cách đều).',
     obj:'TBC của 1, 3, 5, 7, 9', smA: 1, smD: 2, smN: 5 },
+  'bieu-do-cot-doi': { model:'dbar', ten:'Biểu đồ cột đôi: đọc và so sánh hai đại lượng theo từng nhóm (trai/gái của hai lớp)',
+    khoi_dong:'Bảng sĩ số: Lớp 4A có 12 bạn trai và 8 bạn gái; Lớp 4B có 10 bạn trai và 12 bạn gái. Biểu đồ bên vẽ MỖI lớp bằng HAI cột đứng cạnh nhau (xanh = trai, vàng = gái). Nhìn chiều cao cột, lớp nào có nhiều bạn trai hơn? Mỗi lớp có tất cả bao nhiêu bạn?',
+    chot:'BIỂU ĐỒ CỘT ĐÔI: ở mỗi nhóm (mỗi lớp) đặt HAI cột kề nhau để ĐỐI CHIẾU hai đại lượng cùng loại (trai và gái). Cách đọc: (1) đọc CHIỀU CAO từng cột theo đơn vị trên trục dọc; (2) CỘNG hai cột trong cùng nhóm ra TỔNG nhóm (4A = 12 + 8 = 20; 4B = 10 + 12 = 22); (3) SO SÁNH tổng giữa các nhóm (4B nhiều hơn 4A: 22 − 20 = 2 bạn). Lỗi kinh điển: chỉ nhìn CỘT CAO NHẤT của cả biểu đồ rồi kết luận, quên xét theo TỪNG CẶP trong nhóm. Đây là kỹ năng Thống kê lớp 4 (đọc bảng số liệu, biểu đồ), nối với biểu đồ cột đơn và bảng số liệu.',
+    obj:'cột đôi sĩ số 4A/4B', dbT1: 12, dbG1: 8, dbT2: 10, dbG2: 12 },
 };
 
 const state = {
@@ -5488,6 +5492,86 @@ const MODELS = {
     },
     paint3d() {},
   },
+  dbar: {
+    res(st) {
+      const t1 = clamp(Math.round(st.dbT1), 1, 12);
+      const g1 = clamp(Math.round(st.dbG1), 1, 12);
+      const t2 = clamp(Math.round(st.dbT2), 1, 12);
+      const g2 = clamp(Math.round(st.dbG2), 1, 12);
+      const total1 = t1 + g1, total2 = t2 + g2, grand = total1 + total2;
+      const diff = Math.abs(total1 - total2);
+      const moreTotal = total1 === total2 ? '=' : (total1 > total2 ? '>' : '<');
+      return { t1, g1, t2, g2, total1, total2, grand, diff, moreTotal };
+    },
+    defaults(st, L) { st.dbT1 = (L.dbT1 != null ? L.dbT1 : 12); st.dbG1 = (L.dbG1 != null ? L.dbG1 : 8); st.dbT2 = (L.dbT2 != null ? L.dbT2 : 10); st.dbG2 = (L.dbG2 != null ? L.dbG2 : 12); },
+    geomSig(st) { const r = this.res(st); return 'dbar~' + r.t1 + r.g1 + r.t2 + r.g2; },
+    params() { return [{ key: 'dbT1', label: '4A — trai', min: 1, max: 12 }, { key: 'dbG1', label: '4A — gái', min: 1, max: 12 }, { key: 'dbT2', label: '4B — trai', min: 1, max: 12 }, { key: 'dbG2', label: '4B — gái', min: 1, max: 12 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Bốn thanh trượt cho HAI cột đôi: 4A trai/gái và 4B trai/gái (mỗi cột 1–12 bạn). Giơ ngón đặt cột 4A-trai. Mỗi NHÓM có hai cột kề nhau (xanh = trai, vàng = gái).'; },
+    hand(st, f) { st.dbT1 = clamp(Math.round(f), 1, 12); },
+    handLabel(f) { return '→ 4A trai = ' + clamp(Math.round(f), 1, 12); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const teal = 'rgba(127,201,191,.55)', gold = 'rgba(240,196,92,.6)';
+      const moreWord = r.total1 > r.total2 ? 'nhiều hơn' : r.total1 < r.total2 ? 'ít hơn' : 'bằng';
+      const bw = 32, inner = 6, groupGap = 48, ox = 52, baseY = 210, maxH = 150, axisMax = 12;
+      const scale = maxH / axisMax;
+      const groupW = 2 * bw + inner;
+      const g0x = ox + 18;
+      const g1x = g0x + groupW + groupGap;
+      const W = g1x + groupW + 40;
+      let g = '';
+      g += `<text x="14" y="22" font-size="13" font-weight="700" fill="var(--chalk)">BIỂU ĐỒ CỘT ĐÔI · SỐ HỌC SINH HAI LỚP</text>`;
+      g += `<rect x="${ox}" y="34" width="12" height="12" fill="${teal}" stroke="rgba(242,240,230,.5)"></rect><text x="${ox + 16}" y="44" font-size="10" fill="var(--chalk)">Trai</text>`;
+      g += `<rect x="${ox + 52}" y="34" width="12" height="12" fill="${gold}" stroke="rgba(242,240,230,.5)"></rect><text x="${ox + 68}" y="44" font-size="10" fill="var(--chalk)">Gái</text>`;
+      for (let v = 0; v <= axisMax; v += 2) {
+        const y = baseY - v * scale;
+        g += `<line x1="${ox}" y1="${y}" x2="${W - 14}" y2="${y}" stroke="rgba(242,240,230,.12)" stroke-width="1"></line>`;
+        g += `<text x="${ox - 6}" y="${y + 3}" font-size="9" text-anchor="end" fill="var(--chalk)">${v}</text>`;
+      }
+      const drawBar = (x, val, c) => {
+        const h = val * scale, y = baseY - h;
+        return `<rect x="${x}" y="${y}" width="${bw}" height="${h}" fill="${c}" stroke="rgba(242,240,230,.5)" stroke-width="1"></rect>` +
+          `<text x="${x + bw / 2}" y="${y - 4}" font-size="11" font-weight="700" text-anchor="middle" fill="var(--chalk)">${val}</text>`;
+      };
+      g += drawBar(g0x, r.t1, teal);
+      g += drawBar(g0x + bw + inner, r.g1, gold);
+      g += drawBar(g1x, r.t2, teal);
+      g += drawBar(g1x + bw + inner, r.g2, gold);
+      g += `<line x1="${ox}" y1="${baseY}" x2="${W - 14}" y2="${baseY}" stroke="rgba(242,240,230,.55)" stroke-width="1"></line>`;
+      g += `<text x="${g0x + bw + inner / 2}" y="${baseY + 16}" font-size="11" text-anchor="middle" fill="var(--chalk)">Lớp 4A</text>`;
+      g += `<text x="${g1x + bw + inner / 2}" y="${baseY + 16}" font-size="11" text-anchor="middle" fill="var(--chalk)">Lớp 4B</text>`;
+      g += `<text x="14" y="${baseY + 38}" font-size="12" font-weight="700" fill="var(--accent)">Lớp 4A: ${r.t1} + ${r.g1} = ${r.total1} bạn · Lớp 4B: ${r.t2} + ${r.g2} = ${r.total2} bạn · Cả hai lớp: ${r.grand} bạn</text>`;
+      g += `<text x="14" y="${baseY + 58}" font-size="10.5" fill="var(--warn)">❌ Đọc cột ĐÔI: xét TỪNG cặp (trai–gái) trong MỘT nhóm rồi cộng thành tổng nhóm; so hai nhóm bằng CẢ HAI tổng — đừng chỉ nhìn cột cao nhất. Ở đây Lớp 4A ${moreWord} Lớp 4B (${r.diff} bạn).</text>`;
+      host.innerHTML = `<svg id="dbar" width="${W}" height="${baseY + 78}" viewBox="0 0 ${W} ${baseY + 78}">` + g + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      const moreWord = r.total1 > r.total2 ? 'nhiều hơn' : r.total1 < r.total2 ? 'ít hơn' : 'bằng';
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: kiểm tra sĩ số hai lớp. Lớp 4A có ${r.t1} bạn trai và ${r.g1} bạn gái; Lớp 4B có ${r.t2} bạn trai và ${r.g2} bạn gái. Biểu đồ dùng MÀU để phân biệt trai (xanh) và gái (vàng).`, hint: 'mỗi nhóm có HAI cột đứng cạnh nhau.' };
+      if (s === 2) return { cap: `Sơ đồ: đọc CHIỀU CAO từng cột theo trục dọc, rồi CỘNG theo nhóm. Lớp 4A = ${r.t1} + ${r.g1} = ${r.total1} bạn; Lớp 4B = ${r.t2} + ${r.g2} = ${r.total2} bạn. Cột cao hơn = đông hơn.`, hint: 'một cột = một đại lượng.' };
+      if (s === 3) return { cap: `Phép tính: cả hai lớp = ${r.total1} + ${r.total2} = ${r.grand} bạn. So sánh tổng: Lớp 4A ${moreWord} Lớp 4B, chênh lệch ${r.diff} bạn.`, hint: '' };
+      return { cap: `Cả lớp: BIỂU ĐỒ CỘT ĐÔI cho phép xem ĐỒNG THỜI từng cặp trai–gái trong một nhóm và tổng giữa các nhóm. Đọc đúng = dựng từng cột theo đơn vị trục, rồi cộng/so theo TỪNG nhóm (không chỉ nhìn cột cao nhất nhất). Đây là kỹ năng Thống kê lớp 4, nối với bảng số liệu (dtable) và biểu đồ cột đơn (bar).`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `4A = ${r.total1} · 4B = ${r.total2} · chung = ${r.grand}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const teal = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const gold = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const s = 0.5, gap = 0.3;
+      const vals = [r.t1, r.g1, r.t2, r.g2];
+      for (let i = 0; i < 4; i++) {
+        const h = vals[i];
+        const box = new THREE.Mesh(new THREE.BoxGeometry(s, h, s), (i % 2 === 0) ? teal : gold);
+        box.position.set(i * (s + gap) + s / 2, h / 2, 0);
+        g.add(box);
+      }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5761,6 +5845,11 @@ EX['tb-cong-day-cach-deu'] = [
   { prompt: 'Trung bình cộng của dãy 1, 3, 5, 7, 9 là:', choices: ['5', '9', '25'], answer: '5', explanation: 'Dãy cách đều nên TBC = (số đầu + số cuối) : 2 = (1 + 9) : 2 = 5, đúng bằng số chính giữa. 9 là lấy số LỚN NHẤT (sai); 25 là lấy TỔNG (1+3+5+7+9) mà quên chia cho 5.', errorTag: 'lay_tong_quen_chia' },
   { prompt: 'Trung bình cộng của dãy 2, 4, 6, 8, 10, 12 là:', choices: ['7', '12', '42'], answer: '7', explanation: '(số đầu + số cuối) : 2 = (2 + 12) : 2 = 7. Dãy có 6 số (chẵn) nên TBC nằm GIỮA hai số chính giữa 6 và 8, không trùng một số hạng nào. 12 là số lớn nhất; 42 là tổng mà quên chia 6.', errorTag: 'nham_so_lon_nhat_la_tbc' },
   { prompt: 'Một dãy cách đều có 5 số, trung bình cộng bằng 8. Tổng của dãy đó là:', choices: ['40', '13', '8'], answer: '40', explanation: 'Tổng = trung bình cộng × số số hạng = 8 × 5 = 40. 13 là lấy 8 + 5; 8 là nhầm trung bình cộng thành tổng.', errorTag: 'nham_tbc_thanh_tong' },
+];
+EX['bieu-do-cot-doi'] = [
+  { prompt: 'Biểu đồ cột đôi: Lớp 4A (12 trai, 8 gái), Lớp 4B (10 trai, 12 gái). Tổng số bạn LỚP 4A là:', choices: ['20 bạn', '22 bạn', '12 bạn'], answer: '20 bạn', explanation: 'Cộng HAI cột của ĐÚNG nhóm 4A: 12 + 8 = 20 bạn. 22 là tổng của 4B (nhầm nhóm); 12 mới là số trai, chưa cộng gái.', errorTag: 'cong_nham_nhom' },
+  { prompt: 'Lớp nào có NHIỀU bạn GÁI hơn và hơn mấy bạn? (4A: 8 gái; 4B: 12 gái)', choices: ['4B, hơn 4 bạn', '4A, hơn 4 bạn', '4B, hơn 12 bạn'], answer: '4B, hơn 4 bạn', explanation: 'So CẶP cột gái: 4B 12 > 4A 8, chênh 12 − 8 = 4 bạn. "4A hơn" là đọc ngược chiều cao; "hơn 12" là lấy cả giá trị thay vì HIỆU hai cột.', errorTag: 'thieu_tru_khi_so_sanh' },
+  { prompt: 'Cả HAI lớp có tất cả bao nhiêu bạn? (4A = 20; 4B = 22)', choices: ['42 bạn', '22 bạn', '20 bạn'], answer: '42 bạn', explanation: 'Lấy tổng từng nhóm rồi cộng: 20 + 22 = 42 bạn. 22 và 20 là tổng của TỪNG nhóm riêng lẻ, chưa gộp cả hai lớp.', errorTag: 'dung_o_tong_mot_nhom' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
