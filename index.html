@@ -535,6 +535,10 @@ const LESSONS = {
     khoi_dong:'Một cái bánh được chia đều thành 4 phần, cả cái bánh là 4/4 = 1. Bạn Minh lấy 7 phần như thế (7/4). 7 phần có nhiều hơn một cái bánh không? Cứ lấy đủ 4 phần là được một cái nguyên, vậy 7 phần được mấy cái nguyên và còn thừa mấy phần?',
     chot:'SO PHÂN SỐ VỚI 1 chỉ cần so TỬ số với MẪU số: tử > mẫu thì phân số lớn hơn 1; tử = mẫu thì bằng đúng 1; tử < mẫu thì bé hơn 1. Ví dụ 7/4: vì 7 > 4 nên 7/4 > 1. Lấy 7 : 4 = 1 dư 3, tức 7 = 1×4 + 3, nên 7/4 = 1 + 3/4 (một cái nguyên và ba phần tư). Đây chính là phép CHIA CÓ DƯ: thương = số đơn vị nguyên, số dư = tử của phần lẻ, mẫu giữ nguyên. Lỗi kinh điển: nghĩ "mẫu lớn thì phân số lớn" — 5/7 có mẫu 7 to nhưng 5 < 7 nên 5/7 BÉ hơn 1.',
     obj:'so 7/4 với 1', v1N: 7, v1D: 4 },
+  'tb-cong-day-cach-deu': { model:'seqmean', ten:'Trung bình cộng của một dãy số cách đều (TBC = số chính giữa = (số đầu + số cuối) : 2)',
+    khoi_dong:'Một dãy số được viết ra: 1, 3, 5, 7, 9. Em có nhận ra mỗi số hơn số đứng trước đúng 2 đơn vị (dãy CÁCH ĐỀU)? Muốn tìm trung bình cộng, thay vì cộng 1 + 3 + 5 + 7 + 9 rồi chia 5, em chỉ cần lấy (số đầu + số cuối) : 2 = (1 + 9) : 2 = 5. Vì sao kết quả lại ĐÚNG BẰNG số nằm chính giữa dãy?',
+    chot:'Với DÃY SỐ CÁCH ĐỀU, TRUNG BÌNH CỘNG = (số hạng ĐẦU + số hạng CUỐI) : 2; nếu số số hạng LẺ thì nó đúng bằng SỐ CHÍNH GIỮA. Ví dụ 1, 3, 5, 7, 9: (1 + 9) : 2 = 5 = số giữa. Lý do (công thức Gauss): ghép đầu với cuối, thứ hai với áp chót, … mỗi cặp có tổng NHƯ NHAU (= số đầu + số cuối); nên Tổng = (số đầu + số cuối) × số số hạng : 2, chia lại cho số số hạng còn đúng (số đầu + số cuối) : 2. Lỗi kinh điển: lấy SỐ LỚN NHẤT làm trung bình, hoặc quên rằng quy tắc "số chính giữa" CHỈ ĐÚNG với dãy cách đều (dãy không đều phải cộng hết rồi chia). Nối với model mean (san bằng) và seq (dãy cách đều).',
+    obj:'TBC của 1, 3, 5, 7, 9', smA: 1, smD: 2, smN: 5 },
 };
 
 const state = {
@@ -5411,6 +5415,79 @@ const MODELS = {
     },
     paint3d() {},
   },
+  seqmean: {
+    res(st) {
+      const a = clamp(Math.round(st.smA), 1, 9);
+      const d = clamp(Math.round(st.smD), 1, 5);
+      const n = clamp(Math.round(st.smN), 2, 7);
+      const last = a + (n - 1) * d;
+      const total = n * (a + last) / 2;
+      const mean = (a + last) / 2;
+      const mid = (n % 2 === 1) ? a + ((n - 1) / 2) * d : null;
+      return { a, d, n, last, total, mean, mid };
+    },
+    defaults(st, L) { st.smA = (L.smA != null ? L.smA : 1); st.smD = (L.smD != null ? L.smD : 2); st.smN = (L.smN != null ? L.smN : 5); },
+    geomSig(st) { const r = this.res(st); return 'sm~' + r.a + '~' + r.d + '~' + r.n; },
+    params() { return [{ key: 'smA', label: 'Số hạng đầu a', min: 1, max: 9 }, { key: 'smD', label: 'Hiệu chung d (1–5)', min: 1, max: 5 }, { key: 'smN', label: 'Số số hạng n (2–7)', min: 2, max: 7 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Ba thanh trượt: số hạng đầu a (1–9), hiệu chung d (1–5), số số hạng n (2–7). Giơ ngón đặt a. Mỗi cột là một số hạng; đường nét đứt là MỨC SAN ĐỀU = trung bình cộng.'; },
+    hand(st, f) { st.smA = clamp(Math.round(f), 1, 9); },
+    handLabel(f) { return '→ Số hạng đầu a = ' + clamp(Math.round(f), 1, 9); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const mf = Number.isInteger(r.mean) ? String(r.mean) : String(r.mean).replace('.', ',');
+      const bw = 40, gap = 12, ox = 34, baseY = 190, maxH = 120;
+      const scale = maxH / r.last;
+      const W = ox + r.n * (bw + gap) + 26;
+      let g = '';
+      g += `<text x="14" y="22" font-size="13" font-weight="700" fill="var(--chalk)">TRUNG BÌNH CỘNG CỦA DÃY SỐ CÁCH ĐỀU</text>`;
+      const meanY = baseY - r.mean * scale;
+      g += `<line x1="${ox - 12}" y1="${meanY}" x2="${W - 14}" y2="${meanY}" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6 4"></line>`;
+      g += `<text x="${ox - 6}" y="${meanY - 5}" font-size="10.5" fill="var(--accent)">san đều ${mf}</text>`;
+      for (let i = 0; i < r.n; i++) {
+        const term = r.a + i * r.d;
+        const h = term * scale;
+        const x = ox + i * (bw + gap);
+        const y = baseY - h;
+        const isMid = r.mid != null && term === r.mid;
+        const fill = isMid ? 'rgba(240,196,92,.6)' : 'rgba(127,201,191,.5)';
+        g += `<rect x="${x}" y="${y}" width="${bw}" height="${h}" fill="${fill}" stroke="rgba(242,240,230,.5)" stroke-width="1"></rect>`;
+        g += `<text x="${x + bw / 2}" y="${y - 5}" font-size="11" font-weight="700" text-anchor="middle" fill="var(--chalk)">${term}</text>`;
+      }
+      g += `<line x1="${ox - 12}" y1="${baseY}" x2="${W - 14}" y2="${baseY}" stroke="rgba(242,240,230,.55)" stroke-width="1"></line>`;
+      g += `<text x="14" y="${baseY + 22}" font-size="12" fill="var(--chalk)">Dãy: ${r.a}; ${r.a + r.d}; …; ${r.last} (${r.n} số hạng, cách đều nhau ${r.d} đơn vị)</text>`;
+      g += `<text x="14" y="${baseY + 42}" font-size="12" font-weight="700" fill="var(--accent)">TB cộng = (số đầu + số cuối) : 2 = (${r.a} + ${r.last}) : 2 = ${mf} · Tổng = ${mf} × ${r.n} = ${r.total}</text>`;
+      g += `<text x="14" y="${baseY + 62}" font-size="10.5" fill="var(--warn)">❌ Với DÃY CÁCH ĐỀU, trung bình cộng = số CHÍNH GIỮA${r.mid != null ? ` (= ${r.mid})` : ' (mức giữa hai số chính giữa)'} CHỨ KHÔNG phải số lớn nhất (${r.last}). Chỉ cần (đầu + cuối) : 2, không cần cộng hết rồi chia.</text>`;
+      host.innerHTML = `<svg id="seqmean" width="${W}" height="${baseY + 82}" viewBox="0 0 ${W} ${baseY + 82}">` + g + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      const mf = Number.isInteger(r.mean) ? String(r.mean) : String(r.mean).replace('.', ',');
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${r.n} hàng cốc nước có mực cao lần lượt ${r.a}, ${r.a + r.d}, … đến ${r.last} (cách đều nhau ${r.d}). Rót san để MỌI hàng cao bằng nhau → mỗi hàng còn ${mf}. Con số san bằng đó chính là trung bình cộng.`, hint: 'san bằng rồi đo chiều cao chung.' };
+      if (s === 2) return { cap: `Sơ đồ: ${r.n} cột cao theo từng số hạng; đường nét đứt ${mf} là MỨC SAN ĐỀU. Cột cao hơn nhô ra vừa khít phần cột thấp hơn bị lõm vào → trung bình cộng nằm CHÍNH GIỮA dãy.`, hint: 'phần dôi ra = phần thiếu đi.' };
+      if (s === 3) return { cap: `Phép tính (Gauss): số ĐẦU + số CUỐI = ${r.a} + ${r.last} = ${r.a + r.last}; số thứ hai + áp chót cũng bằng ${r.a + r.last}. Vậy 2 × Tổng = ${r.n} × ${r.a + r.last} = ${2 * r.total}, nên Tổng = ${r.total}; TB cộng = Tổng : ${r.n} = ${mf}.`, hint: '' };
+      return { cap: `Cả lớp: với DÃY CÁCH ĐỀU, trung bình cộng = (số đầu + số cuối) : 2${r.mid != null ? ` và đúng bằng SỐ CHÍNH GIỮA (= ${r.mid})` : ' (nằm giữa hai số chính giữa)'}. Đây là lúc model "san bằng" (mean) gặp model "dãy cách đều" (seq): Tổng = trung bình cộng × số số hạng.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); const mf = Number.isInteger(r.mean) ? String(r.mean) : String(r.mean).replace('.', ','); return `TB cộng = (${r.a} + ${r.last}) : 2 = ${mf} · Tổng = ${r.total}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mA = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mM = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const bw = 0.6, gp = 0.2;
+      for (let i = 0; i < r.n; i++) {
+        const term = r.a + i * r.d;
+        const h = term;
+        const isMid = r.mid != null && term === r.mid;
+        const box = new THREE.Mesh(new THREE.BoxGeometry(bw, h, bw), isMid ? mM : mA);
+        box.position.set(i * (bw + gp) + bw / 2, h / 2, 0);
+        g.add(box);
+      }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5679,6 +5756,11 @@ EX['phan-so-voi-1'] = [
   { prompt: 'Phân số 7/4 so với 1:', choices: ['Lớn hơn 1', 'Bằng 1', 'Bé hơn 1'], answer: 'Lớn hơn 1', explanation: 'Tử 7 > mẫu 4 nên 7/4 > 1. Thật ra 7 : 4 = 1 dư 3 nên 7/4 = 1 + 3/4. Chọn "bé hơn 1" là nhầm quy tắc (lấy mẫu so tử); "bằng 1" chỉ đúng khi tử bằng mẫu.', errorTag: 'lam_lan_tu_voi_mau' },
   { prompt: 'Phân số nào bằng đúng 1?', choices: ['5/5', '5/7', '7/5'], answer: '5/5', explanation: 'Phân số bằng 1 khi tử = mẫu: 5/5 = 1. 5/7 < 1 (tử bé hơn mẫu); 7/5 > 1 (tử lớn hơn mẫu).', errorTag: 'tu_khong_bang_mau' },
   { prompt: 'Phân số 5/7 so với 1:', choices: ['Bé hơn 1', 'Lớn hơn 1', 'Bằng 1'], answer: 'Bé hơn 1', explanation: 'Tử 5 < mẫu 7 nên 5/7 < 1 (lấy ít hơn đủ một phần của một đơn vị). Sai lầm hay gặp: tưởng "mẫu 7 to nên phân số to" — phải so tử với mẫu, không so mẫu với tử.', errorTag: 'nham_mau_lon_la_ps_lon' },
+];
+EX['tb-cong-day-cach-deu'] = [
+  { prompt: 'Trung bình cộng của dãy 1, 3, 5, 7, 9 là:', choices: ['5', '9', '25'], answer: '5', explanation: 'Dãy cách đều nên TBC = (số đầu + số cuối) : 2 = (1 + 9) : 2 = 5, đúng bằng số chính giữa. 9 là lấy số LỚN NHẤT (sai); 25 là lấy TỔNG (1+3+5+7+9) mà quên chia cho 5.', errorTag: 'lay_tong_quen_chia' },
+  { prompt: 'Trung bình cộng của dãy 2, 4, 6, 8, 10, 12 là:', choices: ['7', '12', '42'], answer: '7', explanation: '(số đầu + số cuối) : 2 = (2 + 12) : 2 = 7. Dãy có 6 số (chẵn) nên TBC nằm GIỮA hai số chính giữa 6 và 8, không trùng một số hạng nào. 12 là số lớn nhất; 42 là tổng mà quên chia 6.', errorTag: 'nham_so_lon_nhat_la_tbc' },
+  { prompt: 'Một dãy cách đều có 5 số, trung bình cộng bằng 8. Tổng của dãy đó là:', choices: ['40', '13', '8'], answer: '40', explanation: 'Tổng = trung bình cộng × số số hạng = 8 × 5 = 40. 13 là lấy 8 + 5; 8 là nhầm trung bình cộng thành tổng.', errorTag: 'nham_tbc_thanh_tong' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
