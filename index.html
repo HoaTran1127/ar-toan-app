@@ -515,6 +515,10 @@ const LESSONS = {
     khoi_dong:'Cô có hai băng giấy bằng nhau. Băng thứ nhất chia 3 ô tô 2 ô (2/3). Băng thứ hai chia 4 ô tô 1 ô (1/4). Muốn đặt hai băng CẠNH NHAU để so hay cộng, ô của hai băng phải BẰNG NHAU. Làm sao đổi 2/3 và 1/4 thành hai phân số cùng một mẫu số mà giá trị KHÔNG đổi?',
     chot:'QUY ĐỒNG MẪU SỐ: đưa hai phân số về CÙNG một mẫu số mà giá trị mỗi phân số giữ nguyên, nhờ tính chất "nhân (hoặc chia) CẢ tử và mẫu với cùng một số khác 0 thì phân số không đổi". Muốn đổi a/b thành mẫu chung thì nhân tử và mẫu với THỪA SỐ còn lại. Cách chắc đúng cho lớp 4: lấy MẪU CHUNG = tích hai mẫu số (b × d), khi đó a/b = (a×d)/(b×d) và c/d = (c×b)/(d×b). Lỗi phổ biến: CHỈ đổi mẫu mà QUÊN nhân tử → phân số bị biến thành giá trị khác.',
     obj:'quy đồng 2/3 và 1/4 về cùng mẫu số', qdA: 2, qdB: 3, qdC: 1, qdD: 4 },
+  'rut-ve-don-vi': { model:'rutdonvi', ten:'Bài toán rút về đơn vị (tìm giá trị một phần)',
+    khoi_dong:'Mua 5 cái bút cùng loại hết 45 nghìn đồng. Hỏi mua 8 cái bút như thế thì hết bao nhiêu tiền? Vì sao muốn trả lời, ta phải biết giá CỦA MỘT cái bút trước?',
+    chot:'RÚT VỀ ĐƠN VỊ: khi các phần HOÀN TOÀN NHƯ NHAU, ta tìm giá trị của MỘT phần rồi nhân lên. Bước 1 — chia: giá 1 món = tổng : số món = 45 : 5 = 9 nghìn. Bước 2 — nhân: 8 món = 9 × 8 = 72 nghìn. Sơ đồ đoạn thẳng: 5 ô bằng nhau chứa 45 nghìn, mỗi ô là 9 nghìn; rồi 8 ô như vậy cho 72 nghìn. Lỗi phổ biến: lấy 45 × 8 hoặc 45 : 8 (nhảy thẳng sang số phải tìm mà bỏ qua bước rút về 1 phần).',
+    obj:'rút về đơn vị: 5 cái hết 45 nghìn, 8 cái hết bao nhiêu', rdN: 5, rdUnit: 9, rdM: 8 },
 };
 
 const state = {
@@ -5088,6 +5092,64 @@ const MODELS = {
     },
     paint3d() {},
   },
+  rutdonvi: {
+    res(st) {
+      const N = clamp(Math.round(st.rdN), 1, 9);
+      const u = clamp(Math.round(st.rdUnit), 1, 9);
+      const M = clamp(Math.round(st.rdM), 1, 9);
+      const T = N * u;            // tổng tiền của N món (nghìn đồng)
+      const unit = T / N;         // rút về đơn vị: giá 1 món (luôn nguyên vì T = N·u)
+      const ans = unit * M;       // tiền của M món
+      return { N, u, M, T, unit, ans };
+    },
+    defaults(st, L) { st.rdN = (L.rdN != null ? L.rdN : 5); st.rdUnit = (L.rdUnit != null ? L.rdUnit : 9); st.rdM = (L.rdM != null ? L.rdM : 8); },
+    geomSig(st) { const r = this.res(st); return 'rdv' + r.N + '~' + r.u + '~' + r.M; },
+    params() { return [{ key: 'rdN', label: 'Số món đã biết', min: 1, max: 9 }, { key: 'rdUnit', label: 'Giá 1 món (nghìn đồng)', min: 1, max: 9 }, { key: 'rdM', label: 'Số món cần mua', min: 1, max: 9 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Ba thanh trượt: số món ĐÃ BIẾT giá tiền (N), giá 1 món (đơn vị), số món CẦN MUA (M). App dựng "rút về đơn vị": tổng : N = giá 1 món, rồi giá 1 món × M = đáp số. Giơ 1–9 ngón đặt SỐ MÓN CẦN MUA.'; },
+    hand(st, f) { st.rdM = clamp(Math.round(f), 1, 9); },
+    handLabel(f) { return '→ số món cần mua = ' + clamp(Math.round(f), 1, 9); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const W = 264, ox = 150;
+      const row = (y, count, tone) => {
+        const cw = W / count; let s = '';
+        for (let k = 0; k < count; k++) {
+          const x = ox + k * cw;
+          s += `<rect x="${x.toFixed(2)}" y="${y}" width="${(cw - 2).toFixed(2)}" height="22" rx="2" fill="${tone}" stroke="rgba(242,240,230,.5)" stroke-width="1"></rect>`;
+          s += `<text x="${(x + cw / 2 - 1).toFixed(2)}" y="${y + 15}" font-size="11" text-anchor="middle" fill="var(--chalk)">${r.u}</text>`;
+        }
+        return s;
+      };
+      let g = `<text x="14" y="18" font-size="13" font-weight="700" fill="var(--chalk)">Đã biết: ${r.N} món hết ${r.T} nghìn đồng</text>`;
+      g += `<text x="${ox + W + 8}" y="52" font-size="12" font-weight="700" fill="var(--chalk)">= ${r.T}</text>` + row(38, r.N, 'rgba(127,201,191,.55)');
+      g += `<text x="14" y="82" font-size="11" fill="var(--accent)">BƯỚC 1 — RÚT VỀ ĐƠN VỊ: giá 1 món = ${r.T} : ${r.N} = ${r.u} nghìn.</text>`;
+      g += `<text x="14" y="120" font-size="13" font-weight="700" fill="var(--chalk)">Hỏi: ${r.M} món như thế hết bao nhiêu?</text>`;
+      g += `<text x="${ox + W + 8}" y="154" font-size="12" font-weight="700" fill="var(--accent)">= ${r.ans}</text>` + row(140, r.M, 'rgba(240,196,92,.55)');
+      g += `<text x="14" y="184" font-size="11" fill="var(--accent)">BƯỚC 2 — QUAY LẠI: ${r.M} món = ${r.u} × ${r.M} = ${r.ans} nghìn.</text>`;
+      const err = `<text x="14" y="206" font-size="10.5" fill="var(--warn)">❌ Sai thường gặp: lấy ${r.T} × ${r.M} hay ${r.T} : ${r.M}. Phải tìm GIÁ TRỊ CỦA MỘT MÓN (${r.u}) trước, rồi mới nhân với ${r.M}.</text>`;
+      host.innerHTML = `<svg id="rutdonvi" width="520" height="216" viewBox="0 0 520 216">` + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: ${r.N} món ĐỒ HOÀN TOÀN GIỐNG NHAU xếp thành hàng, cả ${r.N} món hết ${r.T} nghìn đồng. ${r.M} món cần mua cũng cùng loại ấy.`, hint: 'mỗi món một giá như nhau nên chỉ cần biết giá 1 món.' };
+      if (s === 2) return { cap: `Sơ đồ: chia đều ${r.T} nghìn cho ${r.N} ô bằng nhau → mỗi ô (1 món) giá ${r.T} : ${r.N} = ${r.u} nghìn. Đây chính là BƯỚC RÚT VỀ ĐƠN VỊ.`, hint: 'rút về đơn vị = tìm giá trị của MỘT phần.' };
+      if (s === 3) return { cap: `Phép tính: giá 1 món = ${r.T} : ${r.N} = ${r.u} nghìn; ${r.M} món = ${r.u} × ${r.M} = ${r.ans} nghìn.`, hint: '' };
+      return { cap: `Cả lớp: biết ${r.N} món giá ${r.T}, ta tìm 1 món = ${r.T} : ${r.N} = ${r.u}, rồi ${r.M} món = ${r.u} × ${r.M} = ${r.ans} nghìn. Mẹo "rút về đơn vị": LUÔN CHIA để được giá trị một phần trước, rồi mới NHÂN lên số phần cần tìm.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.T} : ${r.N} = ${r.u} · ${r.u} × ${r.M} = ${r.ans} nghìn`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mF = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mG = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      for (let k = 0; k < r.N; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), mF); m.position.set(k * 0.6, 0, 0); g.add(m); }
+      for (let k = 0; k < r.M; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), mG); m.position.set(k * 0.6, 0, 1.2); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5331,6 +5393,11 @@ EX['quy-dong-mau-so'] = [
   { prompt: 'Quy đồng 1/2 và 1/3 về mẫu chung 6, được:', choices: ['3/6 và 2/6', '1/6 và 1/6', '2/6 và 3/6'], answer: '3/6 và 2/6', explanation: '1/2 = (1×3)/(2×3) = 3/6; 1/3 = (1×2)/(3×2) = 2/6. Nhân CẢ tử và mẫu, nên tử cũng đổi. 1/6 và 1/6 là lỗi chỉ đổi mẫu mà quên nhân tử; 2/6 và 3/6 là ghép nhầm thừa số.', errorTag: 'quen_nhan_tu' },
   { prompt: 'Quy đồng 2/3 và 1/4 về mẫu chung 12, được:', choices: ['8/12 và 3/12', '2/12 và 1/12', '8/12 và 3/4'], answer: '8/12 và 3/12', explanation: '2/3 = (2×4)/(3×4) = 8/12; 1/4 = (1×3)/(4×3) = 3/12. 2/12 và 1/12 quên nhân tử; 8/12 và 3/4 là mới quy đồng phân số thứ nhất, bỏ phân số thứ hai.', errorTag: 'quen_nhan_tu' },
   { prompt: 'Quy đồng 3/4 và 5/6 về mẫu chung nhỏ nhất 12, được:', choices: ['9/12 và 10/12', '3/12 và 5/12', '9/12 và 10/24'], answer: '9/12 và 10/12', explanation: 'BCNN(4,6)=12. 3/4 = (3×3)/(4×3) = 9/12; 5/6 = (5×2)/(6×2) = 10/12. 3/12 và 5/12 quên nhân tử; 10/24 nhân mẫu gấp đôi mức cần (24 ≠ 12).', errorTag: 'chon_mau_chung_sai' },
+];
+EX['rut-ve-don-vi'] = [
+  { prompt: 'Mua 6 quyển vở hết 54 nghìn đồng. Mua 4 quyển như thế hết bao nhiêu?', choices: ['36 nghìn', '24 nghìn', '90 nghìn'], answer: '36 nghìn', explanation: 'Rút về đơn vị: 1 quyển = 54 : 6 = 9 nghìn; 4 quyển = 9 × 4 = 36 nghìn. 24 là lấy 6 × 4 (quên chia ra giá 1 quyển); 90 là lấy 54 + 6 × ... nhảy sai phép.', errorTag: 'bo_buoc_rut_don_vi' },
+  { prompt: '5 bao gạo nặng 175 kg. Hỏi 3 bao như thế nặng bao nhiêu kg?', choices: ['105 kg', '35 kg', '875 kg'], answer: '105 kg', explanation: '1 bao = 175 : 5 = 35 kg; 3 bao = 35 × 3 = 105 kg. 35 kg mới là khối lượng 1 bao (dừng ở bước rút về đơn vị); 875 là lấy 175 × 5, nhân nhầm lên thay vì chia.', errorTag: 'dung_lai_o_gia_tri_1_phan' },
+  { prompt: 'Ô tô đi 3 giờ được 120 km. Hỏi đi 5 giờ (cùng vận tốc) được bao nhiêu km?', choices: ['200 km', '72 km', '40 km'], answer: '200 km', explanation: 'Mỗi giờ đi được 120 : 3 = 40 km; 5 giờ = 40 × 5 = 200 km. 40 km là quảng đường 1 giờ; 72 là lấy 120 : 5 × 3, đảo sai số giờ.', errorTag: 'nhap_lan_so_gio' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
