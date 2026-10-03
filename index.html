@@ -527,6 +527,10 @@ const LESSONS = {
     khoi_dong:'Một giá bánh có 4 hàng, mỗi hàng xếp 5 cái bánh teal rồi ghép thêm 3 cái bánh vàng. Đếm tổng số bánh theo hai cách: (1) lấy 4 hàng nhân với (5 + 3) cột; (2) đếm riêng 4×5 bánh teal rồi cộng 4×3 bánh vàng. Hai cách cho cùng một kết quả không? Vì sao?',
     chot:'TÍNH CHẤT PHÂN PHỐI: nhân một số với một tổng = nhân số đó với TỪNG số hạng rồi cộng lại. 4 × (5 + 3) = 4×5 + 4×3 = 20 + 12 = 32. Kiểm tra lại: 4 × 8 = 32 — đúng bằng tổng hai phần. Trên sơ đồ ô vuông: hình chữ nhật cao 4, ngang 5+3=8 có 32 ô; kẻ một đường dọc chia thành mảng teal 4×5=20 ô và mảng vàng 4×3=12 ô; 20+12=32. Đây chính là bản chất phép đặt tính nhân nhiều chữ số (areamult) và mẹo tính nhanh. Lỗi kinh điển: chỉ nhân số ngoài với số hạng ĐẦU TIÊN rồi mới cộng số hạng sau — 4×(5+3) ≠ 4×5 + 3 = 23 (sai).',
     obj:'phân phối: 4 × (5 + 3)', pfA: 4, pfB: 5, pfC: 3 },
+  'gap-giam-so-lan': { model:'gapso', ten:'Gấp một số lên nhiều lần · giảm một số đi nhiều lần (so sánh bội số)',
+    khoi_dong:'Hàng trên xếp 3 cái kẹo. Hàng dưới xếp THÀNH 4 NHÓM, mỗi nhóm đúng 3 cái như hàng trên. Hàng dưới có bao nhiêu cái? Muốn được hàng dưới, ta đã "gấp" hàng trên lên mấy lần? Nếu ngược lại, cắt 12 cái kẹo thành 4 phần bằng nhau thì mỗi phần là mấy cái?',
+    chot:'GẤP một số lên k lần = NHÂN số đó cho k (đoạn mới DÀI gấp k lần đoạn cũ). GIẢM một số đi k lần = CHIA số đó cho k (đoạn mới NGẮN đi k lần, số bị chia phải chia hết). Ví dụ 3 gấp 4 lần = 3 × 4 = 12; ngược lại 12 giảm 4 lần = 12 : 4 = 3 — hai phép là NGƯỢC nhau. Lỗi kinh điển: nhầm "gấp 4 lần của 3" thành 3 + 4 = 7 (CỘNG), hoặc nhầm "giảm" thành trừ (12 − 4). Từ "gấp k lần" ta có TỈ số B : A = k — nền của bài toán tỉ lệ thuận.',
+    obj:'gấp 3 lên 4 lần; giảm 12 đi 4 lần', gpA: 3, gpK: 4 },
 };
 
 const state = {
@@ -5272,6 +5276,65 @@ const MODELS = {
     },
     paint3d() {},
   },
+  gapso: {
+    res(st) {
+      const A = clamp(Math.round(st.gpA), 2, 9);
+      const k = clamp(Math.round(st.gpK), 2, 9);
+      const B = A * k;
+      return { A, k, B };
+    },
+    defaults(st, L) { st.gpA = (L.gpA != null ? L.gpA : 3); st.gpK = (L.gpK != null ? L.gpK : 4); },
+    geomSig(st) { const r = this.res(st); return 'gps' + r.A + '~' + r.k; },
+    params() { return [{ key: 'gpA', label: 'Đoạn A (số ban đầu)', min: 2, max: 9 }, { key: 'gpK', label: 'Số lần k (2–9)', min: 2, max: 9 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Hai thanh trượt: đoạn A (2–9 ô) và số lần k (2–9). Giơ 2–9 ngón đặt A. GẤP k lần = viết lại A đúng k lần; GIẢM k lần = chia đoạn dài thành k phần bằng nhau.'; },
+    hand(st, f) { st.gpA = clamp(Math.round(f), 2, 9); },
+    handLabel(f) { return '→ A (đoạn ban đầu) = ' + clamp(Math.round(f), 2, 9); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const u = 20, ox = 44;
+      const yA = 58, yB = 150, H = 34;
+      let g = '';
+      g += `<rect x="${ox}" y="${yA}" width="${r.A * u}" height="${H}" fill="rgba(127,201,191,.55)" stroke="rgba(242,240,230,.5)" stroke-width="1"></rect>`;
+      for (let i = 1; i < r.A; i++) g += `<line x1="${ox + i * u}" y1="${yA}" x2="${ox + i * u}" y2="${yA + H}" stroke="rgba(242,240,230,.22)" stroke-width="1"></line>`;
+      g += `<text x="${ox - 8}" y="${yA + H / 2 + 4}" font-size="12" font-weight="700" text-anchor="end" fill="var(--chalk)">A</text>`;
+      g += `<text x="${ox + r.A * u + 8}" y="${yA + H / 2 + 4}" font-size="12" fill="var(--chalk)">= ${r.A}</text>`;
+      for (let j = 0; j < r.k; j++) {
+        const bx = ox + j * r.A * u;
+        g += `<rect x="${bx}" y="${yB}" width="${r.A * u}" height="${H}" fill="rgba(240,196,92,.5)" stroke="rgba(242,240,230,.5)" stroke-width="1"></rect>`;
+        if (j > 0) g += `<line x1="${bx}" y1="${yB - 6}" x2="${bx}" y2="${yB + H + 6}" stroke="var(--chalk)" stroke-width="1.5" stroke-dasharray="4 3"></line>`;
+      }
+      for (let i = 1; i < r.B; i++) g += `<line x1="${ox + i * u}" y1="${yB}" x2="${ox + i * u}" y2="${yB + H}" stroke="rgba(242,240,230,.16)" stroke-width="1"></line>`;
+      g += `<text x="${ox - 8}" y="${yB + H / 2 + 4}" font-size="12" font-weight="700" text-anchor="end" fill="var(--chalk)">B</text>`;
+      g += `<text x="${ox + r.B * u + 8}" y="${yB + H / 2 + 4}" font-size="12" fill="var(--chalk)">= ${r.B}</text>`;
+      g += `<text x="${ox}" y="${yB + H + 20}" font-size="11" fill="var(--chalk)">B gồm ${r.k} khối nối tiếp, mỗi khối = ${r.A} ô (= A)</text>`;
+      g += `<text x="14" y="24" font-size="13" font-weight="700" fill="var(--chalk)">GẤP / GIẢM MỘT SỐ LẦN</text>`;
+      g += `<text x="14" y="${yB + H + 44}" font-size="12" font-weight="700" fill="var(--accent)">Gấp ${r.k} lần: ${r.A} × ${r.k} = ${r.B} · Giảm ${r.k} lần: ${r.B} : ${r.k} = ${r.A}</text>`;
+      g += `<text x="14" y="${yB + H + 64}" font-size="10.5" fill="var(--warn)">❌ GẤP là NHÂN thêm ${r.k} lần (B dài hơn A); GIẢM là CHIA ${r.k} phần (ngắn lại). Đừng nhầm: ${r.A} + ${r.k} = ${r.A + r.k} là CỘNG, không phải gấp ${r.k} lần ${r.A} (= ${r.B}).</text>`;
+      const W = ox + r.B * u + 56;
+      host.innerHTML = `<svg id="gapso" width="${W}" height="${yB + H + 80}" viewBox="0 0 ${W} ${yB + H + 80}">` + g + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: hàng trên có ${r.A} cái kẹo (đoạn A). Hàng dưới xếp ${r.k} NHÓM, mỗi nhóm đúng ${r.A} cái như vậy → ${r.B} cái. Muốn gấp ${r.A} lên ${r.k} lần, ta viết ${r.A} lại ${r.k} lần rồi đếm.`, hint: 'gấp = thêm các nhóm bằng nhau.' };
+      if (s === 2) return { cap: `Sơ đồ: đoạn A = ${r.A} ô. Đoạn B = ${r.k} đoạn A nối tiếp = ${r.B} ô, nên B DÀI GẤP ${r.k} LẦN A. Ngược lại, cắt B thành ${r.k} phần bằng nhau thì mỗi phần = ${r.A} ô (giảm ${r.k} lần).`, hint: 'đoạn này dài gấp mấy lần đoạn kia.' };
+      if (s === 3) return { cap: `Phép tính: Gấp ${r.k} lần A là ${r.A} × ${r.k} = ${r.B}. Giảm ${r.k} lần B là ${r.B} : ${r.k} = ${r.A}. Hai phép là NGƯỢC nhau (nhân ↔ chia đúng ${r.k} lần).`, hint: '' };
+      return { cap: `Cả lớp: "gấp ${r.k} lần" = nhân cho ${r.k}; "giảm ${r.k} lần" = chia cho ${r.k} (số bị chia phải chia hết). Kiểm: ${r.B} : ${r.k} = ${r.A}, đúng bằng đoạn ban đầu. Đây là nền của TỈ số (${r.B} : ${r.A} = ${r.k} lần) và hai đại lượng tỉ lệ thuận.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.A} × ${r.k} = ${r.B} · ${r.B} : ${r.k} = ${r.A}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mA = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mB = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const s = 0.35;
+      const aBox = new THREE.Mesh(new THREE.BoxGeometry(r.A * s, s, s), mA); aBox.position.set((r.A * s) / 2, 1, 0); g.add(aBox);
+      const bBox = new THREE.Mesh(new THREE.BoxGeometry(r.B * s, s, s), mB); bBox.position.set((r.B * s) / 2, 0, 0); g.add(bBox);
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5530,6 +5593,11 @@ EX['phan-phoi'] = [
   { prompt: 'Tính 4 × (5 + 3) theo tính chất phân phối:', choices: ['32', '23', '12'], answer: '32', explanation: '4 × (5 + 3) = 4×5 + 4×3 = 20 + 12 = 32 (kiểm: 4 × 8 = 32). 23 là lấy 4×5 + 3 — chỉ nhân số ngoài với số hạng ĐẦU rồi cộng, quên nhân 4 với 3; 12 là chỉ tính 4×3, bỏ mảng 4×5.', errorTag: 'chi_nhan_so_hang_dau' },
   { prompt: 'Tính 6 × (10 + 2):', choices: ['72', '62', '60'], answer: '72', explanation: '6 × (10 + 2) = 6×10 + 6×2 = 60 + 12 = 72 (kiểm: 6 × 12 = 72). 62 là lấy 6×10 + 2, quên nhân 6 với 2; 60 là chỉ tính 6×10.', errorTag: 'thieu_nhan_so_hang_thu_hai' },
   { prompt: 'Mẹo tính nhanh 25 × (4 + 6):', choices: ['250', '106', '150'], answer: '250', explanation: '25 × (4 + 6) = 25×4 + 25×6 = 100 + 150 = 250 (gọn hơn: 25 × 10 = 250). 106 là lấy 25×4 + 6, quên nhân 25 với 6; 150 là chỉ phần 25×6.', errorTag: 'truyen_thang_khong_nhan' },
+];
+EX['gap-giam-so-lan'] = [
+  { prompt: 'Gấp 6 lên 3 lần được:', choices: ['18', '9', '21'], answer: '18', explanation: 'Gấp 3 lần = nhân 3: 6 × 3 = 18. 9 là lấy 6 + 3 (cộng thay vì nhân); 21 là 6 × 3 + 3 (gấp xong lại cộng thêm).', errorTag: 'cong_thay_vi_nhan' },
+  { prompt: 'Giảm 24 đi 4 lần được:', choices: ['6', '20', '96'], answer: '6', explanation: 'Giảm 4 lần = chia 4: 24 : 4 = 6. 20 là lấy 24 − 4 (trừ thay vì chia); 96 là 24 × 4 (nhầm giảm thành GẤP 4 lần).', errorTag: 'tru_thay_vi_chia' },
+  { prompt: 'Đoạn B dài gấp 5 lần đoạn A = 7 cm. Đoạn B dài:', choices: ['35 cm', '12 cm', '2 cm'], answer: '35 cm', explanation: 'Gấp 5 lần = 7 × 5 = 35 cm. 12 là 7 + 5; 2 là 7 − 5 (nhầm gấp thành cộng/trừ). Kiểm lại tỉ số: 35 : 7 = 5 lần.', errorTag: 'nham_gap_thanh_cong' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
