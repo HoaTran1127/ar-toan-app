@@ -523,6 +523,10 @@ const LESSONS = {
     khoi_dong:'Có hai dải băng dài 8 cm và 12 cm. Ta muốn lát kín cả hai dải bằng những Ô VUÔNG NHƯ NHAU, không cắt lẻ. Cạnh ô vuông to nhất là bao nhiêu? Và nếu xếp các BỘI của 8 (8,16,24,…) cùng các bội của 12 (12,24,36,…) thì hai hàng gặp nhau đầu tiên ở số nào?',
     chot:'ƯCLN là ước CHUNG LỚN NHẤT — ô vuông to nhất lát khít cả hai dải (ƯCLN(8,12)=4). BCNN là bội CHUNG NHỎ NHẤT — điểm hai hàng bội gặp nhau đầu tiên (BCNN(8,12)=24). ĐẲNG THỨC then chốt: a × b = BCNN(a,b) × ƯCLN(a,b), nên BCNN = a × b ÷ ƯCLN. Lỗi kinh điển: lấy BCNN = a × b (quên chia ƯCLN) — chỉ đúng khi hai số đôi một nguyên tố (ƯCLN=1). ƯCLN dùng để RÚT GỌN (psimp), BCNN dùng để QUY ĐỒNG mẫu chung nhỏ nhất (qds).',
     obj:'ƯCLN(8,12) và BCNN(8,12)', bcA: 8, bcB: 12 },
+  'phan-phoi': { model:'phantphoi', ten:'Tính chất phân phối của phép nhân với phép cộng: a × (b + c) = a×b + a×c',
+    khoi_dong:'Một giá bánh có 4 hàng, mỗi hàng xếp 5 cái bánh teal rồi ghép thêm 3 cái bánh vàng. Đếm tổng số bánh theo hai cách: (1) lấy 4 hàng nhân với (5 + 3) cột; (2) đếm riêng 4×5 bánh teal rồi cộng 4×3 bánh vàng. Hai cách cho cùng một kết quả không? Vì sao?',
+    chot:'TÍNH CHẤT PHÂN PHỐI: nhân một số với một tổng = nhân số đó với TỪNG số hạng rồi cộng lại. 4 × (5 + 3) = 4×5 + 4×3 = 20 + 12 = 32. Kiểm tra lại: 4 × 8 = 32 — đúng bằng tổng hai phần. Trên sơ đồ ô vuông: hình chữ nhật cao 4, ngang 5+3=8 có 32 ô; kẻ một đường dọc chia thành mảng teal 4×5=20 ô và mảng vàng 4×3=12 ô; 20+12=32. Đây chính là bản chất phép đặt tính nhân nhiều chữ số (areamult) và mẹo tính nhanh. Lỗi kinh điển: chỉ nhân số ngoài với số hạng ĐẦU TIÊN rồi mới cộng số hạng sau — 4×(5+3) ≠ 4×5 + 3 = 23 (sai).',
+    obj:'phân phối: 4 × (5 + 3)', pfA: 4, pfB: 5, pfC: 3 },
 };
 
 const state = {
@@ -5212,6 +5216,62 @@ const MODELS = {
     },
     paint3d() {},
   },
+  phantphoi: {
+    res(st) {
+      const a = clamp(Math.round(st.pfA), 2, 9);
+      const b = clamp(Math.round(st.pfB), 1, 9);
+      const c = clamp(Math.round(st.pfC), 1, 9);
+      const s = b + c, ab = a * b, ac = a * c, total = a * s;
+      return { a, b, c, s, ab, ac, total };
+    },
+    defaults(st, L) { st.pfA = (L.pfA != null ? L.pfA : 4); st.pfB = (L.pfB != null ? L.pfB : 5); st.pfC = (L.pfC != null ? L.pfC : 3); },
+    geomSig(st) { const r = this.res(st); return 'ppf' + r.a + '~' + r.b + '~' + r.c; },
+    params() { return [{ key: 'pfA', label: 'a (số nhân cả hai)', min: 2, max: 9 }, { key: 'pfB', label: 'Số hạng b', min: 1, max: 9 }, { key: 'pfC', label: 'Số hạng c', min: 1, max: 9 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Ba thanh trượt cho a, b, c. Vẽ hình chữ nhật cao a, ngang (b + c); kẻ một đường dọc chia thành hai phần a×b và a×c. Tính chất PHÂN PHỐI: a × (b + c) = a×b + a×c. Giơ 2–9 ngón đặt số a.'; },
+    hand(st, f) { st.pfA = clamp(Math.round(f), 2, 9); },
+    handLabel(f) { return '→ a (số nhân cả hai) = ' + clamp(Math.round(f), 2, 9); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const u = 13, ox = 46, oy = 46;
+      const H = r.a * u, wb = r.b * u, wc = r.c * u;
+      let g = '';
+      g += `<rect x="${ox}" y="${oy}" width="${wb}" height="${H}" fill="rgba(127,201,191,.5)" stroke="rgba(242,240,230,.5)" stroke-width="1"></rect>`;
+      g += `<rect x="${ox + wb}" y="${oy}" width="${wc}" height="${H}" fill="rgba(240,196,92,.5)" stroke="rgba(242,240,230,.5)" stroke-width="1"></rect>`;
+      for (let k = 1; k < r.s; k++) g += `<line x1="${ox + k * u}" y1="${oy}" x2="${ox + k * u}" y2="${oy + H}" stroke="rgba(242,240,230,.16)" stroke-width="1"></line>`;
+      for (let k = 1; k < r.a; k++) g += `<line x1="${ox}" y1="${oy + k * u}" x2="${ox + wb + wc}" y2="${oy + k * u}" stroke="rgba(242,240,230,.16)" stroke-width="1"></line>`;
+      g += `<line x1="${ox + wb}" y1="${oy - 6}" x2="${ox + wb}" y2="${oy + H + 6}" stroke="var(--chalk)" stroke-width="1.5" stroke-dasharray="4 3"></line>`;
+      g += `<text x="${ox + wb / 2}" y="${oy + H / 2 + 4}" font-size="12" font-weight="700" text-anchor="middle" fill="var(--chalk)">${r.ab}</text>`;
+      g += `<text x="${ox + wb + wc / 2}" y="${oy + H / 2 + 4}" font-size="12" font-weight="700" text-anchor="middle" fill="var(--chalk)">${r.ac}</text>`;
+      g += `<text x="${ox + wb / 2}" y="${oy - 10}" font-size="11" text-anchor="middle" fill="var(--chalk)">b=${r.b}</text>`;
+      g += `<text x="${ox + wb + wc / 2}" y="${oy - 10}" font-size="11" text-anchor="middle" fill="var(--chalk)">c=${r.c}</text>`;
+      g += `<text x="${ox - 8}" y="${oy + H / 2 + 4}" font-size="11" text-anchor="end" fill="var(--chalk)">a=${r.a}</text>`;
+      g += `<text x="14" y="${oy + H + 24}" font-size="12" font-weight="700" fill="var(--accent)">${r.a} × (${r.b} + ${r.c}) = ${r.a}×${r.b} + ${r.a}×${r.c} = ${r.ab} + ${r.ac} = ${r.total}</text>`;
+      const err = `<text x="14" y="${oy + H + 44}" font-size="10.5" fill="var(--warn)">❌ Phải nhân a với CẢ HAI số hạng: ${r.a}×(${r.b}+${r.c}) ≠ ${r.a}×${r.b} + ${r.c} (= ${r.ab + r.c}). Tổng hai phần phải bằng đúng số ô cả hình ${r.total}.</text>`;
+      const head = `<text x="14" y="22" font-size="13" font-weight="700" fill="var(--chalk)">TÍNH CHẤT PHÂN PHỐI: a × (b + c) = a×b + a×c</text>`;
+      host.innerHTML = `<svg id="phantphoi" width="520" height="${oy + H + 52}" viewBox="0 0 520 ${oy + H + 52}">` + head + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: xếp ${r.a} hàng, mỗi hàng có (${r.b} + ${r.c}) cái bánh xe (bánh ${r.b} cái teal ghép với ${r.c} cái vàng). Đếm theo hai cách.`, hint: 'một hình, hai cách đếm ô.' };
+      if (s === 2) return { cap: `Sơ đồ: cả hình chữ nhật cao ${r.a}, ngang ${r.b}+${r.c} = ${r.s} ô → ${r.total} ô. Kẻ một đường dọc chia thành hai phần: teal ${r.a}×${r.b} = ${r.ab} ô, vàng ${r.a}×${r.c} = ${r.ac} ô.`, hint: 'tổng hai phần = toàn thể.' };
+      if (s === 3) return { cap: `Phép tính: ${r.a} × (${r.b} + ${r.c}) = ${r.a}×${r.b} + ${r.a}×${r.c} = ${r.ab} + ${r.ac} = ${r.total}. Kiểm tra: ${r.a} × ${r.s} = ${r.total} — hai cách đếm ô cho CÙNG một số.`, hint: '' };
+      return { cap: `Cả lớp: nhân một số với một tổng = nhân số đó với TỪNG số hạng rồi cộng lại. ${r.a} × (${r.b} + ${r.c}) = ${r.total}. Mẹo tính nhanh: tách số khó thành tổng các số tròn rồi nhân từng phần (đây chính là bản chất phép đặt tính ở areamult).`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.a} × (${r.b} + ${r.c}) = ${r.ab} + ${r.ac} = ${r.total}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mF = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mG = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const k = 0.35;
+      const left = new THREE.Mesh(new THREE.BoxGeometry(r.b * k, r.a * k, 0.3), mF); left.position.set((r.b * k) / 2, (r.a * k) / 2, 0); g.add(left);
+      const right = new THREE.Mesh(new THREE.BoxGeometry(r.c * k, r.a * k, 0.3), mG); right.position.set(r.b * k + (r.c * k) / 2, (r.a * k) / 2, 0); g.add(right);
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5465,6 +5525,11 @@ EX['ucln-bcnn'] = [
   { prompt: 'ƯCLN(12, 18) và BCNN(12, 18) lần lượt là:', choices: ['6 và 36', '3 và 6', '6 và 216'], answer: '6 và 36', explanation: 'ƯCLN(12,18)=6. BCNN = 12 × 18 ÷ 6 = 216 ÷ 6 = 36 (kiểm: 36 × 6 = 216 = 12 × 18). 3 và 6 sai cả hai; 6 và 216 là lấy nguyên tích làm BCNN, quên chia ƯCLN.', errorTag: 'bcnn_lay_tich_quen_chia_ucln' },
   { prompt: 'BCNN(4, 6) bằng bao nhiêu?', choices: ['12', '24', '2'], answer: '12', explanation: 'ƯCLN(4,6)=2 nên BCNN = 4 × 6 ÷ 2 = 12. Bội của 4: 4,8,12…; bội của 6: 6,12… gặp nhau ở 12. 24 = 4×6 quên chia 2; 2 là lấy nhầm ƯCLN.', errorTag: 'nham_ucln_voi_bcnn' },
   { prompt: 'Rút gọn tỉ số 15 : 24 được:', choices: ['5 : 8', '3 : 5', '15 : 24'], answer: '5 : 8', explanation: 'ƯCLN(15,24)=3; chia cả hai vế cho 3 được 5 : 8. 3 : 5 là nhầm số chia; để nguyên 15 : 24 là chưa rút gọn hết.', errorTag: 'quyen_ucln_khi_rut_gon' },
+];
+EX['phan-phoi'] = [
+  { prompt: 'Tính 4 × (5 + 3) theo tính chất phân phối:', choices: ['32', '23', '12'], answer: '32', explanation: '4 × (5 + 3) = 4×5 + 4×3 = 20 + 12 = 32 (kiểm: 4 × 8 = 32). 23 là lấy 4×5 + 3 — chỉ nhân số ngoài với số hạng ĐẦU rồi cộng, quên nhân 4 với 3; 12 là chỉ tính 4×3, bỏ mảng 4×5.', errorTag: 'chi_nhan_so_hang_dau' },
+  { prompt: 'Tính 6 × (10 + 2):', choices: ['72', '62', '60'], answer: '72', explanation: '6 × (10 + 2) = 6×10 + 6×2 = 60 + 12 = 72 (kiểm: 6 × 12 = 72). 62 là lấy 6×10 + 2, quên nhân 6 với 2; 60 là chỉ tính 6×10.', errorTag: 'thieu_nhan_so_hang_thu_hai' },
+  { prompt: 'Mẹo tính nhanh 25 × (4 + 6):', choices: ['250', '106', '150'], answer: '250', explanation: '25 × (4 + 6) = 25×4 + 25×6 = 100 + 150 = 250 (gọn hơn: 25 × 10 = 250). 106 là lấy 25×4 + 6, quên nhân 25 với 6; 150 là chỉ phần 25×6.', errorTag: 'truyen_thang_khong_nhan' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
