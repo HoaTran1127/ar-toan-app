@@ -519,6 +519,10 @@ const LESSONS = {
     khoi_dong:'Mua 5 cái bút cùng loại hết 45 nghìn đồng. Hỏi mua 8 cái bút như thế thì hết bao nhiêu tiền? Vì sao muốn trả lời, ta phải biết giá CỦA MỘT cái bút trước?',
     chot:'RÚT VỀ ĐƠN VỊ: khi các phần HOÀN TOÀN NHƯ NHAU, ta tìm giá trị của MỘT phần rồi nhân lên. Bước 1 — chia: giá 1 món = tổng : số món = 45 : 5 = 9 nghìn. Bước 2 — nhân: 8 món = 9 × 8 = 72 nghìn. Sơ đồ đoạn thẳng: 5 ô bằng nhau chứa 45 nghìn, mỗi ô là 9 nghìn; rồi 8 ô như vậy cho 72 nghìn. Lỗi phổ biến: lấy 45 × 8 hoặc 45 : 8 (nhảy thẳng sang số phải tìm mà bỏ qua bước rút về 1 phần).',
     obj:'rút về đơn vị: 5 cái hết 45 nghìn, 8 cái hết bao nhiêu', rdN: 5, rdUnit: 9, rdM: 8 },
+  'ucln-bcnn': { model:'bcnn', ten:'ƯCLN và BCNN của hai số (rút gọn tỉ số · mẫu chung nhỏ nhất)',
+    khoi_dong:'Có hai dải băng dài 8 cm và 12 cm. Ta muốn lát kín cả hai dải bằng những Ô VUÔNG NHƯ NHAU, không cắt lẻ. Cạnh ô vuông to nhất là bao nhiêu? Và nếu xếp các BỘI của 8 (8,16,24,…) cùng các bội của 12 (12,24,36,…) thì hai hàng gặp nhau đầu tiên ở số nào?',
+    chot:'ƯCLN là ước CHUNG LỚN NHẤT — ô vuông to nhất lát khít cả hai dải (ƯCLN(8,12)=4). BCNN là bội CHUNG NHỎ NHẤT — điểm hai hàng bội gặp nhau đầu tiên (BCNN(8,12)=24). ĐẲNG THỨC then chốt: a × b = BCNN(a,b) × ƯCLN(a,b), nên BCNN = a × b ÷ ƯCLN. Lỗi kinh điển: lấy BCNN = a × b (quên chia ƯCLN) — chỉ đúng khi hai số đôi một nguyên tố (ƯCLN=1). ƯCLN dùng để RÚT GỌN (psimp), BCNN dùng để QUY ĐỒNG mẫu chung nhỏ nhất (qds).',
+    obj:'ƯCLN(8,12) và BCNN(8,12)', bcA: 8, bcB: 12 },
 };
 
 const state = {
@@ -5150,6 +5154,64 @@ const MODELS = {
     },
     paint3d() {},
   },
+  bcnn: {
+    res(st) {
+      const a = clamp(Math.round(st.bcA), 2, 12), b = clamp(Math.round(st.bcB), 2, 12);
+      const gcd = (x, y) => (y ? gcd(y, x % y) : x);
+      const g = gcd(a, b);
+      const l = (a * b) / g;
+      return { a, b, g, l, ca: a / g, cb: b / g, ka: l / a, kb: l / b };
+    },
+    defaults(st, L) { st.bcA = (L.bcA != null ? L.bcA : 8); st.bcB = (L.bcB != null ? L.bcB : 12); },
+    geomSig(st) { const r = this.res(st); return 'bcnn' + r.a + '~' + r.b + '~g' + r.g + '~l' + r.l; },
+    params() { return [{ key: 'bcA', label: 'Số thứ nhất', min: 2, max: 12 }, { key: 'bcB', label: 'Số thứ hai', min: 2, max: 12 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Hai thanh trượt chọn hai số (2–12). Trên = ƯCLN: ô vuông LỚN NHẤT lát khít cả hai dải. Dưới = BCNN: tia số các BỘI, hai hàng gặp nhau đầu tiên ở đâu thì BCNN ở đó. Đẳng thức then chốt: số_a × số_b = BCNN × ƯCLN. Giơ 2–12 ngón đặt số thứ nhất.'; },
+    hand(st, f) { st.bcA = clamp(Math.round(f), 2, 12); },
+    handLabel(f) { return '→ số thứ nhất = ' + clamp(Math.round(f), 2, 12); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const W = 300, ox = 44, u = W / r.l;
+      let g = `<text x="14" y="18" font-size="13" font-weight="700" fill="var(--chalk)">ƯCLN(${r.a}, ${r.b}) = ${r.g} — ô vuông lớn nhất lát vừa khít cả hai dải</text>`;
+      const bar = (y, val, n, tone) => {
+        const w = val * u, cw = w / n; let s = '';
+        for (let k = 0; k < n; k++) s += `<rect x="${(ox + k * cw).toFixed(2)}" y="${y}" width="${Math.max(cw - 1, 0.5).toFixed(2)}" height="16" rx="1" fill="${tone}" stroke="rgba(242,240,230,.5)" stroke-width="1"></rect>`;
+        return s;
+      };
+      g += `<text x="14" y="52" font-size="11" fill="var(--chalk)">${r.a} = ${r.ca} × ${r.g}</text>` + bar(40, r.a, r.ca, 'rgba(127,201,191,.6)');
+      g += `<text x="14" y="78" font-size="11" fill="var(--chalk)">${r.b} = ${r.cb} × ${r.g}</text>` + bar(66, r.b, r.cb, 'rgba(240,196,92,.6)');
+      g += `<text x="14" y="112" font-size="13" font-weight="700" fill="var(--chalk)">BCNN(${r.a}, ${r.b}) = ${r.l} — hai hàng bội gặp nhau đầu tiên</text>`;
+      const ny = 150;
+      g += `<line x1="${ox}" y1="${ny}" x2="${(ox + W).toFixed(2)}" y2="${ny}" stroke="rgba(242,240,230,.6)" stroke-width="1.5"></line>`;
+      for (let k = 1; k <= r.ka; k++) { const x = ox + k * r.a * u; g += `<line x1="${x.toFixed(2)}" y1="${ny - 8}" x2="${x.toFixed(2)}" y2="${ny}" stroke="rgba(127,201,191,.9)" stroke-width="2"></line>`; }
+      for (let k = 1; k <= r.kb; k++) { const x = ox + k * r.b * u; g += `<line x1="${x.toFixed(2)}" y1="${ny}" x2="${x.toFixed(2)}" y2="${ny + 8}" stroke="rgba(240,196,92,.9)" stroke-width="2"></line>`; }
+      const cx = ox + r.l * u;
+      g += `<text x="${(cx - 2).toFixed(2)}" y="${ny - 12}" font-size="10" text-anchor="end" fill="var(--accent)">gặp tại ${r.l}</text>`;
+      g += `<text x="14" y="192" font-size="12" font-weight="700" fill="var(--accent)">${r.a} × ${r.b} = ${r.l} × ${r.g}  →  BCNN = ${r.a} × ${r.b} ÷ ${r.g} = ${r.l}</text>`;
+      const err = `<text x="14" y="214" font-size="10.5" fill="var(--warn)">❌ Khi hai số có ước chung thì BCNN KHÔNG phải tích ${r.a} × ${r.b} = ${r.a * r.b}; phải CHIA cho ƯCLN ${r.g}. (Chỉ bằng tích khi ${r.g} = 1, tức đôi một nguyên tố.)</text>`;
+      host.innerHTML = `<svg id="bcnn" width="520" height="224" viewBox="0 0 520 224">` + g + err + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: lát hai dải băng dài ${r.a} và ${r.b} bằng những Ô VUÔNG như nhau. Ô to nhất mà lát KHÍT cả hai dải có cạnh = ƯCLN = ${r.g}.`, hint: 'ước chung lớn nhất = ô to nhất lát vừa cả hai.' };
+      if (s === 2) return { cap: `Sơ đồ: dải ${r.a} = ${r.ca} ô, dải ${r.b} = ${r.cb} ô, mỗi ô cạnh ${r.g}. Trên tia số, liệt kê bội của ${r.a} (vạch teal) và ${r.b} (vạch vàng) — chỗ gặp ĐẦU TIÊN là BCNN = ${r.l}.`, hint: 'bội chung nhỏ nhất = điểm gặp đầu tiên.' };
+      if (s === 3) return { cap: `Phép tính: ƯCLN(${r.a},${r.b}) = ${r.g}; BCNN = ${r.a} × ${r.b} ÷ ${r.g} = ${r.l}. Kiểm tra ĐẲNG THỨC TÍCH: ${r.a} × ${r.b} = ${r.a * r.b} = ${r.l} × ${r.g}.`, hint: '' };
+      return { cap: `Cả lớp: ƯCLN(${r.a},${r.b}) = ${r.g} (dùng để RÚT GỌN tỉ số: ${r.a}:${r.b} = ${r.ca}:${r.cb}), BCNN(${r.a},${r.b}) = ${r.l} (dùng làm MẪU CHUNG NHỎ NHẤT khi quy đồng). Ghi nhớ: BCNN × ƯCLN = ${r.a} × ${r.b}.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `ƯCLN = ${r.g} · BCNN = ${r.l}`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mF = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mG = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const sz = Math.max(0.3, Math.min(0.6, 3 / Math.max(r.ca, r.cb)));
+      for (let k = 0; k < r.ca; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(sz, sz, sz), mF); m.position.set(k * (sz + 0.08), 0, 0); g.add(m); }
+      for (let k = 0; k < r.cb; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(sz, sz, sz), mG); m.position.set(k * (sz + 0.08), 0, 1.2); g.add(m); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5398,6 +5460,11 @@ EX['rut-ve-don-vi'] = [
   { prompt: 'Mua 6 quyển vở hết 54 nghìn đồng. Mua 4 quyển như thế hết bao nhiêu?', choices: ['36 nghìn', '24 nghìn', '90 nghìn'], answer: '36 nghìn', explanation: 'Rút về đơn vị: 1 quyển = 54 : 6 = 9 nghìn; 4 quyển = 9 × 4 = 36 nghìn. 24 là lấy 6 × 4 (quên chia ra giá 1 quyển); 90 là lấy 54 + 6 × ... nhảy sai phép.', errorTag: 'bo_buoc_rut_don_vi' },
   { prompt: '5 bao gạo nặng 175 kg. Hỏi 3 bao như thế nặng bao nhiêu kg?', choices: ['105 kg', '35 kg', '875 kg'], answer: '105 kg', explanation: '1 bao = 175 : 5 = 35 kg; 3 bao = 35 × 3 = 105 kg. 35 kg mới là khối lượng 1 bao (dừng ở bước rút về đơn vị); 875 là lấy 175 × 5, nhân nhầm lên thay vì chia.', errorTag: 'dung_lai_o_gia_tri_1_phan' },
   { prompt: 'Ô tô đi 3 giờ được 120 km. Hỏi đi 5 giờ (cùng vận tốc) được bao nhiêu km?', choices: ['200 km', '72 km', '40 km'], answer: '200 km', explanation: 'Mỗi giờ đi được 120 : 3 = 40 km; 5 giờ = 40 × 5 = 200 km. 40 km là quảng đường 1 giờ; 72 là lấy 120 : 5 × 3, đảo sai số giờ.', errorTag: 'nhap_lan_so_gio' },
+];
+EX['ucln-bcnn'] = [
+  { prompt: 'ƯCLN(12, 18) và BCNN(12, 18) lần lượt là:', choices: ['6 và 36', '3 và 6', '6 và 216'], answer: '6 và 36', explanation: 'ƯCLN(12,18)=6. BCNN = 12 × 18 ÷ 6 = 216 ÷ 6 = 36 (kiểm: 36 × 6 = 216 = 12 × 18). 3 và 6 sai cả hai; 6 và 216 là lấy nguyên tích làm BCNN, quên chia ƯCLN.', errorTag: 'bcnn_lay_tich_quen_chia_ucln' },
+  { prompt: 'BCNN(4, 6) bằng bao nhiêu?', choices: ['12', '24', '2'], answer: '12', explanation: 'ƯCLN(4,6)=2 nên BCNN = 4 × 6 ÷ 2 = 12. Bội của 4: 4,8,12…; bội của 6: 6,12… gặp nhau ở 12. 24 = 4×6 quên chia 2; 2 là lấy nhầm ƯCLN.', errorTag: 'nham_ucln_voi_bcnn' },
+  { prompt: 'Rút gọn tỉ số 15 : 24 được:', choices: ['5 : 8', '3 : 5', '15 : 24'], answer: '5 : 8', explanation: 'ƯCLN(15,24)=3; chia cả hai vế cho 3 được 5 : 8. 3 : 5 là nhầm số chia; để nguyên 15 : 24 là chưa rút gọn hết.', errorTag: 'quyen_ucln_khi_rut_gon' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
