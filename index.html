@@ -531,6 +531,10 @@ const LESSONS = {
     khoi_dong:'Hàng trên xếp 3 cái kẹo. Hàng dưới xếp THÀNH 4 NHÓM, mỗi nhóm đúng 3 cái như hàng trên. Hàng dưới có bao nhiêu cái? Muốn được hàng dưới, ta đã "gấp" hàng trên lên mấy lần? Nếu ngược lại, cắt 12 cái kẹo thành 4 phần bằng nhau thì mỗi phần là mấy cái?',
     chot:'GẤP một số lên k lần = NHÂN số đó cho k (đoạn mới DÀI gấp k lần đoạn cũ). GIẢM một số đi k lần = CHIA số đó cho k (đoạn mới NGẮN đi k lần, số bị chia phải chia hết). Ví dụ 3 gấp 4 lần = 3 × 4 = 12; ngược lại 12 giảm 4 lần = 12 : 4 = 3 — hai phép là NGƯỢC nhau. Lỗi kinh điển: nhầm "gấp 4 lần của 3" thành 3 + 4 = 7 (CỘNG), hoặc nhầm "giảm" thành trừ (12 − 4). Từ "gấp k lần" ta có TỈ số B : A = k — nền của bài toán tỉ lệ thuận.',
     obj:'gấp 3 lên 4 lần; giảm 12 đi 4 lần', gpA: 3, gpK: 4 },
+  'phan-so-voi-1': { model:'psvs1', ten:'Phân số so với 1: lớn hơn / bằng / bé hơn 1 (tử số ↔ mẫu số, liên hệ chia có dư)',
+    khoi_dong:'Một cái bánh được chia đều thành 4 phần, cả cái bánh là 4/4 = 1. Bạn Minh lấy 7 phần như thế (7/4). 7 phần có nhiều hơn một cái bánh không? Cứ lấy đủ 4 phần là được một cái nguyên, vậy 7 phần được mấy cái nguyên và còn thừa mấy phần?',
+    chot:'SO PHÂN SỐ VỚI 1 chỉ cần so TỬ số với MẪU số: tử > mẫu thì phân số lớn hơn 1; tử = mẫu thì bằng đúng 1; tử < mẫu thì bé hơn 1. Ví dụ 7/4: vì 7 > 4 nên 7/4 > 1. Lấy 7 : 4 = 1 dư 3, tức 7 = 1×4 + 3, nên 7/4 = 1 + 3/4 (một cái nguyên và ba phần tư). Đây chính là phép CHIA CÓ DƯ: thương = số đơn vị nguyên, số dư = tử của phần lẻ, mẫu giữ nguyên. Lỗi kinh điển: nghĩ "mẫu lớn thì phân số lớn" — 5/7 có mẫu 7 to nhưng 5 < 7 nên 5/7 BÉ hơn 1.',
+    obj:'so 7/4 với 1', v1N: 7, v1D: 4 },
 };
 
 const state = {
@@ -5335,6 +5339,78 @@ const MODELS = {
     },
     paint3d() {},
   },
+  psvs1: {
+    res(st) {
+      const d = clamp(Math.round(st.v1D), 2, 9);
+      const n = clamp(Math.round(st.v1N), 1, 18);
+      const q = Math.floor(n / d);
+      const r = n - q * d;
+      const cmp = n > d ? '>' : n === d ? '=' : '<';
+      return { d, n, q, r, cmp };
+    },
+    defaults(st, L) { st.v1N = (L.v1N != null ? L.v1N : 7); st.v1D = (L.v1D != null ? L.v1D : 4); },
+    geomSig(st) { const r = this.res(st); return 'psvs1' + r.n + '~' + r.d; },
+    params() { return [{ key: 'v1N', label: 'Tử số n (số ô tô)', min: 1, max: 18 }, { key: 'v1D', label: 'Mẫu số d (1 gồm d phần, 2–9)', min: 2, max: 9 }]; },
+    toggles() { return []; },
+    ctlHint() { return 'Hai thanh trượt: tử số n (1–18 ô) và mẫu số d (2–9). Giơ ngón đặt n. Tử số = số ô đang tô; mẫu số = số ô tạo thành MỘT đơn vị (=1). Tô đủ d ô là được đúng 1.'; },
+    hand(st, f) { st.v1N = clamp(Math.round(f), 1, 18); },
+    handLabel(f) { return '→ Tử số n = ' + clamp(Math.round(f), 1, 18); },
+    draw2d(host, st) {
+      const r = this.res(st);
+      const u = 22, H = 32, ox = 40, yRef = 52, yFrac = 116;
+      const cs = r.cmp === '<' ? '&lt;' : r.cmp === '>' ? '&gt;' : '=';
+      let g = '';
+      g += `<text x="14" y="24" font-size="13" font-weight="700" fill="var(--chalk)">PHÂN SỐ SO VỚI 1</text>`;
+      g += `<rect x="${ox}" y="${yRef}" width="${r.d * u}" height="${H}" fill="rgba(127,201,191,.5)" stroke="rgba(242,240,230,.5)" stroke-width="1"></rect>`;
+      for (let i = 1; i < r.d; i++) g += `<line x1="${ox + i * u}" y1="${yRef}" x2="${ox + i * u}" y2="${yRef + H}" stroke="rgba(242,240,230,.25)" stroke-width="1"></line>`;
+      g += `<text x="${ox - 6}" y="${yRef + H / 2 + 4}" font-size="12" font-weight="700" text-anchor="end" fill="var(--chalk)">1 =</text>`;
+      g += `<text x="${ox + r.d * u + 8}" y="${yRef + H / 2 + 4}" font-size="11" fill="var(--chalk)">${r.d}/${r.d} ô</text>`;
+      for (let i = 0; i < r.n; i++) {
+        const x = ox + i * u;
+        const whole = i < r.q * r.d;
+        const fill = whole ? 'rgba(127,201,191,.5)' : 'rgba(240,196,92,.55)';
+        g += `<rect x="${x}" y="${yFrac}" width="${u}" height="${H}" fill="${fill}" stroke="rgba(242,240,230,.45)" stroke-width="1"></rect>`;
+      }
+      for (let k = 1; k <= r.q; k++) {
+        const bx = ox + k * r.d * u;
+        g += `<line x1="${bx}" y1="${yFrac - 8}" x2="${bx}" y2="${yFrac + H + 8}" stroke="var(--chalk)" stroke-width="1.5" stroke-dasharray="4 3"></line>`;
+      }
+      for (let k = 0; k < r.q; k++) {
+        const cx = ox + k * r.d * u + (r.d * u) / 2;
+        g += `<text x="${cx}" y="${yFrac + H + 16}" font-size="11" font-weight="700" text-anchor="middle" fill="var(--chalk)">1</text>`;
+      }
+      if (r.r > 0) {
+        const rx = ox + r.q * r.d * u + (r.r * u) / 2;
+        g += `<text x="${rx}" y="${yFrac + H + 16}" font-size="10" text-anchor="middle" fill="var(--warn)">${r.r}/${r.d}</text>`;
+      }
+      g += `<text x="${ox - 6}" y="${yFrac + H / 2 + 4}" font-size="12" font-weight="700" text-anchor="end" fill="var(--chalk)">${r.n}/${r.d}</text>`;
+      g += `<text x="14" y="${yFrac + H + 40}" font-size="12" font-weight="700" fill="var(--accent)">${r.n}/${r.d} ${cs} 1 · ${r.n} = ${r.q}×${r.d} + ${r.r}</text>`;
+      g += `<text x="14" y="${yFrac + H + 60}" font-size="10.5" fill="var(--warn)">❌ So với 1 chỉ nhìn TỬ số và MẪU số: ${r.n} ${cs} ${r.d} → phân số ${r.cmp === '>' ? 'lớn hơn' : r.cmp === '<' ? 'bé hơn' : 'bằng'} 1. Có ${r.q} đơn vị nguyên${r.r > 0 ? ` và thừa ${r.r}/${r.d}` : ''}. Đừng nhầm "mẫu to thì phân số to".</text>`;
+      const W = Math.max(ox + r.d * u, ox + r.n * u) + 60;
+      host.innerHTML = `<svg id="psvs1" width="${W}" height="${yFrac + H + 78}" viewBox="0 0 ${W} ${yFrac + H + 78}">` + g + `</svg>`;
+    },
+    caption(st) {
+      const L = cur(), s = st.step, r = this.res(st);
+      const tenPhan = r.cmp === '>' ? 'lớn hơn 1' : r.cmp === '<' ? 'bé hơn 1' : 'bằng đúng 1';
+      if (s === 0) return { cap: L.khoi_dong, hint: 'Bấm "Bước tiếp" sang phần Vật thật.' };
+      if (s === 1) return { cap: `Vật thật: một cái bánh chia đều thành ${r.d} phần thì cả cái bánh là ${r.d}/${r.d} = 1. Em lấy ${r.n} phần như thế (${r.n}/${r.d}). Cứ đủ ${r.d} phần là một cái nguyên; ${r.n} phần thì được ${r.q} cái nguyên${r.r > 0 ? ` và ${r.r} phần lẻ` : ', vừa hết'}.`, hint: 'đếm theo từng "cái" tròn.' };
+      if (s === 2) return { cap: `Sơ đồ: thanh dưới có ${r.n} ô, cứ ${r.d} ô ghép thành MỘT đơn vị (=1) như thanh trên. Ghép được ${r.q} đơn vị nguyên${r.r > 0 ? ` và dư ${r.r} ô (= ${r.r}/${r.d})` : ', vừa hết không dư'}.`, hint: 'tử số chứa mấy lần mẫu số.' };
+      if (s === 3) return { cap: `Phép tính: lấy tử chia mẫu — ${r.n} : ${r.d} = ${r.q} dư ${r.r}, tức ${r.n} = ${r.q}×${r.d} + ${r.r}. Vì ${r.n} ${r.cmp} ${r.d} nên ${r.n}/${r.d} ${tenPhan}.`, hint: '' };
+      return { cap: `Cả lớp: so phân số với 1 chỉ cần so TỬ số với MẪU số — tử ${r.cmp === '>' ? 'lớn hơn' : r.cmp === '<' ? 'bé hơn' : 'bằng'} mẫu thì phân số ${tenPhan}. Đây chính là phép chia có dư: thương ${r.q} là số đơn vị nguyên, số dư ${r.r} là phần lẻ ${r.r}/${r.d}.`, hint: '' };
+    },
+    value(st) { const r = this.res(st); return `${r.n}/${r.d} ${r.cmp} 1`; },
+    showFromStep() { return 2; },
+    build3d(st) {
+      const r = this.res(st), g = new THREE.Group();
+      const mWhole = new THREE.MeshStandardMaterial({ color: 0x7fc9bf, roughness: 0.6 });
+      const mPart = new THREE.MeshStandardMaterial({ color: 0xf0c45c, roughness: 0.45 });
+      const s = 0.6;
+      for (let k = 0; k < r.q; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), mWhole); b.position.set(k * s + s / 2, 0, 0); g.add(b); }
+      if (r.r > 0) { const w = (r.r / r.d) * s; const p = new THREE.Mesh(new THREE.BoxGeometry(w, s, s), mPart); p.position.set(r.q * s + w / 2, 0, 0); g.add(p); }
+      return g;
+    },
+    paint3d() {},
+  },
 };
 
 // ======================= Bật/tắt miếng (chỉ pie) =======================
@@ -5598,6 +5674,11 @@ EX['gap-giam-so-lan'] = [
   { prompt: 'Gấp 6 lên 3 lần được:', choices: ['18', '9', '21'], answer: '18', explanation: 'Gấp 3 lần = nhân 3: 6 × 3 = 18. 9 là lấy 6 + 3 (cộng thay vì nhân); 21 là 6 × 3 + 3 (gấp xong lại cộng thêm).', errorTag: 'cong_thay_vi_nhan' },
   { prompt: 'Giảm 24 đi 4 lần được:', choices: ['6', '20', '96'], answer: '6', explanation: 'Giảm 4 lần = chia 4: 24 : 4 = 6. 20 là lấy 24 − 4 (trừ thay vì chia); 96 là 24 × 4 (nhầm giảm thành GẤP 4 lần).', errorTag: 'tru_thay_vi_chia' },
   { prompt: 'Đoạn B dài gấp 5 lần đoạn A = 7 cm. Đoạn B dài:', choices: ['35 cm', '12 cm', '2 cm'], answer: '35 cm', explanation: 'Gấp 5 lần = 7 × 5 = 35 cm. 12 là 7 + 5; 2 là 7 − 5 (nhầm gấp thành cộng/trừ). Kiểm lại tỉ số: 35 : 7 = 5 lần.', errorTag: 'nham_gap_thanh_cong' },
+];
+EX['phan-so-voi-1'] = [
+  { prompt: 'Phân số 7/4 so với 1:', choices: ['Lớn hơn 1', 'Bằng 1', 'Bé hơn 1'], answer: 'Lớn hơn 1', explanation: 'Tử 7 > mẫu 4 nên 7/4 > 1. Thật ra 7 : 4 = 1 dư 3 nên 7/4 = 1 + 3/4. Chọn "bé hơn 1" là nhầm quy tắc (lấy mẫu so tử); "bằng 1" chỉ đúng khi tử bằng mẫu.', errorTag: 'lam_lan_tu_voi_mau' },
+  { prompt: 'Phân số nào bằng đúng 1?', choices: ['5/5', '5/7', '7/5'], answer: '5/5', explanation: 'Phân số bằng 1 khi tử = mẫu: 5/5 = 1. 5/7 < 1 (tử bé hơn mẫu); 7/5 > 1 (tử lớn hơn mẫu).', errorTag: 'tu_khong_bang_mau' },
+  { prompt: 'Phân số 5/7 so với 1:', choices: ['Bé hơn 1', 'Lớn hơn 1', 'Bằng 1'], answer: 'Bé hơn 1', explanation: 'Tử 5 < mẫu 7 nên 5/7 < 1 (lấy ít hơn đủ một phần của một đơn vị). Sai lầm hay gặp: tưởng "mẫu 7 to nên phân số to" — phải so tử với mẫu, không so mẫu với tử.', errorTag: 'nham_mau_lon_la_ps_lon' },
 ];
 function exOf() { const k = EXKEY[state.lesson] || state.lesson; const a = EX[k]; return (a && a.length) ? a : null; }
 function renderEx() {
