@@ -9,6 +9,11 @@ bằng chuột / màn 2D** khi máy không có camera hoặc không tải đư�
 vẫn giữ vai trò xuất prompt cho Gemini Canvas; thư mục này là bản app thật với **bộ
 giáo án Toán 4–5** (chọn bài trong dải của cô) — khởi đầu là *Phân số ban đầu*.
 
+## Liên kết nhanh
+
+- **Demo chạy ngay (mọi thiết bị):** https://hoatran1127.github.io/ar-toan-app/
+- **Bài mô tả dự án (hồ sơ / gọi vốn):** [`MO-TA-DU-AN.md`](MO-TA-DU-AN.md)
+
 ## Chạy thử
 
 Mở `index.html` bằng trình duyệt (Chrome/Edge). Vì app gọi `getUserMedia` và CDN
