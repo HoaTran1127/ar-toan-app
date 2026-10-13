@@ -1,4 +1,4 @@
-// ---- tiep MODELS: gop vao object MODELS (giu nguyen thu tu key) ----
+// ---- tiếp MODELS: gộp vào object MODELS (giữ nguyên thứ tự key) ----
 Object.assign(MODELS, {
   // ======================= Model: steps (bài toán nhiều bước — mở dần sơ đồ) =======================
   // Repo 'bai-toan-nhieu-buoc': vẽ sơ đồ trước rồi tính, MỖI BƯỚC một phép tính KÈM ĐƠN VỊ,

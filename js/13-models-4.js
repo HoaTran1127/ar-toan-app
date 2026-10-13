@@ -1,4 +1,4 @@
-// ---- tiep MODELS: gop vao object MODELS (giu nguyen thu tu key) ----
+// ---- tiếp MODELS: gộp vào object MODELS (giữ nguyên thứ tự key) ----
 Object.assign(MODELS, {
   // beyond-bank 8: DIỆN TÍCH HÌNH THANG — chứng minh "xoay 1 hình thang giống hệt → hình bình hành đáy (a+b)".
   // Hai tay: trái = ĐÁY NHỎ b, phải = ĐÁY LỚN a; chiều cao h qua +/−. Chặn lỗi "quên cộng hai đáy / quên chia 2".

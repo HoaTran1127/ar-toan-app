@@ -1,4 +1,4 @@
-// ---- tiep MODELS: gop vao object MODELS (giu nguyen thu tu key) ----
+// ---- tiếp MODELS: gộp vào object MODELS (giữ nguyên thứ tự key) ----
 Object.assign(MODELS, {
   seq: {
     res(st) {

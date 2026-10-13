@@ -20,7 +20,8 @@ Mở `index.html` bằng trình duyệt (Chrome/Edge). Vì app gọi `getUserMed
 MediaPipe, tốt nhất phục vụ qua HTTP:
 
 ```bash
-npx serve .        # hoặc: python -m http.server
+node serve.mjs           # http://127.0.0.1:8000/  (đổi cổng: node serve.mjs 8123)
+npx serve .              # hoặc: python -m http.server
 ```
 
 Không có camera hoặc CDN bị chặn thì app **vẫn chạy đầy đủ bằng chuột** — cô bấm
@@ -413,5 +414,20 @@ màn chiếu, lấy **verbatim** từ ngân hàng `tools/data/examples.mjs` củ
 
 ```
 ar-toan-app/
-  index.html   # toàn bộ app: bảng chiếu (2D + khối 3D) + dải điều khiển của cô + camera/MediaPipe
+  index.html        # khung bảng chiếu (2D + khối 3D) + dải điều khiển của cô, nạp 11 mô-đun theo thứ tự
+  js/
+    00-core.js      # LESSONS: 84 bài — mỗi bài = tên + model + nội dung giảng
+    10-models-1.js  \
+    11-models-2.js   |
+    12-models-3.js   | MODELS: 78 mô hình trực quan (draw2d / build3d / paint3d + điều khiển bằng tay)
+    13-models-4.js   |
+    14-models-5.js  /
+    15-models-6.js  /
+    30-render.js    # kết xuất bảng chiếu + bộ câu hỏi LUYỆN TẬP (EX) kèm chẩn đoán lỗi
+    40-camera.js    # webcam + MediaPipe HandLandmarker, tự lùi về chuột khi không có camera
+    50-three.js     # Three.js nạp ĐỘNG + dựng/destroy khối 3D
+    70-main.js      # khởi động, điều phối bước giảng
+  scripts/
+    verify.mjs      # chấm tự động (headless): node scripts/verify.mjs .
+  serve.mjs         # phục vụ HTTP tại chỗ, mặc định cổng 8000
 ```

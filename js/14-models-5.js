@@ -1,4 +1,4 @@
-// ---- tiep MODELS: gop vao object MODELS (giu nguyen thu tu key) ----
+// ---- tiếp MODELS: gộp vào object MODELS (giữ nguyên thứ tự key) ----
 Object.assign(MODELS, {
   // ======================= Model: areaunits (bảng đơn vị đo DIỆN TÍCH — beyond-bank) =======================
   // Đối trọng của lenunits: đơn vị diện tích liền nhau hơn kém 100 LẦN (không phải 10), vì cả HAI chiều dài đều ×10.

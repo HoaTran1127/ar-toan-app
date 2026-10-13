@@ -17,7 +17,7 @@ nặng, và không bám đúng từng bài trong sách giáo khoa Việt Nam.
 
 ## Giải pháp
 
-Một **ứng dụng web gọn trong một tệp HTML**, biến lớp học (máy chiếu, tablet, điện thoại,
+Một **ứng dụng web thuần (HTML + JavaScript, không cần build)**, biến lớp học (máy chiếu, tablet, điện thoại,
 kể cả laptop cũ) thành phòng trực quan tương tác:
 
 - **Giảng bằng tay thật.** Dùng webcam + nhận diện bàn tay (MediaPipe): học sinh *giơ
@@ -36,14 +36,15 @@ kể cả laptop cũ) thành phòng trực quan tương tác:
 
 - **Đúng giáo trình Việt Nam:** nội dung bám sát sách giáo khoa Toán 4–5, cộng thêm 45 bài
   mở rộng ngoài ngân hàng giáo án.
-- **Cực nhẹ, dễ phổ cập:** một tệp HTML, mở là chạy, không phí bản quyền, chạy được trên
-  chính thiết bị nhà trường đã có.
+- **Cực nhẹ, dễ phổ cập:** mở `index.html` là chạy, không phí bản quyền, không cài đặt,
+  chạy được trên chính thiết bị nhà trường đã có.
 - **Công bằng số:** nhận diện tay không đòi hỏi thiết bị đội giá (VR/găng); quyền riêng tư
   được tôn trọng (ảnh camera xử lý ngay tại máy, không truyền đi).
-- **Đã kiểm chứng bằng kỹ thuật:** mọi mô hình được chấm tự động (headless) với **quét toàn
-  bộ tổ hợp số liệu và bất biến toán học** trước khi phát hành — ví dụ mô hình mới nhất
-  (biểu đồ cột đôi) kiểm **20.736 tổ hợp** và đối chiếu công thức bằng hai đường độc lập.
-  Chất lượng không phải lời hứa, mà là phép đo.
+- **Đã kiểm chứng bằng kỹ thuật:** mọi mô hình được chấm tự động (headless) bằng
+  `scripts/verify.mjs` — **quét toàn bộ tổ hợp số liệu** của 78 mô hình / 84 bài / 199 câu
+  luyện tập (**203.975 tổ hợp**, 0 lỗi render, 0 giá trị NaN), đồng thời đối chiếu bất biến
+  toán học và vị trí đáp án đúng trước khi phát hành.
+  Chất lượng không phải lời hứa, mà là phép đo chạy lại được bằng một lệnh.
 
 ## Tình trạng triển khai
 

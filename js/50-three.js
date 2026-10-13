@@ -27,8 +27,8 @@ async function init3D() {
   animate();
 }
 // Dispose ĐỆ QUY toàn cây: geometry + material (kể cả mảng material) + texture.
-// Fix rò rỉ GPU ở các group lồng nhau (balance pivot, clock mkHand, goc mkRay).
-// dispose() của Three.js là idempotent nên gọi trùng cũng an toàn.
+// Sửa rò rỉ GPU ở các group lồng nhau (balance pivot, clock mkHand, goc mkRay).
+// dispose() của Three.js gọi nhiều lần vẫn an toàn nên gọi trùng cũng không sao.
 function disposeGroup(g) {
   g.traverse(o => {
     if (o.geometry) o.geometry.dispose();

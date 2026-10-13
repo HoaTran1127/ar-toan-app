@@ -1,4 +1,4 @@
-// ---- tiep MODELS: gop vao object MODELS (giu nguyen thu tu key) ----
+// ---- tiếp MODELS: gộp vào object MODELS (giữ nguyên thứ tự key) ----
 Object.assign(MODELS, {
   // ======================= Model: prob (xác suất — hộp bóng màu) =======================
   // Repo xac-suat: "liệt kê hết kết quả có thể rồi đếm kết quả thuận lợi"; "không thuận lợi = không
